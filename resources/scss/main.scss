@@ -1,0 +1,39 @@
+// theme colors
+
+$primary : #0d79ab;
+$success : #20c997;
+
+$font-size-base: 0.9rem;
+$input-focus-box-shadow: unset;
+$form-select-focus-box-shadow: unset;
+$btn-focus-box-shadow : unset;
+$btn-box-shadow: unset;
+$btn-active-box-shadow: unset;
+$list-group-item-padding-y : 0.7rem;
+
+
+// all bootstrap
+@import "../../node_modules/bootstrap/scss/bootstrap";
+
+
+a {
+    text-decoration: unset;
+}
+
+@media screen and (max-width:767px) {
+    .sidebar {
+        max-width: 20rem;
+        transform: translateX(-100%);
+        transition: transform 0.4s ease-out;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+}
+
+@media screen and (min-width: 768px){
+    input.search {
+        min-width: 20rem;
+    }
+}

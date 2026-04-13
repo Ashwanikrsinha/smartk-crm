@@ -1,0 +1,152 @@
+{
+  "project_info": {
+    "name": "SmartK - Specialized School CRM",
+    "framework": "Laravel 11.x",
+    "php_version": "8.2+",
+    "database": "MySQL / PostgreSQL",
+    "primary_purpose": "School sales visits, kit distributions, and revenue collection management."
+  },
+  "directory_structure": {
+    "app/Models": "Core Eloquent models representing the data schema and relationships.",
+    "app/Http/Controllers": "Request handling and workflow orchestration logic.",
+    "app/Policies": "Granular authorization rules using Laravel's policy engine.",
+    "app/Http/Requests": "Input validation and sanitization for various entities.",
+    "resources/views": "Blade templates for the user interface.",
+    "routes": "Web and API route definitions."
+  },
+  "core_workflow_mapping": [
+    {
+      "step": 1,
+      "role": "Sales Person (SP)",
+      "action": "Log Visit & Initiate Order",
+      "models_involved": ["Visit", "Customer", "VisitItem", "Invoice"],
+      "controllers": ["VisitController", "InvoiceController"]
+    },
+    {
+      "step": 2,
+      "role": "Sales Manager (SM)",
+      "action": "Audit & Approval",
+      "models_involved": ["Invoice"],
+      "controllers": ["InvoiceController"]
+    },
+    {
+      "step": 3,
+      "role": "Accounts Team",
+      "action": "Revenue Reconciliation",
+      "models_involved": ["Invoice", "Receipt", "Payment"],
+      "controllers": ["BillController", "ReceiptController"]
+    }
+  ],
+  "model_relationships": {
+    "User": {
+      "belongsTo": ["Role", "Department", "User (reportiveTo)"],
+      "hasMany": ["Visit", "Customer", "Log"]
+    },
+    "Visit": {
+      "belongsTo": ["Customer (School)", "User (Sales Person)", "Purpose"],
+      "hasOne": ["Invoice (Sales Order)", "Quotation"],
+      "hasMany": ["VisitItem (Kits)", "VisitAttachment"]
+    },
+    "Invoice": {
+      "belongsTo": ["Customer (School)", "Visit"],
+      "hasMany": ["InvoiceItem", "InvoiceAttachment"]
+    },
+    "Customer": {
+      "belongsTo": ["User (Assigned SP)", "State", "City", "CustomerType"],
+      "hasMany": ["Visit", "Invoice", "CustomerContact"]
+    }
+  },
+  "authorization_system": {
+    "mechanism": "Role-Based Access Control (RBAC)",
+    "implementation": "User::hasPermission() checks the user's role's permissions.",
+    "policy_logic": "Policies in app/Policies verify if the authenticated user has the necessary atomic permission (e.g., 'create_invoices').",
+    "key_policies": [
+      "VisitPolicy",
+      "InvoicePolicy",
+      "CustomerPolicy",
+      "UserPolicy",
+      "RolePolicy"
+    ]
+  },
+  "view_structure": {
+    "layouts": [
+      "resources/views/layouts/app.blade.php",
+      "resources/views/layouts/dashboard.blade.php"
+    ],
+    "partials": [
+      "resources/views/partials/sidebar.blade.php",
+      "resources/views/partials/top-nav.blade.php"
+    ],
+    "components": [
+      "resources/views/components/datatable.blade.php"
+    ],
+    "patterns": "Modules (Schools, Visits, Orders) use standardized index/create/edit/show/form structure."
+  },
+  "migration_flow": {
+    "foundation": [
+      "2014_10_12_000000_create_users_table.php",
+      "2021_09_18_064427_create_permissions_table.php"
+    ],
+    "core_entities": [
+      "2021_10_05_054350_create_contacts_table.php",
+      "2022_05_18_145015_create_items_table.php"
+    ],
+    "transactions": [
+      "2021_10_10_103245_create_visit_attachments.php",
+      "2022_06_27_141639_create_quotations_table.php",
+      "2022_06_27_132042_create_payments_table.php"
+    ]
+  },
+  "database_schema": {
+    "users": [
+      "id", "username", "password", "role_id", "remember_token", "is_disable", "inactive_date", "reportive_id", "department_id", "marital_status", "birth_date", "marriage_date", "contact_number", "designation_id", "address", "city", "state", "pin_code", "joining_date", "salary", "photo", "bio"
+    ],
+    "roles": ["id", "name"],
+    "permissions": ["id", "name"],
+    "permission_role": ["permission_id", "role_id"],
+    "customers": [
+      "id", "name", "segment_id", "email", "city", "state", "address", "phone_number", "gst_number", "description", "customer_types"
+    ],
+    "contacts": [
+      "id", "customer_id", "name", "birth_date", "marriage_date", "contact_number", "designation_id"
+    ],
+    "visits": [
+      "id", "visit_number", "visit_date", "user_id", "purpose_id", "customer_id", "customer_name", "status", "level", "follow_date", "follow_type", "description", "reason", "order_amount", "insight", "action"
+    ],
+    "visit_items": [
+      "id", "visit_id", "product_id", "quantity", "unit_id", "description", "rate"
+    ],
+    "visit_attachemts": ["id", "visit_id", "filename"],
+    "invoices": [
+      "id", "invoice_number", "invoice_date", "customer_id", "visit_id", "phone_number", "address", "status", "follow_date", "follow_type", "reason", "remarks", "terms", "amount"
+    ],
+    "invoice_items": [
+      "id", "invoice_id", "product_id", "description", "unit_id", "quantity", "rate", "amount"
+    ],
+    "bills": [
+      "id", "bill_number", "type", "bill_date", "customer_id", "phone_number", "gst_number", "address", "is_approved", "transport_id", "vehicle_number", "bilty_number", "delivery_date", "remarks", "terms", "amount", "cgst_amount", "sgst_amount", "igst_amount", "transport_charges", "extra_charges", "total_amount"
+    ],
+    "items": ["id", "name", "category_id", "description", "unit_id", "rate", "photo", "code", "group_id"],
+    "tasks": ["id", "title", "description", "deadline_time", "assignee_id", "status"],
+    "leaves": ["id", "user_id", "start_date", "end_date", "reason", "status"],
+    "targets": ["id", "user_id", "target_amount", "month", "year"],
+    "tally_sales": [
+      "id", "voucher_number", "voucher_date", "voucher_type", "gu_id", "party_name", "ledger_name", "entered_by", "buyer_address_list", "inventories_list", "ledger_entries_list"
+    ],
+    "tally_payments": [
+      "id", "voucher_number", "reference_number", "reference_type", "voucher_type", "voucher_master_id", "voucher_alter_id", "company_name", "voucher_date", "amount", "payment_mode", "cheque_number", "cheque_date", "bank_name", "debit_ledger", "credit_ledger"
+    ]
+  },
+  "technical_notes": {
+    "rebranding": {
+      "Customer": "School",
+      "Invoice": "Sales Order (SO)",
+      "Bill": "Printed School Order (PDF)",
+      "Visit": "Visit Log",
+      "Receipt": "Collection Update"
+    },
+    "listing_engine": "Yajra DataTables for high-performance data grids.",
+    "state_management": "Invoice status uses 'not interested', 'follow up', and 'mature' (Approved).",
+    "rejection_flow": "Sales Manager can reject orders, sending them back to the Sales Person for correction."
+  }
+}

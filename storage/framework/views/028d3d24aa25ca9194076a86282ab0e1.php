@@ -1,0 +1,2 @@
+<a href="<?php echo e(route('tally.receipts.show', ['receipt' => $receipt])); ?>" class="btn btn-sm text-primary"><i class="feather icon-eye"></i></a>
+<?php /**PATH D:\Data\smartk-crm\resources\views/tally/receipts/button.blade.php ENDPATH**/ ?>
