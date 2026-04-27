@@ -28,7 +28,7 @@ class InvoiceStoreRequest extends FormRequest
 
             // Line items
             'products'          => 'required|array|min:1',
-            'products.*'        => 'required|exists:items,id',
+            'products.*'        => 'required|exists:products,id',
             'quantities.*'      => 'required|numeric|min:1',
             'rates.*'           => 'required|numeric|min:0',
             'amounts.*'         => 'required|numeric|min:0',

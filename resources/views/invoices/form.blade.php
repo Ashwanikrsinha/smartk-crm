@@ -335,7 +335,6 @@ $(document).ready(function () {
     $('#add-item-row').on('click', function () {
         $.get(`/invoices/item-row-template?idx=${itemIndex}`, function (html) {
             $('#items-body').append(html);
-            initItemRow(itemIndex);
             itemIndex++;
         });
     });

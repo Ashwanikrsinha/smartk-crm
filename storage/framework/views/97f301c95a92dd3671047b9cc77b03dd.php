@@ -80,7 +80,7 @@ Only images: jpg, png, jpeg files are allowed with max size 10MB.
 
 
 
-<button type="submit" class="btn btn-primary"><?php echo e($mode == 'create' ? 'Save' : 'Edit'); ?></button>
+<button type="submit" class="btn btn-primary"><?php echo e($mode == 'create' ? 'Save' : 'Update'); ?></button>
 
 <?php $__env->startPush('scripts'); ?>
 

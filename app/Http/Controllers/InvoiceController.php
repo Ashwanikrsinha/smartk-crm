@@ -156,7 +156,8 @@ class InvoiceController extends Controller
         if ($invoice->isApproved()) {
             return back()->with('error', 'Approved orders cannot be edited.');
         }
-
+        // return $request->all();
+        // Log::info("requeiuy ",['reuest all========='=>$request->all()]);
         DB::transaction(function () use ($request, $invoice) {
 
             $status = $request->action === 'submit'
@@ -183,6 +184,7 @@ class InvoiceController extends Controller
 
             $invoice->invoiceItems()->delete();
             $invoice->createInvoiceItems($request);
+             Log::info("requeiuyreuest all====== at inside  txn === ",['req'=>$request->all()]);
 
             $invoice->pdcs()->delete();
             $invoice->createPdcs($request);

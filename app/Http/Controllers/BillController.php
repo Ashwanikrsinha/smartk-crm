@@ -113,7 +113,7 @@ class BillController extends Controller
             'terms'        => 'nullable|string|max:2000',
             'remarks'      => 'nullable|string|max:1000',
             'products'     => 'required|array|min:1',
-            'products.*'   => 'required|exists:items,id',
+            'products.*'   => 'required|exists:products,id',
             'quantities.*' => 'required|numeric|min:1',
             'rates.*'      => 'required|numeric|min:0',
             'amounts.*'    => 'required|numeric|min:0',
@@ -210,7 +210,7 @@ class BillController extends Controller
         $request->validate([
             'bill_date'    => 'required|date',
             'products'     => 'required|array|min:1',
-            'products.*'   => 'required|exists:items,id',
+            'products.*'   => 'required|exists:products,id',
             'quantities.*' => 'required|numeric|min:1',
             'rates.*'      => 'required|numeric|min:0',
             'amounts.*'    => 'required|numeric|min:0',

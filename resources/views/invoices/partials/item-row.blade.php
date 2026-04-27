@@ -32,7 +32,7 @@
     {{-- MRP --}}
     <td>
         <input type="number" step="0.01" name="mrps[{{ $idx }}]"
-            class="form-control form-control-sm mrp-input" value="{{ isset($item) ? $item->product->mrp : '' }}"
+            class="form-control form-control-sm mrp-input" value="{{ isset($item) ? $item->product->price : '' }}"
             placeholder="0.00" readonly>
     </td>
 

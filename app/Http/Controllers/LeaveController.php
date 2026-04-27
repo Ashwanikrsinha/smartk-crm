@@ -88,6 +88,7 @@ class LeaveController extends Controller
 
         $leave = Leave::create([
             'user_id'    => $user->id,
+            'leave_number' => Leave::leaveNumber(),
             'leave_type' => $request->leave_type,
             'from_date' => $request->from_date,
             'to_date'   => $request->to_date,
