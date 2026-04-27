@@ -8,30 +8,85 @@ use Illuminate\Support\Facades\DB;
 
 class PermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
-    public function run()
+    public function run(): void
     {
-        // all permissions data
-        
-        $names = [
-            'items',
+        DB::table('permissions')->delete();
+
+        $crudModules = [
+            'bills',
+            'categories',
+            'customer_types',
+            'customers',       // Schools
+            'departments',
+            'designations',
+            'employees',
+            'events',
+            'groups',
+            'invoices',        // Purchase Orders (POs)
+            'leaves',
+            'logs',
+            'news',
             'permissions',
+            'products',
+            'purposes',
+            'quotations',
             'roles',
+            'segments',
+            'states',
+            'supplier_types',
+            'suppliers',
+            'targets',
+            'tasks',
+            'transports',
+            'units',
             'users',
+            'visits',
+            'challans',
+            'collections',
+            'lead_sources',
+            'pdcs',
+            'school_documents',
+            'dispatch_queue',
+            'inventory',
         ];
 
-        foreach($names as $name){
-                
-            DB::table('permissions')->insert([
-                ['name' => "browse_{$name}"],
-                ['name' => "create_{$name}"],
-                ['name' => "edit_{$name}"],
-                ['name' => "delete_{$name}"],
-            ]);
+        $permissions = [];
+
+        foreach ($crudModules as $module) {
+            $permissions[] = ['name' => "browse_{$module}"];
+            $permissions[] = ['name' => "create_{$module}"];
+            $permissions[] = ['name' => "edit_{$module}"];
+            $permissions[] = ['name' => "delete_{$module}"];
+            $permissions[] = ['name' => "show_{$module}"];
         }
+
+        // -------------------------------------------------------
+        // Special action permissions (not simple CRUD)
+        // -------------------------------------------------------
+        $actionPermissions = [
+            // Sales Manager
+            'approve_invoices',        // Approve/reject POs
+            'view_team_data',          // Scope to own team's SPs
+            'create_sp_accounts',      // SM can create SP user accounts
+
+            // Accounts Team
+            'verify_payments',         // Mark collection as received
+            'view_all_orders',         // See all approved POs
+
+            // Admin / Reporting
+            'export_reports',          // Excel/PDF export
+            'view_all_data',           // Full system access (Admin)
+            'edit_companies',          // Company settings
+
+            // Items
+            'edit_items',
+            'browse_items',
+        ];
+
+        foreach ($actionPermissions as $perm) {
+            $permissions[] = ['name' => $perm];
+        }
+
+        DB::table('permissions')->insert($permissions);
     }
 }

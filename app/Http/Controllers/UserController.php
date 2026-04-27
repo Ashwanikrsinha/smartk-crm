@@ -18,13 +18,16 @@ class UserController extends Controller
         $this->authorizeResource(User::class, 'user');
     }
 
-   
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
+            if(auth()->user()->isSalesManager()){
+                $users = User::with('role', 'department')->select()->where('reportive_id', auth()->user()->id);
+            }else{
+                $users = User::with('role', 'department')->select();
+            }
 
-            $users = User::with('role', 'department')->select();
-  
             return DataTables::of($users)
                    ->editColumn('status', function ($user) {
                         return $user->is_disable ? 'Disable' : 'Active';
@@ -38,7 +41,7 @@ class UserController extends Controller
     }
 
     public function create()
-    {
+    {   
         $roles = Role::orderBy('name')->pluck('name', 'id');
         $users = User::active()->orderBy('username')->pluck('username', 'id');
         $departments = Department::orderBy('name')->pluck('name', 'id');
@@ -48,7 +51,7 @@ class UserController extends Controller
 
     public function store(UserStoreRequest $request)
     {
-      
+
         $validatedData = $request->validated();
         $validatedData['password'] = bcrypt($request->password);
         $validatedData['is_disable'] = $request->has('is_disable');
@@ -66,7 +69,7 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        
+
         $roles = Role::orderBy('name')->pluck('name', 'id');
         $users = User::active()->orderBy('username')->pluck('username', 'id');
         $departments = Department::orderBy('name')->pluck('name', 'id');
@@ -76,7 +79,7 @@ class UserController extends Controller
 
     public function update(UserUpdateRequest $request, User $user)
     {
-       
+
         $validatedData = $request->validated();
         $validatedData['is_disable'] = $request->has('is_disable');
 
@@ -95,7 +98,7 @@ class UserController extends Controller
     }
 
     public function destroy(User $user)
-    {   
+    {
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User Deleted');
     }

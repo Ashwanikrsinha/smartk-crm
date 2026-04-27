@@ -30,7 +30,11 @@ class VisitPolicy
      */
     public function view(User $user, Visit $visit)
     {
-        return $user->hasPermission('show_visits');
+        if (!$user->hasPermission('show_visits')) {
+            return false;
+        }
+
+        return in_array($visit->user_id, $user->teamMemberIds());
     }
 
     /**
@@ -53,7 +57,16 @@ class VisitPolicy
      */
     public function update(User $user, Visit $visit)
     {
-        return $user->hasPermission('edit_visits');
+         if (!$user->hasPermission('edit_visits')) {
+            return false;
+        }
+
+        // SP can only edit their own visits
+        if ($user->isSalesPerson()) {
+            return $visit->user_id === $user->id;
+        }
+
+        return in_array($visit->user_id, $user->teamMemberIds());
     }
 
     /**
@@ -65,7 +78,11 @@ class VisitPolicy
      */
     public function delete(User $user, Visit $visit)
     {
-        return $user->hasPermission('delete_visits');
+        if (!$user->hasPermission('delete_visits')) {
+            return false;
+        }
+
+        return in_array($visit->user_id, $user->teamMemberIds());
     }
 
     /**

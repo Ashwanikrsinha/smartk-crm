@@ -2,7 +2,7 @@
 <div class="row">
 
     <input type="hidden" name="type" value="{{ isset($bill) ? $bill->type : $type }}">
-    
+
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">Bill No.</label>
         <div class="form-control">{{ $bill->bill_number ?? $bill_number }}</div>
@@ -13,8 +13,8 @@
         <input type="date" class="form-control" name="bill_date"
             value="{{ isset($bill) ? $bill->bill_date->format('Y-m-d') : date('Y-m-d') }}" required>
     </div>
-    
-    
+
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Customer Name</label>
         <select name="customer_id" id="customer_id" class="form-control" required>
@@ -42,7 +42,7 @@
         <label for="" class="form-label">GST No.</label>
         <input type="text" class="form-control" name="gst_number" value="{{ $bill->gst_number ?? old('gst_number') }}">
     </div>
-    
+
 
 
     <div class="col-lg-6 mb-3">
@@ -140,20 +140,20 @@
     </div>
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 
 @push('scripts')
 
 <script>
-    
+
     function enableSelectize(){
        $('table#item tbody').find('select').selectize({ sortField: 'text' });
-    }  
-  
+    }
+
     $(document).ready(() => {
 
-        
+
         $('select').selectize();
 
 
@@ -182,7 +182,7 @@
             let total = $(this).val() * quantityEl.val();
 
             $(this).parent().parent().find(`input[name='amounts[]']`).val(total.toFixed(2));
-            
+
             setAmount();
             setTotalAmount();
 
@@ -190,21 +190,21 @@
 
 
         $('#add-row').click(function(e){
-            
+
             e.preventDefault();
-   
+
            $('table#item tbody tr:last').find('select').each(function (el) {
                let value = $(this).val();
                $(this)[0].selectize.destroy();
                $(this).val(value);
            });
-   
+
            $('table#item tbody tr:last').clone().appendTo('table#item tbody').find('[name]').val('');
-               
+
             enableSelectize();
-       }); 
-   
-   
+       });
+
+
         // remove last row
         $('#remove-row').on('click', (e)=>{
            e.preventDefault();
@@ -215,16 +215,16 @@
         function setAmount(){
 
             let amount = 0;
-                
+
             $(`input[name='amounts[]']`).each(function(index, el){
-                amount = amount + parseFloat($(this).val());        
+                amount = amount + parseFloat($(this).val());
             });
             console.log(amount);
             $('[name=amount]').val(amount.toFixed(2));
         }
 
         $('input#cgst-percentage').on('input', function(){
-            
+
             let amount = parseFloat($('[name=amount]').val()).toFixed(2);
             let cgst_amount = amount / 100 * parseInt($(this).val());
             $('[name=cgst_amount]').val(cgst_amount.toFixed(2));
@@ -233,7 +233,7 @@
         });
 
         $('input#sgst-percentage').on('input', function(){
-            
+
             let amount = parseFloat($('[name=amount]').val()).toFixed(2);
             let sgst_amount = amount / 100 * parseInt($(this).val());
             $('[name=sgst_amount]').val(sgst_amount.toFixed(2));
@@ -242,7 +242,7 @@
         });
 
         $('input#igst-percentage').on('input', function(){
-            
+
             let amount = parseFloat($('[name=amount]').val()).toFixed(2);
             let igst_amount = amount / 100 * parseInt($(this).val());
             $('[name=igst_amount]').val(igst_amount.toFixed(2));
@@ -253,33 +253,33 @@
 
         $('input#transport_charges').on('input', setTotalAmount);
         $('input#extra_charges').on('input', setTotalAmount);
-        
+
 
         function setTotalAmount(){
-    
-            let totalAmount = parseFloat($('[name=amount]').val()) 
+
+            let totalAmount = parseFloat($('[name=amount]').val())
                     + parseFloat($('[name=cgst_amount]').val())
                     + parseFloat($('[name=sgst_amount]').val())
                     + parseFloat($('[name=igst_amount]').val())
                     + parseFloat($('[name=transport_charges]').val())
-                    + parseFloat($('[name=extra_charges]').val());  
-            
+                    + parseFloat($('[name=extra_charges]').val());
+
             $('[name=total_amount]').val(totalAmount.toFixed(2));
-            
+
         }
 
-        
+
         const filePondAlertEl = $('#filepond-alert');
 
         FilePond.create(document.querySelector('#attachemnts'));
 
         FilePond.setOptions({
             server : {
-                headers : { 
+                headers : {
                       'X-CSRF_TOKEN' : '{{ csrf_token() }}',
-                      'X-Requested-With': 'XMLHttpRequest', 
+                      'X-Requested-With': 'XMLHttpRequest',
                 },
-                process : {  
+                process : {
                     url : `{{ route('bills.attachments.store') }}`,
                     onerror : (res) => {
                         console.log(res);
@@ -293,7 +293,7 @@
                 }
             }
         });
-   
+
 
        tinymce.init({
             selector: '[name=terms]',
@@ -301,7 +301,7 @@
             branding: false,
             plugins: 'lists link image paste table fullscreen',
             toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
+                    aligncenter alignright alignjustify | bullist numlist outdent indent
                     | table |link image | fullscreen`,
         });
 
@@ -314,7 +314,7 @@
             $.ajax({
                 url : `${url}?customer_id=${customer_id}`
             }).done((res)=>{
-                
+
                 $('[name=phone_number]').val(res.phone_number);
                 $('[name=gst_number]').val(res.gst_number);
                 $('[name=address]').val(res.address);
@@ -324,13 +324,13 @@
 
 
         $('#add-transport[type=checkbox]').click(function(){
-        
-            $(this).is(':checked') 
-                ? $('section#transport').removeClass('d-none') 
+
+            $(this).is(':checked')
+                ? $('section#transport').removeClass('d-none')
                 : $('section#transport').addClass('d-none');
         });
-      
-        
+
+
     });
 
 </script>

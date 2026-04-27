@@ -81,12 +81,12 @@
             @endif
         </select>
     </div>
-    
+
 </div>
 
 
 @if(isset($visit) && $mode == 'create')
-    @include('visits.items') 
+    @include('visits.items')
 @elseif (!isset($visit) && $mode == 'edit')
     @include('quotations.items')
 @elseif(isset($visit) && $mode == 'edit')
@@ -143,7 +143,7 @@
         <strong>Formats</strong>: images, pdf, excel, docx.</small>
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 
 @push('scripts')
@@ -151,8 +151,8 @@
 <script>
     function enableSelectize(){
        $('table#item tbody').find('select').selectize({ sortField: 'text' });
-    }  
-  
+    }
+
 
     $(document).ready(() => {
 
@@ -167,24 +167,24 @@
 
         $('select[name=customer_id]').on('change', function(){
             if ($(this).val().length > 0) {
-              window.location = `${window.location.origin}${window.location.pathname}?customer_id=${$(this).val()}`;   
+              window.location = `${window.location.origin}${window.location.pathname}?customer_id=${$(this).val()}`;
             }
-        }); 
+        });
 
 
         $('select[name=visit_id]').on('change', function(){
             if ($(this).val().length > 0) {
                window.location = `${window.location.origin}${window.location.pathname}?customer_id=${$('[name=customer_id]').val()}&visit_id=${$(this).val()}`;
             }
-        }); 
+        });
 
 
-        
+
         FilePond.create(document.querySelector('#attachemnts'));
 
         FilePond.setOptions({
             server : {
-                process : {  
+                process : {
                     url : `{{ route('quotations.attachments.store') }}`,
                     headers : { 'X-CSRF_TOKEN' : '{{ csrf_token() }}' },
                     onerror : (json) => { console.log(JSON.parse(json)); }
@@ -199,37 +199,37 @@
 
 
         $('#add-row').click(function(e){
-            
+
             e.preventDefault();
-   
+
            $('table#item tbody tr:last').find('select').each(function (el) {
                let value = $(this).val();
                $(this)[0].selectize.destroy();
                $(this).val(value);
            });
-   
+
            $('table#item tbody tr:last').clone()
                .appendTo('table#item tbody')
                .find('[name]').val('');
-               
+
             enableSelectize();
-       }); 
-   
-   
+       });
+
+
         // remove last row
         $('#remove-row').on('click', (e)=>{
            e.preventDefault();
            $('table#item tbody tr:last').remove();
        });
-   
+
        $('#check-items').click(function(){
-   
+
            $('table#item tbody').find('select').each(function (el) {
                let value = $(this).val();
                $(this)[0].selectize.destroy();
                $(this).val(value);
            });
-   
+
            if($(this).is(':checked')){
                $('table#item tbody').find('[name]').prop('disabled', false);
                $('table#item tbody').find('[name]').prop('required', true);
@@ -238,12 +238,12 @@
                $('table#item tbody').find('[name]').prop('disabled', true);
                $('table#item tbody').find('[name]').prop('required', false);
            }
-           
+
            enableSelectize();
-       
+
        });
 
-       
+
        $('select#status').change(function(){
 
             const followUp = '{{ App\Models\Quotation::FOLLOW_UP }}';
@@ -259,11 +259,11 @@
 
             if($(this).val() == notInterested){
                 $('div#reason').removeClass('d-none');
-            }  
+            }
 
         });
 
-        
+
     });
 
 </script>

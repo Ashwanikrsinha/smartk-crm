@@ -7,12 +7,12 @@
             required>
     </div>
 
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Email Address</label>
         <input type="email" class="form-control" name="email" value="<?php echo e($user->email ?? old('email')); ?>" required>
     </div>
-
+<?php if(!auth()->user()->isSalesManager()): ?>
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">Role</label>
         <select name="role_id" id="" class="form-control" required>
@@ -28,6 +28,9 @@
             <?php endif; ?>
         </select>
     </div>
+    <?php else: ?>
+    <input type="hidden" name="role_id" value="3">
+    <?php endif; ?>
 
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">Department</label>
@@ -48,7 +51,7 @@
         </select>
     </div>
 
-
+<?php if(!auth()->user()->isSalesManager()): ?>
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Reportive To</label>
         <select name="reportive_id" id="" class="form-control">
@@ -66,6 +69,9 @@
             <?php endif; ?>
         </select>
     </div>
+    <?php else: ?>
+    <input type="hidden" name="reportive_id" value="<?php echo e(auth()->user()->id); ?>">
+    <?php endif; ?>
 
 </section>
 
@@ -88,13 +94,13 @@
 
 <div class="col-12 mb-4 ms-1">
     <div class="form-check">
-        <input class="form-check-input" type="checkbox" id="is_disable" name="is_disable" 
+        <input class="form-check-input" type="checkbox" id="is_disable" name="is_disable"
         value="1" <?php echo e(isset($user) ? $user->is_disable ? 'checked' : '' : ''); ?>>
         <label class="form-check-label" for="is_disable">Disable?</label>
     </div>
 </div>
 
-<button type="submit" class="btn btn-primary"><?php echo e($mode == 'create' ? 'Save' : 'Edit'); ?></button>
+<button type="submit" class="btn btn-primary"><?php echo e($mode == 'create' ? 'Save' : 'Update'); ?></button>
 
 <?php $__env->startPush('scripts'); ?>
 
@@ -106,4 +112,5 @@
    });
 </script>
 
-<?php $__env->stopPush(); ?><?php /**PATH D:\Data\smartk-crm\resources\views/users/form.blade.php ENDPATH**/ ?>
+<?php $__env->stopPush(); ?>
+<?php /**PATH D:\Data\smartk-crm\resources\views/users/form.blade.php ENDPATH**/ ?>

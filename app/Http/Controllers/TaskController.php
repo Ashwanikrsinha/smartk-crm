@@ -26,11 +26,11 @@ class TaskController extends Controller
         if ($request->ajax()) {
 
             $tasks = Task::with('assignee', 'assignor')
-                       ->where(function($query) {  
+                       ->where(function($query) {
                         $query->where('assignor_id', auth()->id())
                             ->orWhere('assignee_id', auth()->id());
                         })->select();
-  
+
             return DataTables::of($tasks)
                     ->editColumn('task_number', function ($task) {
                         return "T-{$task->task_number}";
@@ -61,7 +61,11 @@ class TaskController extends Controller
      */
     public function create()
     {
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
+        if(auth()->user()->isSalesManager()){
+            $users = User::active()->orderBy('username')->pluck('username', 'id')->where('reportive_id', auth()->user()->id);
+        }else{
+            $users = User::active()->orderBy('username')->pluck('username', 'id');
+        }
         return view('tasks.create', compact('users'));
     }
 
@@ -80,10 +84,10 @@ class TaskController extends Controller
 
         $task = Task::create($validatedData);
         $task->load('assignor');
-        
-        $assignee = User::findOrFail($request->assignee_id);   
-        $assignee->notify(new NewTaskNotification($task));        
-   
+
+        $assignee = User::findOrFail($request->assignee_id);
+        $assignee->notify(new NewTaskNotification($task));
+
         return  back()->with('success', 'Task Created');
     }
 
@@ -107,7 +111,11 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
+        if(auth()->user()->isSalesManager()){
+            $users = User::active()->orderBy('username')->pluck('username', 'id')->where('reportive_id', auth()->user()->id);
+        }else{
+            $users = User::active()->orderBy('username')->pluck('username', 'id');
+        }
         return view('tasks.edit', compact('task', 'users'));
     }
 
@@ -123,7 +131,7 @@ class TaskController extends Controller
         $validatedData = $request->validated();
         $validatedData['completed_at'] = $request->has('is_completed') ? now() : null;
         $task->update($validatedData);
-   
+
         return back()->with('success', 'Task Updated');
     }
 

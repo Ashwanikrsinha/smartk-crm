@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Target;
 use App\Models\User;
+use App\Models\Invoice;
 use App\Models\Visit;
 use Illuminate\Http\Request;
 use App\Http\Requests\TargetRequest;
@@ -13,124 +14,178 @@ class TargetController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Target::class, 'target');
+        $this->middleware('auth');
     }
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
-
         if ($request->ajax()) {
 
-            $targets = Target::with('user')->selectRaw(
-                '*, 
-                (SELECT COUNT(visit_date) FROM visits 
-                WHERE user_id = targets.user_id 
-                AND 
-                visit_date BETWEEN targets.start_date AND targets.end_date) 
-                AS total_visits'
-            );
-                
-              
+            $user    = auth()->user();
+            $teamIds = $user->teamMemberIds();
+
+            $targets = Target::with('user:id,username')
+                ->whereIn('user_id', $teamIds)
+                ->select('id', 'user_id', 'target_amount', 'month', 'year');
+
             return DataTables::of($targets)
-                    ->editColumn('target', function ($target) {
-                        return $target->target .'/' . $target->total_visits;
-                    })
-                    ->editColumn('start_date', function ($target) {
-                        return $target->start_date->format('d M, Y');
-                    })
-                    ->editColumn('end_date', function ($target) {
-                        return $target->end_date->format('d M, Y');
-                    })
-                    ->editColumn('complete', function ($target) {
-                        return $target->total_visits * 100 / $target->target . '%';
-                    })
-                  ->addColumn('action', function ($target) {
-                      return view('targets.buttons')->with(['target' => $target]);
-                  })->make(true);
+                ->editColumn('target_amount', fn($t) => '₹' . number_format($t->target_amount, 2))
+                ->editColumn('month', fn($t) => date('F', mktime(0, 0, 0, $t->month, 1)) . ' ' . $t->year)
+                ->addColumn('achieved', function ($t) {
+                    // Sum approved PO amount for this SP in this month/year
+                    $achieved = Invoice::where('user_id', $t->user_id)
+                        ->where('status', Invoice::STATUS_APPROVED)
+                        ->whereMonth('invoice_date', $t->month)
+                        ->whereYear('invoice_date',  $t->year)
+                        ->sum('amount');
+                    return '₹' . number_format($achieved, 2);
+                })
+                ->addColumn('achievement_pct', function ($t) {
+                    $achieved = Invoice::where('user_id', $t->user_id)
+                        ->where('status', Invoice::STATUS_APPROVED)
+                        ->whereMonth('invoice_date', $t->month)
+                        ->whereYear('invoice_date',  $t->year)
+                        ->sum('amount');
+                    $pct = $t->target_amount > 0
+                        ? round(($achieved / $t->target_amount) * 100)
+                        : 0;
+                    $color = $pct >= 100 ? 'success' : ($pct >= 60 ? 'warning' : 'danger');
+                    return "<div class=\"progress\" style=\"height:18px\">
+                                <div class=\"progress-bar bg-{$color}\" style=\"width:{$pct}%\">{$pct}%</div>
+                            </div>";
+                })
+                ->addColumn('action', fn($t) => view('targets.buttons', ['target' => $t])->render())
+                ->rawColumns(['achievement_pct', 'action'])
+                ->make(true);
         }
 
         return view('targets.index');
     }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
-        return view('targets.create', compact('users'));
-    }
+        $this->authorizeSmOrAdmin();
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(TargetRequest $request)
-    {   
-        Target::create($request->validated());
-        return  back()->with('success', 'Target Created');
+        return view('targets.create', $this->formData());
     }
+    public function store(Request $request)
+    {
+        $this->authorizeSmOrAdmin();
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Target $target
-     * @return \Illuminate\Http\Response
-     */
+        $request->validate([
+            'user_id'       => 'required|exists:users,id',
+            'target_amount' => 'required|numeric|min:1',
+            'month'         => 'required|integer|min:1|max:12',
+            'year'          => 'required|integer|min:2020|max:2099',
+        ]);
+
+        // One target per SP per month/year
+        Target::updateOrCreate(
+            [
+                'user_id' => $request->user_id,
+                'month'   => $request->month,
+                'year'    => $request->year,
+            ],
+            ['target_amount' => $request->target_amount]
+        );
+
+        return redirect()->route('targets.index')
+            ->with('success', 'Target set successfully.');
+    }
     public function show(Target $target)
     {
-        $query = Visit::where('user_id', $target->user_id)
-            ->whereBetween('visit_date', [$target->start_date, $target->end_date]);
+        $this->authorizeAccess($target);
 
-        $visits = $query->paginate()->fragment('visits');
-        $total_visits = $query->count();
+        $target->load('user:id,username');
 
-        return view('targets.show', compact('target', 'visits', 'total_visits'));
+        // Achieved amount this month
+        $achieved = Invoice::where('user_id', $target->user_id)
+            ->where('status', Invoice::STATUS_APPROVED)
+            ->whereMonth('invoice_date', $target->month)
+            ->whereYear('invoice_date',  $target->year)
+            ->sum('amount');
+
+        $pct = $target->target_amount > 0
+            ? round(($achieved / $target->target_amount) * 100)
+            : 0;
+
+        return view('targets.show', compact('target', 'achieved', 'pct'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Target $target
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Target $target)
     {
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
-        return view('targets.edit', compact('target', 'users'));
-    }
+        $this->authorizeSmOrAdmin();
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Target $target
-     * @return \Illuminate\Http\Response
-     */
-    public function update(TargetRequest $request, Target $target)
+        return view('targets.edit', array_merge(
+            $this->formData(),
+            ['target' => $target]
+        ));
+    }
+    public function update(Request $request, Target $target)
     {
-        $target->update($request->validated());
-        return back()->with('success', 'Target Updated');
+        $this->authorizeSmOrAdmin();
+
+        $request->validate([
+            'target_amount' => 'required|numeric|min:1',
+            'month'         => 'required|integer|min:1|max:12',
+            'year'          => 'required|integer|min:2020|max:2099',
+        ]);
+
+        $target->update([
+            'target_amount' => $request->target_amount,
+            'month'         => $request->month,
+            'year'          => $request->year,
+        ]);
+
+        return back()->with('success', 'Target updated.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Target $target
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Target $target)
     {
+        $this->authorizeSmOrAdmin();
+
         $target->delete();
-        return back()->with('success', 'Target Deleted');
+
+        return redirect()->route('targets.index')
+            ->with('success', 'Target deleted.');
+    }
+
+    private function formData(): array
+    {
+        $user = auth()->user();
+
+        // SM sees only their SPs; Admin sees all SPs
+        $spQuery = User::salesPersons()->active()->orderBy('username');
+
+        if ($user->isSalesManager()) {
+            $spQuery->where('reportive_id', $user->id);
+        }
+
+        return [
+            'salesPersons' => $spQuery->get(['id', 'username']),
+            'months'       => array_combine(range(1, 12), array_map(
+                fn($m) => date('F', mktime(0, 0, 0, $m, 1)),
+                range(1, 12)
+            )),
+            'years'        => array_combine(
+                range(date('Y') - 1, date('Y') + 2),
+                range(date('Y') - 1, date('Y') + 2)
+            ),
+        ];
+    }
+
+    private function authorizeSmOrAdmin(): void
+    {
+        if (!auth()->user()->isSalesManager() && !auth()->user()->isAdmin()) {
+            abort(403, 'Only Sales Managers and Admins can manage targets.');
+        }
+    }
+
+    private function authorizeAccess(Target $target): void
+    {
+        $user    = auth()->user();
+        $teamIds = $user->teamMemberIds();
+
+        if (!in_array($target->user_id, $teamIds)) {
+            abort(403);
+        }
     }
 }

@@ -6,15 +6,15 @@
 
   @can('create', App\Models\Product::class)
     <div class="d-flex align-items-center">
-      
+
       <div class="dropdown shadow-sm me-2">
         <button class="btn bg-white dropdown-toggle" type="button" id="settings-dropdown" data-bs-toggle="dropdown">
-          <i class="feather icon-settings"></i>  
+          <i class="feather icon-settings"></i>
         </button>
 
         <div class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="settings-dropdown">
             <a href="{{ route('units.index') }}" class="dropdown-item">Units</a>
-            <a href="{{ route('groups.index') }}" class="dropdown-item">Groups</a>
+            {{-- <a href="{{ route('groups.index') }}" class="dropdown-item">Groups</a> --}}
             <a href="{{ route('categories.index') }}" class="dropdown-item">Categories</a>
         </div>
       </div>
@@ -27,7 +27,7 @@
 </header>
 
 @php
-  $columns = ['id', 'name', 'HSN code', 'unit', 'group', 'category',  're order level', 'actions'];
+  $columns = ['id', 'name', 'HSN code', 'unit',  'category',  're order level', 'actions'];
 @endphp
 
 <x-datatable id="products" :columns="$columns" />
@@ -49,12 +49,12 @@
                 { data: 'name', name: 'name' },
                 { data: 'code', name: 'code' },
                 { data: 'unit.name', name: 'unit.name' },
-                { data: 'group.name', name: 'group.name' },
+                // { data: 'group.name', name: 'group.name' },
                 { data: 'category.name', name: 'category.name' },
                 { data: 'reorder_level', name: 'reorder_level' },
                 { data: 'action', 'orderable': false, searchable: false}
             ],
         });
-    });   
+    });
 </script>
 @endpush

@@ -32,14 +32,15 @@ class VisitController extends Controller
     {
 
         if ($request->ajax()) {
-
+            $teamIds = auth()->user()->teamMemberIds();
             $visits = Visit::with([
-                'customer' => function ($query) { $query->select('id', 'name', 'segment_id'); }, 
+                'customer' => function ($query) { $query->select('id', 'name', 'segment_id'); },
                 'user' => function ($query) { $query->select('id', 'username'); },
                 'purpose'
                 ])
+                ->whereIn('user_id', $teamIds)
                 ->select();
-  
+
             return DataTables::of($visits)
                     ->editColumn('visit_number', function ($visit) {
                         return "V-{$visit->visit_number}";
@@ -78,9 +79,13 @@ class VisitController extends Controller
         $levels = Visit::levels();
         $products = Product::orderBy('name')->pluck('name', 'id');
         $units = Unit::orderBy('name')->pluck('name', 'id');
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
+        if(auth()->user()->isSalesManager()){
+            $users = User::active()->orderBy('username')->pluck('username', 'id')->where('reportive_id', auth()->user()->id);
+        }else{
+            $users = User::active()->orderBy('username')->pluck('username', 'id');
+        }
 
-        return view('visits.create', 
+        return view('visits.create',
             compact('customers', 'purposes', 'users', 'follow_types', 'statuses', 'levels', 'products', 'units'));
     }
 
@@ -92,13 +97,13 @@ class VisitController extends Controller
      */
     public function store(VisitRequest $request)
     {
-       
+
         DB::transaction(function () use ($request) {
 
             $visit = Visit::create([
                 'visit_date' => $request->visit_date,
                 'follow_date' => $request->follow_date,
-                'visit_number' =>  Visit::visitNumber(), 
+                'visit_number' =>  Visit::visitNumber(),
                 'user_id' => $request->user_id,
                 'purpose_id' => $request->purpose_id,
                 'customer_id' => $request->customer_id,
@@ -120,9 +125,9 @@ class VisitController extends Controller
            if ($request->filled('attachments.0')) {
                $visit->createVisitAttachments($request);
             }
-        
+
         });
-            
+
         return  redirect()->route('visits.index')->with('success', 'Visit Created');
     }
 
@@ -137,7 +142,7 @@ class VisitController extends Controller
         if($visit->visitItems->count()){
             $visit->load(['visitItems.product', 'visitItems.unit']);
         }
-        
+
         if($visit->attachments->count() > 0){
             $visit->load('attachments');
         }
@@ -162,11 +167,15 @@ class VisitController extends Controller
         $follow_types = Visit::followTypes();
         $statuses = Visit::status();
         $levels = Visit::levels();
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
+        if(auth()->user()->isSalesManager()){
+            $users = User::active()->orderBy('username')->pluck('username', 'id')->where('reportive_id', auth()->user()->id);
+        }else{
+            $users = User::active()->orderBy('username')->pluck('username', 'id');
+        }
         $products = Product::orderBy('name')->pluck('name', 'id');
         $units = Unit::orderBy('name')->pluck('name', 'id');
 
-        return view('visits.edit', 
+        return view('visits.edit',
         compact('visit','customers', 'purposes', 'users', 'statuses', 'follow_types', 'levels', 'products', 'units'));
     }
 
@@ -179,7 +188,7 @@ class VisitController extends Controller
      */
     public function update(VisitRequest $request, Visit $visit)
     {
-        
+
         DB::transaction(function () use ($request, $visit) {
 
             $visit->update([
@@ -207,9 +216,9 @@ class VisitController extends Controller
            if ($request->filled('attachments.0')) {
                $visit->createVisitAttachments($request);
            }
-        
+
         });
-            
+
         return  back()->with('success', 'Visit Updated');
     }
 

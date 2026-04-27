@@ -1,326 +1,453 @@
 @csrf
-<div class="row">
-    
-    <div class="col-lg-3 mb-3">
-        <label for="" class="form-label">Invoice No.</label>
-        <div class="form-control">{{  $invoice->invoice_number ?? $invoice_number }}</div>
+
+{{-- ═══════════════════════════════════════════════════
+     SECTION 1: SCHOOL SELECTION
+═══════════════════════════════════════════════════ --}}
+<div class="bg-white rounded shadow-sm p-4 mb-4">
+
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h6 class="fw-bold mb-0"><i class="feather icon-home me-2 text-primary"></i>School Details</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#new-school-modal">
+            <i class="feather icon-plus me-1"></i> New School
+        </button>
     </div>
 
-    <div class="col-lg-3 mb-3">
-        <label for="" class="form-label">Invoice Date</label>
-        <input type="date" class="form-control" name="invoice_date"
-            value="{{ isset($invoice) ? $invoice->invoice_date->format('Y-m-d') : date('Y-m-d') }}" required>
-    </div>
-    
-    
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Customer Name</label>
-        <select name="customer_id" id="customer_id" class="form-control" required>
-            @if(isset($invoice))
-            @foreach($customers as $key => $customer)
-            <option value="{{ $key }}" {{ request('customer_id')==$key ? 'selected' : '' }} {{ !request('customer_id') &&
-            $invoice->customer_id == $key ? 'selected' : '' }}>
-                {{ $customer }}
-            </option>
-            @endforeach
-            @else
-            <option selected value="">Choose...</option>
-            @foreach($customers as $key => $customer)
-            <option {{ request('customer_id') == $key || old('customer_id')==$key ? 'selected' : '' }}  value="{{ $key }}">{{ $customer}}</option>
-            @endforeach
-            @endif
-        </select>
-    </div>
+    <div class="row">
 
-
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Visit No.</label>
-        <select name="visit_id" id="" class="form-control" required>
-           <option value="" selected disabled>Choose...</option>
-           @if (isset($invoice) && blank($visits)))
-              <option value="{{ $invoice->visit->id }}" selected>V-{{ $invoice->visit->visit_number }}</option>
-           @elseif(isset($visits))
-                @foreach($visits as $key => $visit_number)
-                <option value="{{ $key }}" {{ request('visit_id') == $key ? 'selected' : '' }}>
-                    V-{{ $visit_number }}
+        {{-- School Search --}}
+        <div class="col-lg-6 mb-3">
+            <label class="form-label">School <span class="text-danger">*</span></label>
+            <select name="customer_id" id="school-select" class="form-control" required>
+                <option value="">Search and select school...</option>
+                @foreach($customers as $school)
+                <option value="{{ $school->id }}"
+                    {{ isset($invoice) && $invoice->customer_id == $school->id ? 'selected' : '' }}>
+                    [{{ $school->school_code }}] {{ $school->name }} — {{ $school->city }}, {{ $school->state }}
                 </option>
                 @endforeach
-           @endif
-        </select>
+            </select>
+        </div>
+
+        {{-- School Code (auto-filled, read-only) --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">School Code</label>
+            <input type="text" class="form-control bg-light" id="school-code" readonly
+                value="{{ isset($invoice) ? $invoice->customer->school_code : '' }}">
+        </div>
+
+        {{-- Lead From --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">Lead From</label>
+            <select name="lead_source_id" id="lead-source" class="form-control">
+                <option value="">Select lead source...</option>
+                @foreach($lead_sources as $id => $name)
+                <option value="{{ $id }}"
+                    {{ isset($invoice) && $invoice->customer->lead_source_id == $id ? 'selected' : '' }}>
+                    {{ $name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Contact Person --}}
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Contact Person Name</label>
+            <input type="text" name="contact_person" class="form-control" id="contact-person"
+                value="{{ isset($invoice) ? $invoice->contact_person : old('contact_person') }}"
+                placeholder="Principal / Coordinator name">
+        </div>
+
+        {{-- Phone --}}
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Mobile Number</label>
+            <input type="text" name="phone_number" class="form-control" id="school-phone"
+                value="{{ isset($invoice) ? $invoice->phone_number : old('phone_number') }}"
+                placeholder="10-digit mobile number">
+        </div>
+
+        {{-- Email --}}
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Email ID</label>
+            <input type="email" name="email" class="form-control" id="school-email"
+                value="{{ isset($invoice) ? $invoice->customer->email : old('email') }}"
+                placeholder="school@example.com">
+        </div>
+
+        {{-- Date --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">PO Date <span class="text-danger">*</span></label>
+            <input type="date" name="invoice_date" class="form-control" required
+                value="{{ isset($invoice) ? $invoice->invoice_date->format('Y-m-d') : date('Y-m-d') }}">
+        </div>
+
+        {{-- Delivery Due Date --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">Delivery Due Date</label>
+            <input type="date" name="delivery_due_date" class="form-control"
+                value="{{ isset($invoice) ? optional($invoice->delivery_due_date)->format('Y-m-d') : '' }}">
+        </div>
+
+        {{-- Address --}}
+        <div class="col-lg-6 mb-3">
+            <label class="form-label">School Address</label>
+            <input type="text" name="address" class="form-control" id="school-address"
+                value="{{ isset($invoice) ? $invoice->address : old('address') }}"
+                placeholder="Full address">
+        </div>
+
+        {{-- State --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">State</label>
+            <input type="text" name="state" class="form-control" id="school-state"
+                value="{{ isset($invoice) ? $invoice->customer->state : old('state') }}"
+                placeholder="State">
+        </div>
+
+        {{-- City --}}
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">City</label>
+            <input type="text" name="city" class="form-control" id="school-city"
+                value="{{ isset($invoice) ? $invoice->customer->city : old('city') }}"
+                placeholder="City">
+        </div>
+
+        {{-- Pin Code --}}
+        <div class="col-lg-2 mb-3">
+            <label class="form-label">Pin Code</label>
+            <input type="text" name="pin_code" class="form-control" id="school-pin"
+                value="{{ isset($invoice) ? $invoice->customer->pin_code : old('pin_code') }}"
+                placeholder="6-digit pin">
+        </div>
+
+        {{-- Visit (optional) --}}
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Link Visit <small class="text-muted">(optional)</small></label>
+            <select name="visit_id" id="visit-select" class="form-control">
+                <option value="">Select visit (optional)...</option>
+                {{-- Populated via AJAX when school is chosen --}}
+                @if(isset($invoice) && $invoice->visit_id)
+                <option value="{{ $invoice->visit_id }}" selected>
+                    V-{{ $invoice->visit->visit_number }}
+                </option>
+                @endif
+            </select>
+        </div>
+
+    </div>
+</div>
+
+
+{{-- ═══════════════════════════════════════════════════
+     SECTION 2: ORDER ITEMS
+═══════════════════════════════════════════════════ --}}
+<div class="bg-white rounded shadow-sm p-4 mb-4">
+
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h6 class="fw-bold mb-0"><i class="feather icon-package me-2 text-primary"></i>Order Items</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add-item-row">
+            <i class="feather icon-plus me-1"></i> Add Row
+        </button>
     </div>
 
+    {{-- Table Header --}}
+    <div class="table-responsive">
+    <table class="table table-bordered" id="items-table">
+        <thead class="table-light">
+            <tr>
+                <th style="width:5%">#</th>
+                <th style="width:18%">Category</th>
+                <th style="width:18%">Product / Kit</th>
+                <th style="width:9%">MRP</th>
+                <th style="width:8%">Qty</th>
+                <th style="width:9%">Discount (%)</th>
+                <th style="width:12%">Net Sale Price</th>
+                <th style="width:12%">Total Amount</th>
+                <th style="width:5%"></th>
+            </tr>
+        </thead>
+        <tbody id="items-body">
 
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Status</label>
-        <select name="status" id="status" class="form-control" required>
-            <option selected value="">Choose...</option>
-            @if(isset($invoice))
-            @foreach($statuses as $status)
-            <option value="{{ $status }}" {{ $invoice->status == $status ? 'selected' : '' }}>
-                {{ ucwords($status) }}
-            </option>
-            @endforeach
+            @if(isset($invoice) && $invoice->invoiceItems->count())
+
+                {{-- Edit mode: load existing items --}}
+                @foreach($invoice->invoiceItems as $idx => $item)
+                @include('invoices.partials.item-row', [
+                    'idx'     => $idx,
+                    'item'    => $item,
+                    'categories' => $categories,
+                ])
+                @endforeach
+
             @else
-            @foreach($statuses as $status)
-            <option {{ old('status')==$status ? 'selected' : '' }} value="{{ $status }}">
-                {{ ucwords($status) }}
-            </option>
-            @endforeach
+                {{-- Create mode: one blank row --}}
+                @include('invoices.partials.item-row', [
+                    'idx'        => 0,
+                    'item'       => null,
+                    'categories' => $categories,
+                ])
             @endif
-        </select>
+
+        </tbody>
+    </table>
     </div>
 
-    
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Phone No.</label>
-        <input type="text" class="form-control" name="phone_number" value="{{ $invoice->phone_number ?? old('phone_number') }}">
+    {{-- Total PO Amount --}}
+    <div class="d-flex justify-content-end mt-2">
+        <div class="text-end">
+            <label class="form-label fw-bold">Total PO Amount</label>
+            <div class="input-group" style="width: 200px;">
+                <span class="input-group-text">₹</span>
+                <input type="text" class="form-control fw-bold text-end"
+                       id="total-po-amount-display" readonly placeholder="0.00">
+                <input type="hidden" name="total_po_amount" id="total-po-amount">
+            </div>
+        </div>
     </div>
-
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Address</label>
-        <input type="text" class="form-control" name="address" value="{{ $invoice->address ?? old('address') }}">
-    </div>
-    
-
 
 </div>
 
 
-@include('invoices.items')
+{{-- ═══════════════════════════════════════════════════
+     SECTION 3: PDC (POST DATED CHEQUES)
+═══════════════════════════════════════════════════ --}}
+<div class="bg-white rounded shadow-sm p-4 mb-4">
 
-
-<section class="row {{ isset($invoice) && $invoice->status == App\Models\Visit::FOLLOW_UP ? '' : 'd-none' }}" id="follow-up">
-
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Follow Up Date</label>
-        <input type="date" class="form-control" name="follow_date" value="{{ isset($invoice->follow_date) ? $invoice->follow_date->format('Y-m-d') : old('follow_date') }}">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h6 class="fw-bold mb-0">
+            <i class="feather icon-credit-card me-2 text-primary"></i>
+            Payment Cheques (PDC)
+            <small class="text-muted fw-normal ms-1">— Post dated cheques from school</small>
+        </h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add-pdc-row">
+            <i class="feather icon-plus me-1"></i> Add Cheque
+        </button>
     </div>
 
-    <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Follow Up Type</label>
-        <select name="follow_type" id="follow_type" class="form-control">
-            <option selected value="" disabled>Choose...</option>
-            @if(isset($invoice))
-            @foreach($follow_types as $type)
-            <option value="{{ $type }}" {{ $invoice->follow_type == $type ? 'selected' : '' }}>
-                {{ ucfirst($type) }}
-            </option>
+    <div id="pdc-body">
+
+        @if(isset($invoice) && $invoice->pdcs->count())
+            @foreach($invoice->pdcs as $idx => $pdc)
+                @include('invoices.partials.pdc-row', ['idx' => $idx, 'pdc' => $pdc])
             @endforeach
-            @else
-            @foreach($follow_types as $type)
-            <option {{ old('follow_type')==$type ? 'selected' : '' }} value="{{ $type }}">{{ ucfirst($type) }}
-            </option>
-            @endforeach
-            @endif
-        </select>
+        @else
+            @include('invoices.partials.pdc-row', ['idx' => 0, 'pdc' => null])
+        @endif
+
     </div>
 
-
-</section>
-
-
-<div class="{{ isset($invoice) && $invoice->status == App\Models\Invoice::NOT_INTERESTED ? '' : 'd-none' }} mb-3" id="reason">
-    <label for="" class="form-label">Reason</label>
-    <textarea name="reason" cols="30" rows="3" class="form-control">{{ $invoice->reason  ?? old('reason') }}</textarea>
 </div>
 
 
-
-<footer class="d-flex justify-content-between mt-3 mt-lg-0 mb-4">
-    <button class="btn btn-primary btn-sm" id="add-row">
-        <span class="feather icon-plus"></span>
-    </button>
-    <button class="btn btn-danger btn-sm" id="remove-row">
-        <i class="feather icon-x"></i>
-    </button>
-</footer>
-
-
-<div class="mb-3">
-    <label for="" class="form-label">Remarks</label>
-    <textarea name="remarks" cols="30" rows="3"  class="form-control">{{ $invoice->remarks ?? old('remarks') }}</textarea>
+{{-- ═══════════════════════════════════════════════════
+     SECTION 4: REMARKS & TERMS
+═══════════════════════════════════════════════════ --}}
+<div class="bg-white rounded shadow-sm p-4 mb-4">
+    <h6 class="fw-bold border-bottom pb-2 mb-3">
+        <i class="feather icon-file-text me-2 text-primary"></i>Additional Details
+    </h6>
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <label class="form-label">Remarks</label>
+            <textarea name="remarks" class="form-control" rows="3"
+                placeholder="Any notes or special instructions...">{{ isset($invoice) ? $invoice->remarks : old('remarks') }}</textarea>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <label class="form-label">Terms & Conditions</label>
+            <textarea name="terms" class="form-control" rows="3"
+                placeholder="Payment terms, delivery conditions...">{{ isset($invoice) ? $invoice->terms : old('terms') }}</textarea>
+        </div>
+    </div>
 </div>
 
 
-<div class="mb-3">
-    <label for="" class="form-label">Terms & Conditions</label>
-    <textarea name="terms" cols="30" rows="3"  class="form-control">{{ $invoice->terms ?? old('terms') }}</textarea>
+{{-- ═══════════════════════════════════════════════════
+     SECTION 5: ACTIONS
+═══════════════════════════════════════════════════ --}}
+<div class="bg-white rounded shadow-sm p-3 d-flex justify-content-between align-items-center">
+    <a href="{{ route('invoices.index') }}" class="btn btn-secondary">Cancel</a>
+    <div class="d-flex gap-2">
+        <button type="submit" name="action" value="draft" class="btn btn-outline-primary">
+            <i class="feather icon-save me-1"></i> Save as Draft
+        </button>
+        <button type="submit" name="action" value="submit" class="btn btn-primary"
+            onclick="return confirm('Submit this PO to your Sales Manager for approval?')">
+            <i class="feather icon-send me-1"></i> Submit for Approval
+        </button>
+    </div>
 </div>
-
-
-<div id="filepond-alert" class="alert alert-danger d-none my-3">
-    Only images, pdf, doc, excel files are allowed with max size of 10MB.
-</div>
-
-<div class="mb-3">
-    <label for="attachemnts" class="form-label">Attachments</label>
-    <input type="file" name="attachments[]" multiple max="3" id="attachemnts">
-</div>
-
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
 
 
 @push('scripts')
-
 <script>
-    
-    function enableSelectize(){
-       $('table#item tbody').find('select').selectize({ sortField: 'text' });
-    }  
-  
-    $(document).ready(() => {
+$(document).ready(function () {
 
-        
-        $('select').selectize();
-
-
-        $('table#item tbody').on('input',`input[name='quantities[]']`,function(){
-
-            let rateEl = $(this).parent().parent().find(`input[name='rates[]']`);
-
-            rateEl.val() ?  rateEl.val() : rateEl.val(0);
-
-            let total = $(this).val() * rateEl.val();
-
-            $(this).parent().parent().find(`input[name='amounts[]']`).val(total.toFixed(2));
-
-            setAmount();
-            setTotalAmount();
-
-        });
-
-
-        $('table#item tbody').on('input',`input[name='rates[]']`,function(){
-
-            let quantityEl = $(this).parent().parent().find(`input[name='quantities[]']`);
-
-            quantityEl.val() ?  quantityEl.val() : quantityEl.val(0);
-
-            let total = $(this).val() * quantityEl.val();
-
-            $(this).parent().parent().find(`input[name='amounts[]']`).val(total.toFixed(2));
-            
-            setAmount();
-            setTotalAmount();
-
-        });
-
-
-        $('#add-row').click(function(e){
-            
-            e.preventDefault();
-   
-           $('table#item tbody tr:last').find('select').each(function (el) {
-               let value = $(this).val();
-               $(this)[0].selectize.destroy();
-               $(this).val(value);
-           });
-   
-           $('table#item tbody tr:last').clone()
-               .appendTo('table#item tbody')
-               .find('[name]').val('');
-               
-            enableSelectize();
-       }); 
-   
-   
-        // remove last row
-        $('#remove-row').on('click', (e)=>{
-           e.preventDefault();
-           $('table#item tbody tr:last').remove();
-       });
-
-
-        function setAmount(){
-
-            let amount = 0;
-                
-            $(`input[name='amounts[]']`).each(function(index, el){
-                amount = amount + parseFloat($(this).val());        
-            });
-            console.log(amount);
-            $('[name=amount]').val(amount.toFixed(2));
+    // ─── Selectize school dropdown ───────────────────────
+    const schoolSelect = $('#school-select').selectize({
+        placeholder: 'Search school by name or code...',
+        onChange: function (schoolId) {
+            if (!schoolId) return;
+            fetchSchoolDetails(schoolId);
+            fetchVisits(schoolId);
         }
-
-
-        
-        $('select[name=customer_id]').on('change', function(){
-            if ($(this).val().length > 0) {
-              window.location = `${window.location.origin}${window.location.pathname}?customer_id=${$(this).val()}`;   
-            }
-        }); 
-
-
-        $('select[name=visit_id]').on('change', function(){
-            if ($(this).val().length > 0) {
-               window.location = `${window.location.origin}${window.location.pathname}?customer_id=${$('[name=customer_id]').val()}&visit_id=${$(this).val()}`;
-            }
-        }); 
-
-
-        
-
-        
-        const filePondAlertEl = $('#filepond-alert');
-
-        FilePond.create(document.querySelector('#attachemnts'));
-
-        FilePond.setOptions({
-            server : {
-                headers : { 
-                      'X-CSRF_TOKEN' : '{{ csrf_token() }}',
-                      'X-Requested-With': 'XMLHttpRequest', 
-                },
-                process : {  
-                    url : `{{ route('invoices.attachments.store') }}`,
-                    onerror : (res) => {
-                        console.log(res);
-                        filePondAlertEl.removeClass('d-none');
-                        setTimeout(() => filePondAlertEl.addClass('d-none'), 4000);
-                    }
-                },
-                revert: {
-                  url : `{{ route('invoices.attachments.destroy') }}`,
-                  _method : 'DELETE',
-                }
-            }
-        });
-   
-
-       tinymce.init({
-            selector: '[name=terms]',
-            height: 420,
-            branding: false,
-            plugins: 'lists link image paste table fullscreen',
-            toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
-                    | table |link image | fullscreen`,
-        });
-
-        
-       $('select#status').change(function(){
-
-            const followUp = '{{ App\Models\Invoice::FOLLOW_UP }}';
-            const notInterested = '{{ App\Models\Invoice::NOT_INTERESTED }}';
-
-            $('section#follow-up').addClass('d-none');
-            $('div#reason').addClass('d-none');
-
-
-            if($(this).val() == followUp){
-                $('section#follow-up').removeClass('d-none');
-            }
-
-            if($(this).val() == notInterested){
-                $('div#reason').removeClass('d-none');
-            }  
-
-        });
-   
-   
-        
     });
 
-</script>
+    // ─── Selectize visit dropdown ────────────────────────
+    $('#visit-select').selectize({ placeholder: 'Select visit (optional)...' });
 
+    // ─── Fetch school details via AJAX ──────────────────
+    function fetchSchoolDetails(schoolId) {
+        $.get(`/invoices/school/${schoolId}`, function (data) {
+            $('#school-code').val(data.school_code);
+            $('#school-phone').val(data.phone_number);
+            $('#school-address').val(data.address);
+            $('#school-state').val(data.state);
+            $('#school-city').val(data.city);
+            $('#school-pin').val(data.pin_code);
+            $('#school-email').val(data.email);
+
+            // Set lead source
+            const leadSelectize = $('#lead-source')[0].selectize;
+            if (leadSelectize && data.lead_source_id) {
+                leadSelectize.setValue(data.lead_source_id);
+            }
+        });
+    }
+
+    // ─── Fetch visits for this school ───────────────────
+    function fetchVisits(schoolId) {
+        $.get(`/invoices/visits/${schoolId}`, function (visits) {
+            const visitSelectize = $('#visit-select')[0].selectize;
+            visitSelectize.clearOptions();
+            visitSelectize.addOption({ value: '', text: 'Select visit (optional)...' });
+            visits.forEach(v => {
+                visitSelectize.addOption({
+                    value: v.id,
+                    text: `V-${v.visit_number} — ${v.visit_date}`
+                });
+            });
+            visitSelectize.refreshOptions(false);
+        });
+    }
+
+    // ─── Item rows: Category → Product chain ────────────
+    let itemIndex = {{ isset($invoice) ? $invoice->invoiceItems->count() : 1 }};
+
+    $('#add-item-row').on('click', function () {
+        $.get(`/invoices/item-row-template?idx=${itemIndex}`, function (html) {
+            $('#items-body').append(html);
+            initItemRow(itemIndex);
+            itemIndex++;
+        });
+    });
+
+    // Remove row
+    $(document).on('click', '.remove-item-row', function () {
+        if ($('#items-body tr').length === 1) return; // keep at least 1
+        $(this).closest('tr').remove();
+        recalculateTotal();
+    });
+
+    // On category change → load products
+    $(document).on('change', '.category-select', function () {
+        const row = $(this).closest('tr');
+        const categoryId = $(this).val();
+        const productSelect = row.find('.product-select');
+
+        productSelect.html('<option value="">Loading...</option>');
+
+        $.get(`/invoices/products/${categoryId}`, function (products) {
+            let options = '<option value="">Select product...</option>';
+            products.forEach(p => {
+                options += `<option value="${p.id}" data-mrp="${p.price}" data-rate="${p.price}">${p.name}</option>`;
+            });
+            productSelect.html(options);
+        });
+    });
+
+    // On product change → fill MRP and Net Sale Price
+    $(document).on('change', '.product-select', function () {
+        const row = $(this).closest('tr');
+        const selected = $(this).find(':selected');
+        const mrp = parseFloat(selected.data('mrp')) || 0;
+        const rate = parseFloat(selected.data('rate')) || 0;
+
+        row.find('.mrp-input').val(mrp.toFixed(2));
+        row.find('.rate-input').val(rate.toFixed(2));
+        calculateRowTotal(row);
+    });
+
+    // On qty / discount / rate change → recalculate row
+    $(document).on('input', '.qty-input, .discount-input, .rate-input', function () {
+        calculateRowTotal($(this).closest('tr'));
+    });
+
+    function calculateRowTotal(row) {
+        const qty      = parseFloat(row.find('.qty-input').val()) || 0;
+        const discount = parseFloat(row.find('.discount-input').val()) || 0;
+        const mrp      = parseFloat(row.find('.mrp-input').val()) || 0;
+
+        // Net Sale Price = MRP - (MRP * discount / 100)
+        const netPrice = mrp - (mrp * discount / 100);
+        row.find('.rate-input').val(netPrice.toFixed(2));
+
+        const total = qty * netPrice;
+        row.find('.amount-input').val(total.toFixed(2));
+        row.find('.amount-display').text('₹' + total.toFixed(2));
+
+        recalculateTotal();
+    }
+
+    function recalculateTotal() {
+        let total = 0;
+        $('.amount-input').each(function () {
+            total += parseFloat($(this).val()) || 0;
+        });
+        $('#total-po-amount-display').val('₹' + total.toFixed(2));
+        $('#total-po-amount').val(total.toFixed(2));
+    }
+
+    // ─── PDC rows ────────────────────────────────────────
+    let pdcIndex = {{ isset($invoice) ? $invoice->pdcs->count() : 1 }};
+
+    $('#add-pdc-row').on('click', function () {
+        const html = pdcRowTemplate(pdcIndex);
+        $('#pdc-body').append(html);
+        pdcIndex++;
+    });
+
+    $(document).on('click', '.remove-pdc-row', function () {
+        $(this).closest('.pdc-row').remove();
+    });
+
+    function pdcRowTemplate(idx) {
+        return `
+        <div class="pdc-row border rounded p-3 mb-2 d-flex align-items-center gap-3 flex-wrap">
+            <span class="badge bg-success">PDC ${idx + 1}</span>
+            <div>
+                <label class="form-label mb-1 small">Date</label>
+                <input type="date" name="pdc_dates[]" class="form-control form-control-sm" style="width:140px">
+            </div>
+            <div>
+                <label class="form-label mb-1 small">Cheque Number</label>
+                <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" placeholder="Cheque no." style="width:160px">
+            </div>
+            <div>
+                <label class="form-label mb-1 small">Bank Name</label>
+                <input type="text" name="pdc_bank_names[]" class="form-control form-control-sm" placeholder="Bank name" style="width:160px">
+            </div>
+            <div>
+                <label class="form-label mb-1 small">Amount (₹)</label>
+                <input type="number" step="0.01" name="pdc_amounts[]" class="form-control form-control-sm" placeholder="0.00" style="width:120px">
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-pdc-row ms-auto mt-3">
+                <i class="feather icon-trash-2"></i>
+            </button>
+        </div>`;
+    }
+
+    // ─── Init on page load ───────────────────────────────
+    recalculateTotal();
+
+});
+</script>
 @endpush

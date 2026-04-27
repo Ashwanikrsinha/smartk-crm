@@ -51,9 +51,24 @@ class CustomerPolicy
      * @param  \App\Models\Customer  $customer
      * @return mixed
      */
-    public function update(User $user, Customer $customer)
+    public function update(User $user, Customer $customer): bool
     {
-        return $user->hasPermission('edit_customers');
+        if (!$user->hasPermission('edit_customers')) {
+            return false;
+        }
+
+        if ($user->isSalesPerson()) {
+            return $customer->created_by === $user->id;
+        }
+
+        if ($user->isSalesManager()) {
+            // SM can edit schools created by their SPs
+            $teamIds = $user->teamMemberIds();
+            return in_array($customer->created_by, $teamIds);
+        }
+
+        // Admin
+        return true;
     }
 
     /**
@@ -63,9 +78,19 @@ class CustomerPolicy
      * @param  \App\Models\Customer  $customer
      * @return mixed
      */
-    public function delete(User $user, Customer $customer)
+
+
+    public function delete(User $user, Customer $customer): bool
     {
-        return $user->hasPermission('delete_customers');
+        if (!$user->hasPermission('delete_customers')) {
+            return false;
+        }
+
+        if ($user->isSalesManager()) {
+            return in_array($customer->created_by, $user->teamMemberIds());
+        }
+
+        return $user->isAdmin();
     }
 
     /**

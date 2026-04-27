@@ -1,4 +1,3 @@
-
 <?php $__env->startSection('content'); ?>
 
 <header class="d-flex justify-content-between align-items-center mb-4">
@@ -6,15 +5,15 @@
 
   <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create', App\Models\Product::class)): ?>
     <div class="d-flex align-items-center">
-      
+
       <div class="dropdown shadow-sm me-2">
         <button class="btn bg-white dropdown-toggle" type="button" id="settings-dropdown" data-bs-toggle="dropdown">
-          <i class="feather icon-settings"></i>  
+          <i class="feather icon-settings"></i>
         </button>
 
         <div class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="settings-dropdown">
             <a href="<?php echo e(route('units.index')); ?>" class="dropdown-item">Units</a>
-            <a href="<?php echo e(route('groups.index')); ?>" class="dropdown-item">Groups</a>
+            
             <a href="<?php echo e(route('categories.index')); ?>" class="dropdown-item">Categories</a>
         </div>
       </div>
@@ -27,7 +26,7 @@
 </header>
 
 <?php
-  $columns = ['id', 'name', 'HSN code', 'unit', 'group', 'category',  're order level', 'actions'];
+  $columns = ['id', 'name', 'HSN code', 'unit',  'category',  're order level', 'actions'];
 ?>
 
 <?php if (isset($component)) { $__componentOriginal8aaf9779783cdf64609094123653a0b9 = $component; } ?>
@@ -68,13 +67,14 @@
                 { data: 'name', name: 'name' },
                 { data: 'code', name: 'code' },
                 { data: 'unit.name', name: 'unit.name' },
-                { data: 'group.name', name: 'group.name' },
+                // { data: 'group.name', name: 'group.name' },
                 { data: 'category.name', name: 'category.name' },
                 { data: 'reorder_level', name: 'reorder_level' },
                 { data: 'action', 'orderable': false, searchable: false}
             ],
         });
-    });   
+    });
 </script>
 <?php $__env->stopPush(); ?>
+
 <?php echo $__env->make('layouts.dashboard', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Data\smartk-crm\resources\views/products/index.blade.php ENDPATH**/ ?>

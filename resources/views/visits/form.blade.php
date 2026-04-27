@@ -27,7 +27,7 @@
         </select>
     </div>
 
-
+@if(!auth()->user()->isSalesPerson())
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Assign To (User)</label>
         <select name="user_id" id="user_id" class="form-control" required>
@@ -45,6 +45,9 @@
             @endif
         </select>
     </div>
+    @else
+    <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+    @endif
 
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Purpose</label>
@@ -64,7 +67,7 @@
         </select>
     </div>
 
-    
+
 
     @include('visits.items')
 
@@ -113,7 +116,7 @@
             @endif
         </select>
     </div>
-    
+
 </div>
 
 
@@ -181,7 +184,7 @@
 </div>
 
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 @push('scripts')
 
@@ -189,8 +192,8 @@
 
     function enableSelectize(){
        $('table#item tbody').find('select').selectize({ sortField: 'text' });
-    }  
-  
+    }
+
     $(document).ready(() => {
 
         $('select').selectize();
@@ -209,22 +212,22 @@
             branding: false,
             plugins: 'lists link image paste table fullscreen',
             toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
+                    aligncenter alignright alignjustify | bullist numlist outdent indent
                     | table |link image | fullscreen`,
         });
 
-        
+
 
         const filePondAlertEl = $('#filepond-alert');
         FilePond.create(document.querySelector('#attachemnts'));
 
         FilePond.setOptions({
             server : {
-                headers : { 
+                headers : {
                       'X-CSRF-TOKEN' : '{{ csrf_token() }}',
-                      'X-Requested-With': 'XMLHttpRequest', 
+                      'X-Requested-With': 'XMLHttpRequest',
                 },
-                process : {  
+                process : {
                     url : `{{ route('visits.attachments.store') }}`,
                     onerror : (res) => {
                         console.log(res);
@@ -239,39 +242,39 @@
             }
         })
 
-        
+
       $('#add-row').click(function(e){
-            
+
             e.preventDefault();
-    
+
             $('table#item tbody tr:last').find('select').each(function (el) {
                 let value = $(this).val();
                 $(this)[0].selectize.destroy();
                 $(this).val(value);
             });
-    
+
             $('table#item tbody tr:last').clone()
                 .appendTo('table#item tbody')
                 .find('[name]').val('');
-                
+
             enableSelectize();
-        }); 
-    
-    
+        });
+
+
         // remove last row
         $('#remove-row').on('click', (e)=>{
             e.preventDefault();
             $('table#item tbody tr:last').remove();
         });
-    
+
         $('#check-items').click(function(){
-    
+
             $('table#item tbody').find('select').each(function (el) {
                 let value = $(this).val();
                 $(this)[0].selectize.destroy();
                 $(this).val(value);
             });
-    
+
             if($(this).is(':checked')){
                 $('table#item tbody').find('[name]').prop('disabled', false);
                 $('table#item tbody').find('[name]').prop('required', true);
@@ -280,9 +283,9 @@
                 $('table#item tbody').find('[name]').prop('disabled', true);
                 $('table#item tbody').find('[name]').prop('required', false);
             }
-    
+
             enableSelectize();
-        
+
         });
 
 
@@ -301,11 +304,11 @@
 
             if($(this).val() == notInterested){
                 $('div#reason').removeClass('d-none');
-            }  
+            }
 
         });
-    
-        
+
+
     });
 
 </script>

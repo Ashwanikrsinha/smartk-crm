@@ -4,7 +4,7 @@
         <label for="" class="form-label">Title</label>
         <input type="text" class="form-control" name="title" value="{{ $news->title ?? old('title') }}" required>
     </div>
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Event</label>
         <select name="event_id" id="event_id" class="form-control" required>
@@ -24,7 +24,7 @@
     </div>
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Publish Date</label>
-        <input type="date" class="form-control" name="published_at" 
+        <input type="date" class="form-control" name="published_at"
         value="{{ isset($news) ? $news->published_at->format('Y-m-d') : date('Y-m-d') }}" required>
     </div>
 
@@ -37,7 +37,7 @@
     <div id="filepond-alert" class="alert alert-danger d-none my-3">
         Only images are allowed with max size 10MB.
     </div>
-    
+
     <div class="col-lg-12 mb-3">
         <label for="attachemnts" class="form-label">Images</label>
         <input type="file" name="images[]" multiple max="3" id="images">
@@ -45,7 +45,7 @@
             <strong>Formats</strong>: jpg, png, jpeg.</small>
     </div>
 
-    
+
     <div class="mb-4">
         <div class="form-check">
             <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
@@ -56,7 +56,7 @@
 
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 
 @push('scripts')
@@ -78,22 +78,22 @@
             branding: false,
             plugins: 'lists link image paste table fullscreen',
             toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
+                    aligncenter alignright alignjustify | bullist numlist outdent indent
                     | table |link image | fullscreen`,
         });
 
-        
+
 
         const filePondAlertEl = $('#filepond-alert');
         FilePond.create(document.querySelector('#images'));
 
         FilePond.setOptions({
             server : {
-                headers : { 
+                headers : {
                       'X-CSRF-TOKEN' : '{{ csrf_token() }}',
-                      'X-Requested-With': 'XMLHttpRequest', 
+                      'X-Requested-With': 'XMLHttpRequest',
                 },
-                process : {  
+                process : {
                     url : `{{ route('news.images.store') }}`,
                     onerror : (res) => {
                         console.log(res);
@@ -108,7 +108,7 @@
             }
         })
 
-        
+
     });
 
 </script>

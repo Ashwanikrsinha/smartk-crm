@@ -18,6 +18,8 @@ class CreateTargetsTable extends Migration
             $table->unsignedBigInteger('target');
             $table->date('start_date');
             $table->date('end_date');
+            $table->integer('month');
+            $table->integer('year');
             $table->foreignId('user_id');
         });
     }

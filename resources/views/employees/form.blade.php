@@ -41,7 +41,7 @@
         <input type="text" class="form-control" name="phone_number" value="{{ $employee->phone_number ?? old('phone_number') }}" required>
     </div>
 
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">State</label>
         <select name="state"  class="form-control">
@@ -58,12 +58,12 @@
         </select>
     </div>
 
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">City</label>
         <input type="text" name="city" class="form-control" value="{{ $employee->city ?? old('city') }}">
     </div>
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Adrress</label>
         <input type="text" name="address" class="form-control" value="{{ $employee->address ?? old('address') }}">
@@ -194,7 +194,7 @@
             maxlength="150">{{ $employee->resign_reason ?? old('resign_reason') }}</textarea>
     </div>
 
-    
+
 </section>
 
 <div class="mb-4">
@@ -210,7 +210,7 @@
 </section>
 
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 @push('scripts')
 
@@ -232,11 +232,11 @@
             branding: false,
             plugins: 'lists link image paste table fullscreen',
             toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
+                    aligncenter alignright alignjustify | bullist numlist outdent indent
                     | table |link image | fullscreen`,
         });
 
-        
+
         $('#can-login[type=checkbox]').click(function(){
 
             $('section#user').find('select').each(function (el) {
@@ -245,10 +245,10 @@
                 $(this).val(value);
             });
 
-        
+
             if($(this).is(':checked')){
 
-                $('section#user').removeClass('d-none'); 
+                $('section#user').removeClass('d-none');
                 $('section#user').find('[data-input]').prop('required', true);
                 $('section#user').find('[data-input]').prop('disabled', false);
 

@@ -28,4 +28,5 @@
             </table>
         </section>
     </div>
-</div><?php /**PATH D:\Data\smartk-crm\resources\views/components/datatable.blade.php ENDPATH**/ ?>
+</div>
+<?php /**PATH D:\Data\smartk-crm\resources\views/components/datatable.blade.php ENDPATH**/ ?>

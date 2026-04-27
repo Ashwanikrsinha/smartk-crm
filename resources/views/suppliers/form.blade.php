@@ -41,7 +41,7 @@
         </select>
     </div>
 
-    
+
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">State</label>
         <select name="state" class="form-control">
@@ -49,7 +49,7 @@
             @if (isset($supplier))
                 @foreach($states as $state)
                 <option value="{{ $state }}" {{ $supplier->state == $state ? 'selected' : '' }}>{{ $state }}</option>
-                @endforeach  
+                @endforeach
             @else
                 @foreach($states as $state)
                 <option value="{{ $state }}">{{ $state }}</option>
@@ -70,7 +70,7 @@
         <input type="text" class="form-control" name="address" value="{{ $supplier->address ?? old('address') }}">
     </div>
 
-    
+
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">GST No.</label>
         <input type="text" class="form-control" name="gst_number" value="{{ $supplier->gst_number ?? old('gst_number') }}">
@@ -98,7 +98,7 @@
 
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>
 
 @push('scripts')
 
@@ -112,7 +112,7 @@
     $(document).ready(() => {
 
         $('select').selectize();
-        
+
 
         $('#add-row').click(function (e) {
 

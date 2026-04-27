@@ -2,40 +2,41 @@
 @section('content')
 
 <header class="d-flex justify-content-between align-items-center mb-4">
-  <h5>Visit Targets</h5>
-  @can('create', App\Models\Target::class)
-   <a href="{{ route('targets.create') }}" class="btn btn-primary">Targets</a>
-  @endcan
+    <div>
+        <h5 class="mb-0">Targets</h5>
+        <small class="text-muted">Monthly sales targets per Sales Person</small>
+    </div>
+    @if(auth()->user()->isSalesManager() || auth()->user()->isAdmin())
+    <a href="{{ route('targets.create') }}" class="btn btn-primary btn-sm">
+        <i class="feather icon-plus me-1"></i> Set Target
+    </a>
+    @endif
 </header>
 
-@php
-  $columns = ['id', 'executive', 'target', 'start date', 'end date', 'complete', 'actions'];
-@endphp
-
-<x-datatable id="targets" :columns="$columns" />
+<div class="bg-white rounded shadow-sm p-3">
+    <x-datatable id="targets"
+        :columns="['SP Name', 'Period', 'Target Amount', 'Achieved', 'Achievement %', 'Actions']" />
+</div>
 
 @endsection
 
-
 @push('scripts')
 <script>
-  $(document).ready(() => {
-
-        $('table#targets').DataTable({
-             processing: true,
-             serverSide: true,
-             order: [[0,'desc']],
-             ajax: '{{ route("targets.index") }}',
-             columns: [
-                { data: 'id', visible: false, searchable: false },
-                { data: 'user.username', name: 'user.username' },
-                { data: 'target', name: 'target' },
-                { data: 'start_date', name: 'start_date' },
-                { data: 'end_date', name: 'end_date' },
-                { data: 'complete', name: 'complete' },
-                { data: 'action', 'orderable': false, searchable: false}
-            ],
-        });
-    });   
+$(document).ready(function () {
+    $('table#targets').DataTable({
+        processing: true,
+        serverSide: true,
+        order:      [[1, 'desc']],
+        ajax:       '{{ route('targets.index') }}',
+        columns: [
+            { data: 'user.username',     name: 'user.username' },
+            { data: 'month',             name: 'month', searchable: false },
+            { data: 'target_amount',     name: 'target_amount', searchable: false },
+            { data: 'achieved',          orderable: false, searchable: false },
+            { data: 'achievement_pct',   orderable: false, searchable: false },
+            { data: 'action',            orderable: false, searchable: false },
+        ],
+    });
+});
 </script>
 @endpush

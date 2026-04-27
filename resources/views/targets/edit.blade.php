@@ -1,16 +1,15 @@
 @extends('layouts.dashboard')
 @section('content')
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5>Edit Target</h5>
+            <small class="text-muted">{{ $target->user->username }} — {{ $target->month_label }}</small>
+        </div>
+        <a href="{{ route('targets.index') }}" class="btn btn-sm btn-secondary">Back</a>
+    </header>
 
-<header class="d-flex justify-content-between mb-4 align-items-center">
-      <h5 class="d-inline-block me-2 mb-0">Edit Visit Target</h5>
-    <a href="{{ route('targets.index') }}"  class="btn btn-sm btn-secondary">Back</a>
-</header>
-
-<form action="{{ route('targets.update', ['target' => $target]) }}" method="POST" 
-    class="p-3 shadow-sm rounded bg-white"
-    onsubmit="return confirm('Are you sure?');">
-    @method('PUT')
-    @include('targets.form', ['mode' => 'edit'])
-</form>
-
+    <form action="{{ route('targets.update', $target) }}" method="POST" class="bg-white rounded shadow-sm p-4">
+        @method('PUT')
+        @include('targets.form')
+    </form>
 @endsection

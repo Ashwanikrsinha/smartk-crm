@@ -15,7 +15,7 @@
         <label for="" class="form-label">GST No.</label>
         <input type="text" class="form-control" name="gst_number" value="{{ $transport->gst_number ?? old('gst_number') }}">
     </div>
-    
+
 
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Address</label>
@@ -24,4 +24,4 @@
 
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Save' : 'Update' }}</button>

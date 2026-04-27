@@ -12,7 +12,7 @@
         value="{{ isset($task) ? $task->deadline_time->format('Y-m-d h:i') : old('deadline_time') }}"
          class="form-control" required>
     </div>
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Assignee Name (User)</label>
         <select name="assignee_id" id="assignee_id" class="form-control" required>
@@ -21,7 +21,7 @@
                 <option value="{{ $key }}" {{ $task->assignee_id == $key ? 'selected' : '' }}>
                     {{ $user }}
                 </option>
-                @endforeach   
+                @endforeach
             @else
                 <option selected value="">Choose...</option>
                 @foreach($users as $key => $user)
@@ -43,13 +43,13 @@
 
 <div class="mb-4">
     <div class="form-check">
-        <input class="form-check-input" type="checkbox" id="is_completed" name="is_completed" value="1" 
+        <input class="form-check-input" type="checkbox" id="is_completed" name="is_completed" value="1"
         {{ isset($task->completed_at) ? 'checked' : '' }}>
         <label class="form-check-label" for="is_completed">Complete ?</label>
     </div>
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Assign' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Assign' : 'Update' }}</button>
 
 
 @push('scripts')
@@ -57,14 +57,14 @@
 <script>
 
     $(document).ready(() => {
-        
-        $('select').selectize(); 
+
+        $('select').selectize();
 
         $('input[type=date]').flatpickr({
             altInput: true,
             enableTime: true,
             dateFormat: 'Y-m-d H:i',
-        });  
+        });
 
         tinymce.init({
             selector: '[name=description]',
@@ -72,7 +72,7 @@
             branding: false,
             plugins: 'lists link image paste table fullscreen',
             toolbar: `undo redo | bold italic underline | alignleft
-                    aligncenter alignright alignjustify | bullist numlist outdent indent 
+                    aligncenter alignright alignjustify | bullist numlist outdent indent
                     | table |link image | fullscreen`,
         });
 

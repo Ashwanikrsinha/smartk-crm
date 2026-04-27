@@ -6,20 +6,20 @@
             {{ $mode == 'edit' ? $leave->user->username : auth()->user()->username  }}
         </div>
     </div>
-    
+
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Leave Type</label>
-        <select name="type" id="type" class="form-control" required>
+        <select name="leave_type" id="leave_type" class="form-control" required>
             <option selected value="">Choose...</option>
             @if(isset($leave))
-                @foreach($types as $type)
-                <option value="{{ $type }}" {{ $leave->type == $type ? 'selected' : '' }}>
+                @foreach($leaveTypes as $type)
+                <option value="{{ $type }}" {{ $leave->leave_type == $type ? 'selected' : '' }}>
                     {{ ucwords($type) }}
                 </option>
                 @endforeach
             @else
-                @foreach($types as $type)
-                <option {{ old('type') == $type ? 'selected' : '' }} value="{{ $type }}">
+                @foreach($leaveTypes as $type)
+                <option {{ old('leave_type') == $type ? 'selected' : '' }} value="{{ $type }}">
                     {{ ucwords($type) }}
                 </option>
                 @endforeach
@@ -36,12 +36,12 @@
 
     <div class="mb-3 col-lg-6">
         <label for="" class="form-label">To Date</label>
-        <input type="date" class="form-control" name="to_date" 
+        <input type="date" class="form-control" name="to_date"
         value="{{ isset($leave) ? $leave->to_date->format('Y-m-d') : old('to_date') }}" required>
     </div>
 
 
-    
+
     @if($mode == 'edit' & isset($leave))
         <div class="col-lg-6 mb-3">
             <label for="" class="form-label">Leave Days</label>
@@ -69,7 +69,7 @@
         </div>
     @endif
 
-    
+
     <div class="mb-3">
         <label for="" class="form-label">Comment</label>
         <textarea name="comment" cols="30" rows="5" class="form-control" maxlength="250">{{ $leave->comment ?? old('comment') }}</textarea>
@@ -77,7 +77,7 @@
 
 </div>
 
-<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Apply' : 'Edit' }}</button>
+<button type="submit" class="btn btn-primary">{{ $mode == 'create' ? 'Apply' : 'Update' }}</button>
 
 
 @push('scripts')
@@ -85,12 +85,12 @@
 <script>
 
     $(document).ready(() => {
-        $('select').selectize(); 
+        $('select').selectize();
         $('input[type=date]').flatpickr({
             altInput: true,
             altFormat: 'F j, Y',
             dateFormat: 'Y-m-d',
-        });  
+        });
     });
 
 </script>

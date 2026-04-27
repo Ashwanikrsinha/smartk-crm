@@ -28,11 +28,10 @@ class InvoicePolicy
      * @param  \App\Models\Invoice  $invoice
      * @return mixed
      */
-    public function view(User $user, Invoice $invoice)
-    {
-        return true;
-        
-    }
+    // public function view(User $user, Invoice $invoice)
+    // {
+    //     return true;
+    // }
 
     /**
      * Determine whether the user can create models.
@@ -52,10 +51,10 @@ class InvoicePolicy
      * @param  \App\Models\Invoice  $invoice
      * @return mixed
      */
-    public function update(User $user, Invoice $invoice)
-    {
-        return true;
-    }
+    // public function update(User $user, Invoice $invoice)
+    // {
+    //     return true;
+    // }
 
     /**
      * Determine whether the user can delete the model.
@@ -64,10 +63,10 @@ class InvoicePolicy
      * @param  \App\Models\Invoice  $invoice
      * @return mixed
      */
-    public function delete(User $user, Invoice $invoice)
-    {
-        return $user->hasPermission('delete_invoices');
-    }
+    // public function delete(User $user, Invoice $invoice)
+    // {
+    //     return $user->hasPermission('delete_invoices');
+    // }
 
     /**
      * Determine whether the user can restore the model.
@@ -91,5 +90,73 @@ class InvoicePolicy
     public function forceDelete(User $user, Invoice $invoice)
     {
         //
+    }
+
+    /**
+     * Who can see a specific PO?
+     */
+    public function view(User $user, Invoice $invoice): bool
+    {
+        if (!$user->hasPermission('show_invoices') && !$user->hasPermission('browse_invoices')) {
+            return false;
+        }
+
+        return in_array($invoice->user_id, $user->teamMemberIds());
+    }
+
+    /**
+     * Who can edit a PO?
+     * SP can edit ONLY if:
+     *   - They created it
+     *   - It's in draft or rejected state
+     * SM/Admin can edit any time.
+     */
+    public function update(User $user, Invoice $invoice): bool
+    {
+        if (!$user->hasPermission('edit_invoices')) {
+            return false;
+        }
+
+        // SP can only edit their own POs in editable states
+        if ($user->isSalesPerson()) {
+            return $invoice->user_id === $user->id && $invoice->isEditable();
+        }
+
+        // SM can edit team POs, Admin can edit all
+        return in_array($invoice->user_id, $user->teamMemberIds());
+    }
+
+    /**
+     * Who can delete a PO?
+     * Only SM (their team's POs) and Admin.
+     */
+    public function delete(User $user, Invoice $invoice): bool
+    {
+        if (!$user->hasPermission('delete_invoices')) {
+            return false;
+        }
+
+        return in_array($invoice->user_id, $user->teamMemberIds());
+    }
+
+    /**
+     * Who can approve/reject a PO?
+     * Only SM (for their team) and Admin.
+     */
+    public function approve(User $user, Invoice $invoice): bool
+    {
+        if (!$user->hasPermission('approve_invoices')) {
+            return false;
+        }
+
+        return in_array($invoice->user_id, $user->teamMemberIds());
+    }
+    public function export(User $user, Invoice $invoice): bool
+    {
+        if (!$user->hasPermission('export_reports')) {
+            return false;
+        }
+
+        return in_array($invoice->user_id, $user->teamMemberIds());
     }
 }

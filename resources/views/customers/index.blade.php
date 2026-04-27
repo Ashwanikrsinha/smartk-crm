@@ -1,57 +1,75 @@
 @extends('layouts.dashboard')
 @section('content')
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="mb-0">Schools</h5>
+            <small class="text-muted">All registered schools</small>
+        </div>
+        @can('create', App\Models\Customer::class)
+            <a href="{{ route('customers.create') }}" class="btn btn-primary btn-sm">
+                <i class="feather icon-plus me-1"></i> New School
+            </a>
+        @endcan
+    </header>
 
-<header class="d-flex justify-content-between align-items-center mb-4">
-  <h5>Customers</h5>
-
-  @can('create', App\Models\Customer::class) 
-  <div class="d-flex align-items-center">
-    <div class="dropdown shadow-sm me-2">
-      <button class="btn bg-white dropdown-toggle" type="button" id="settings-dropdown" data-bs-toggle="dropdown">
-        <i class="feather icon-settings"></i>  
-      </button>
-  
-      <div class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="settings-dropdown">
-          <a href="{{ route('customer-types.index') }}" class="dropdown-item">Customer Types</a>
-          <a href="{{ route('segments.index') }}" class="dropdown-item">Segments</a>
-          <a href="{{ route('designations.index') }}" class="dropdown-item">Designations</a>
-      </div>
+    <div class="bg-white rounded shadow-sm p-3">
+        <x-datatable id="schools" :columns="['Code', 'School Name', 'City', 'State', 'Phone', 'Lead Source', 'SP', 'POs', 'Actions']" />
     </div>
-  
-    <a href="{{ route('customers.create') }}" class="btn btn-primary">Customer</a>
-  </div>
-  @endcan
-
-</header>
-
-@php
-  $columns = ['id', 'name', 'segment', 'phone no', 'state' ,'actions'];
-@endphp
-
-<x-datatable id="customers" :columns="$columns" />
-
-
 @endsection
 
-
 @push('scripts')
-<script>
-  $(document).ready(() => {
-
-        $('table#customers').DataTable({
-             processing: true,
-             serverSide: true,
-             order: [[0,'desc']],
-             ajax: `{{ route('customers.index') }}`,
-             columns: [
-                { data: 'id', visible: false, searchable: false },
-                { data: 'name', name: 'name' },
-                { data: 'segment.name', name: 'segment.name', sortable : false },
-                { data: 'phone_number', name: 'phone_number' },
-                { data: 'state', name: 'state'},
-                { data: 'action', 'orderable': false, searchable: false}
-            ],
+    <script>
+        $(document).ready(function() {
+            $('table#schools').DataTable({
+                processing: true,
+                serverSide: true,
+                order: [
+                    [0, 'desc']
+                ],
+                ajax: '{{ route('customers.index') }}',
+                columns: [{
+                        data: 'school_code',
+                        name: 'school_code'
+                    },
+                    {
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'city',
+                        name: 'city'
+                    },
+                    {
+                        data: 'state',
+                        name: 'state'
+                    },
+                    {
+                        data: 'phone_number',
+                        name: 'phone_number',
+                        searchable: false
+                    },
+                    {
+                        data: 'lead_source',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'created_by',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'po_count',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'action',
+                        orderable: false,
+                        searchable: false
+                    },
+                ],
+            });
         });
-    });   
-</script>
+    </script>
 @endpush
