@@ -226,16 +226,6 @@ class Invoice extends Model
     public function createInvoiceItems($request): void
     {
         foreach ($request->products as $i => $product) {
-
-            Log::info("reuest all====== at inside  modal ===",[
-                'product_id'  => $product,
-                'description' => $request->descriptions[$i] ?? '',
-                'unit_id'     => $request->units[$i],
-                'quantity'    => $request->quantities[$i],
-                'rate'        => $request->rates[$i],
-                'discount'    => $request->discounts[$i],
-                'amount'      => $request->amounts[$i],
-            ]);
             $this->invoiceItems()->create([
                 'product_id'  => $product,
                 'description' => $request->descriptions[$i] ?? '',

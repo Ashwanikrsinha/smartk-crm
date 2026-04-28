@@ -63,7 +63,8 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'name' => 'required|unique:products|max:100',
+            'name' => 'required|max:100',
+            // 'name' => 'required|unique:products|max:100',
             'code' => 'required',
             // 'group_id' => 'required|integer',
             'category_id' => 'required|integer',
@@ -121,7 +122,8 @@ class ProductController extends Controller
     {
 
         $validatedData = $request->validate([
-            'name' => 'required|max:100|'.Rule::unique('products')->ignore($product),
+            'name' => 'required|max:100|',
+            // 'name' => 'required|max:100|'.Rule::unique('products')->ignore($product),
             'code' => 'required',
             // 'group_id' => 'required|integer',
             'category_id' => 'required|integer',
@@ -149,7 +151,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $product->productImages()->delete();
+        $product->images()->delete();
         $product->delete();
 
         return back()->with('success', 'Product Deleted');

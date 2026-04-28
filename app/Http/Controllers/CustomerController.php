@@ -81,7 +81,7 @@ class CustomerController extends Controller
                 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
             ],
             'lead_source_id'  => 'nullable|exists:lead_sources,id',
-            'segment_id'      => 'nullable|exists:segments,id',
+            // 'segment_id'      => 'nullable|exists:segments,id',
             'description'     => 'nullable|string|max:1000',
             // Contacts
             'person_name'     => 'nullable|array',
@@ -219,7 +219,7 @@ class CustomerController extends Controller
                 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
             ],
             'lead_source_id' => 'nullable|exists:lead_sources,id',
-            'segment_id'     => 'nullable|exists:segments,id',
+            // 'segment_id'     => 'nullable|exists:segments,id',
             'description'    => 'nullable|string|max:1000',
             'person_name'    => 'nullable|array',
             'person_name.*'  => 'nullable|string|max:255',
@@ -275,7 +275,7 @@ class CustomerController extends Controller
     {
         return [
             'lead_sources' => LeadSource::orderBy('name')->pluck('name', 'id'),
-            'segments'     => Segment::orderBy('name')->pluck('name', 'id'),
+            // 'segments'     => Segment::orderBy('name')->pluck('name', 'id'),
             'states'       => State::orderBy('name')->pluck('name', 'name'),
             'designations' => Designation::orderBy('name')->pluck('name', 'id'), // needed for contacts table
         ];

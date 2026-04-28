@@ -94,7 +94,7 @@ class InvoiceController extends Controller
                 'delivery_due_date' => $request->delivery_due_date,
                 'customer_id'      => $request->customer_id,
                 'visit_id'         => $request->visit_id ?? null,
-                'user_id'          => auth()->id(),
+                'user_id'          => $request->user_id ?? auth()->id(),
                 'phone_number'     => $request->phone_number,
                 'address'          => $request->address,
                 'status'           => $status,
@@ -184,7 +184,7 @@ class InvoiceController extends Controller
 
             $invoice->invoiceItems()->delete();
             $invoice->createInvoiceItems($request);
-             Log::info("requeiuyreuest all====== at inside  txn === ",['req'=>$request->all()]);
+            //  Log::info("requeiuyreuest all====== at inside  txn === ",['req'=>$request->all()]);
 
             $invoice->pdcs()->delete();
             $invoice->createPdcs($request);
@@ -194,7 +194,8 @@ class InvoiceController extends Controller
             }
         });
 
-        return back()->with('success', 'Purchase Order updated successfully.');
+        return redirect()->route('invoices.index', $invoice)
+            ->with('success', 'Purchase Order updated successfully.');
     }
 
     public function destroy(Invoice $invoice)
@@ -477,10 +478,10 @@ class InvoiceController extends Controller
         return response()->json($products);
     }
 
-    public function getVisitsBySchool(Request $request): JsonResponse
+    public function getVisitsBySchool(Request $request, $customer): JsonResponse
     {
-        $visits = Visit::where('customer_id', $request->customer_id)
-            ->where('user_id', auth()->id())
+        $visits = Visit::where('customer_id', $customer)
+            ->where('user_id', $request->user_id ?? auth()->id())
             ->orderByDesc('visit_date')
             ->get(['id', 'visit_number', 'visit_date', 'description']);
 
@@ -489,12 +490,19 @@ class InvoiceController extends Controller
 
     private function formData(): array
     {
+        $teamIds = auth()->user()->teamMemberIds();
+        $users = User::whereIn('id', $teamIds)
+            ->salesPersons()
+            ->active()
+            ->orderBy('username')
+            ->get(['id', 'username']);
         return [
             'categories'   => Category::orderBy('name')->get(['id', 'name']),
             'units'        => Unit::orderBy('name')->pluck('name', 'id'),
             'customers'    => Customer::orderBy('name')->get(['id', 'name', 'school_code', 'city', 'state']),
             'lead_sources' => LeadSource::orderBy('name')->pluck('name', 'id'),
             'states'       => State::orderBy('name')->pluck('name', 'name'),
+            'users'        => $users,
             'visits'       => collect(), // populated via AJAX when school selected
         ];
     }

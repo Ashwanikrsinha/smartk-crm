@@ -118,6 +118,21 @@
                 value="<?php echo e(isset($invoice) ? $invoice->customer->pin_code : old('pin_code')); ?>"
                 placeholder="6-digit pin">
         </div>
+        <?php if(!auth()->user()->isSalesPerson()): ?>
+            <div class="col-lg-4 mb-3">
+            <label class="form-label">Employee <span class="text-danger">*</span></label>
+            <select name="user_id" id="user-select" class="form-control" required>
+                <option value="">Search and select employee...</option>
+                <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($user->id); ?>"
+                    <?php echo e(isset($invoice) && $invoice->user_id == $user->id ? 'selected' : ''); ?>>
+                    <?php echo e($user->username); ?>
+
+                </option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+        <?php endif; ?>
 
         
         <div class="col-lg-4 mb-3">
@@ -154,7 +169,7 @@
         <thead class="table-light">
             <tr>
                 <th style="width:5%">#</th>
-                <th style="width:18%">Category</th>
+                <th style="width:18%">Product Type</th>
                 <th style="width:18%">Product / Kit</th>
                 <th style="width:9%">MRP</th>
                 <th style="width:8%">Qty</th>
@@ -283,9 +298,20 @@ $(document).ready(function () {
             fetchVisits(schoolId);
         }
     });
+    const userSelect = $('#user-select').selectize({
+        placeholder: 'Search employee by name or code...',
+        onChange: function (userId) {
+           const schoolId =  $('#school-select').val();
+            if (!userId) return;
+            if (!schoolId) return;
+            fetchVisits(schoolId,userId);
+        }
+    });
 
     // ─── Selectize visit dropdown ────────────────────────
     $('#visit-select').selectize({ placeholder: 'Select visit (optional)...' });
+    $('#user-select').selectize({ placeholder: 'Select employee ...' });
+
 
     // ─── Fetch school details via AJAX ──────────────────
     function fetchSchoolDetails(schoolId) {
@@ -307,8 +333,8 @@ $(document).ready(function () {
     }
 
     // ─── Fetch visits for this school ───────────────────
-    function fetchVisits(schoolId) {
-        $.get(`/invoices/visits/${schoolId}`, function (visits) {
+    function fetchVisits(schoolId,userId) {
+        $.get(`/invoices/visits/${schoolId}?user_id=${userId}`, function (visits) {
             const visitSelectize = $('#visit-select')[0].selectize;
             visitSelectize.clearOptions();
             visitSelectize.addOption({ value: '', text: 'Select visit (optional)...' });

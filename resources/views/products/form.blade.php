@@ -47,7 +47,7 @@
     </div> --}}
 
     <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Category</label>
+        <label for="" class="form-label">Product Type</label>
         <select name="category_id" id="" class="form-control" required>
             <option selected value="">Choose...</option>
             @if(isset($product))

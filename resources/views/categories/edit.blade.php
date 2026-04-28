@@ -2,11 +2,11 @@
 @section('content')
 
 <header class="d-flex justify-content-between mb-4 align-items-center">
-    <h5>Edit Category</h5>
+    <h5>Edit Product Type</h5>
     <a href="{{ route('categories.index') }}" class="btn btn-sm btn-secondary">Back</a>
 </header>
 
-<form action="{{ route('categories.update', ['group' => $group ]) }}" method="POST"
+<form action="{{ route('categories.update', ['category' => $category ]) }}" method="POST"
     class="p-3 bg-white rounded shadow-sm">
     @csrf
     @method('PUT')

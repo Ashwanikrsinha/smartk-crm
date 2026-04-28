@@ -7,13 +7,13 @@
 
 <div class="row">
 
-    <div class="col-lg-5 mb-3">
+    <div class="col-lg-6 mb-3">
         <label class="form-label">School Name <span class="text-danger">*</span></label>
         <input type="text" name="name" class="form-control" value="{{ $customer->name ?? old('name') }}"
             placeholder="Full school name" required>
     </div>
 
-    <div class="col-lg-4 mb-3">
+    <div class="col-lg-6 mb-3">
         <label class="form-label">Lead From</label>
         <select name="lead_source_id" class="form-control">
             <option value="">Select source...</option>
@@ -26,7 +26,7 @@
         </select>
     </div>
 
-    <div class="col-lg-3 mb-3">
+    {{-- <div class="col-lg-3 mb-3">
         <label class="form-label">Segment</label>
         <select name="segment_id" class="form-control">
             <option value="">Select segment...</option>
@@ -37,7 +37,7 @@
                 </option>
             @endforeach
         </select>
-    </div>
+    </div> --}}
 
     <div class="col-lg-4 mb-3">
         <label class="form-label">Mobile Number <span class="text-danger">*</span></label>

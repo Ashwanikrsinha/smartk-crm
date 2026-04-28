@@ -2,9 +2,9 @@
 @section('content')
 
 <header class="d-flex justify-content-between align-items-center mb-4">
-  <h5>Categories</h5>
+  <h5>Product Types</h5>
   @can('create', App\Models\Category::class)
-   <a href="{{ route('categories.create') }}" class="btn btn-primary">Category</a>
+   <a href="{{ route('categories.create') }}" class="btn btn-primary">Product Type</a>
   @endcan
 </header>
 
@@ -13,7 +13,7 @@
 @endphp
 
 <x-datatable id="categories" :columns="$columns" />
-  
+
 @endsection
 
 @push('scripts')
@@ -31,6 +31,6 @@
                 { data: 'action', 'orderable': false, searchable: false}
             ],
         });
-    });   
+    });
 </script>
 @endpush

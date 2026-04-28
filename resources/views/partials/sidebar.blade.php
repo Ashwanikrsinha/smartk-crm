@@ -172,7 +172,7 @@
 
                     <a href="{{ route('categories.index') }}"
                         class="list-group-item list-group-item-action border-0 ps-4">
-                        <i class="feather icon-tag me-2"></i> Categories
+                        <i class="feather icon-tag me-2"></i> Product Type
                     </a>
 
                     <a href="{{ route('units.index') }}" class="list-group-item list-group-item-action border-0 ps-4">

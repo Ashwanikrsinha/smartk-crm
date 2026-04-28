@@ -62,13 +62,21 @@
                 {{-- State --}}
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label small mb-1">State</label>
-                    <input type="text" name="state" class="form-control form-control-sm" list="state-list"
+                    <select name="state" class="form-control form-control-sm">
+                        <option value="">All States</option>
+                        @foreach ($states as $st)
+                            <option value="{{ $st }}" {{ request('state') == $st ? 'selected' : '' }}>
+                                {{ $st }}
+                            </option>
+                        @endforeach
+                    </select>
+                    {{-- <input type="text" name="state" class="form-control form-control-sm" list="state-list"
                         value="{{ $state ?? '' }}" placeholder="State...">
                     <datalist id="state-list">
                         @foreach ($states as $st)
                             <option value="{{ $st }}">
                         @endforeach
-                    </datalist>
+                    </datalist> --}}
                 </div>
 
                 {{-- Status --}}

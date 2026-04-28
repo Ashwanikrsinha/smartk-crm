@@ -2,7 +2,7 @@
 @section('content')
 
 <header class="d-flex justify-content-between mb-4 align-items-center">
-    <h5>New Category</h5>
+    <h5>New Product Type</h5>
     <a href="{{ route('categories.index') }}" class="btn btn-sm btn-secondary">Back</a>
 </header>
 
