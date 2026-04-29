@@ -46,6 +46,8 @@ class DashboardController extends Controller
         $spId      = $request->input('sp_id');
         $schoolId  = $request->input('school_id');
         $month     = $request->input('month');     // format: 2025-04
+        $dateFrom  = $request->input('date_from');
+        $dateTo    = $request->input('date_to');
         $year      = $request->input('year', date('Y'));
 
         // ── Base query (approved POs only for financials) ─
@@ -58,6 +60,8 @@ class DashboardController extends Controller
         if ($month) {
             $baseQuery->whereYear('invoice_date', substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
+        } elseif ($dateFrom && $dateTo) {
+            $baseQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
         } else {
             $baseQuery->whereYear('invoice_date', $year);
         }
@@ -98,7 +102,13 @@ class DashboardController extends Controller
             ->when($month, function ($q) use ($month) {
                 $q->whereYear('invoice_date',  substr($month, 0, 4))
                     ->whereMonth('invoice_date', substr($month, 5, 2));
-            }, fn($q) => $q->whereYear('invoice_date', $year))
+            }, function ($q) use ($dateFrom, $dateTo, $year) {
+                if ($dateFrom && $dateTo) {
+                    $q->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+                } else {
+                    $q->whereYear('invoice_date', $year);
+                }
+            })
             ->select(
                 'id',
                 'po_number',
@@ -142,6 +152,8 @@ class DashboardController extends Controller
             'spId',
             'schoolId',
             'month',
+            'dateFrom',
+            'dateTo',
             'year'
         ));
     }
@@ -154,6 +166,8 @@ class DashboardController extends Controller
     {
         $year  = $request->input('year', date('Y'));
         $month = $request->input('month');
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
 
         $baseQuery = Invoice::where('user_id', $user->id)
             ->whereIn('status', [Invoice::STATUS_APPROVED, Invoice::STATUS_SUBMITTED]);
@@ -161,6 +175,8 @@ class DashboardController extends Controller
         if ($month) {
             $baseQuery->whereYear('invoice_date',  substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
+        } elseif ($dateFrom && $dateTo) {
+            $baseQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
         } else {
             $baseQuery->whereYear('invoice_date', $year);
         }
@@ -179,7 +195,13 @@ class DashboardController extends Controller
             ->when($month, function ($q) use ($month) {
                 $q->whereYear('invoice_date',  substr($month, 0, 4))
                     ->whereMonth('invoice_date', substr($month, 5, 2));
-            }, fn($q) => $q->whereYear('invoice_date', $year))
+            }, function ($q) use ($dateFrom, $dateTo, $year) {
+                if ($dateFrom && $dateTo) {
+                    $q->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+                } else {
+                    $q->whereYear('invoice_date', $year);
+                }
+            })
             ->select(
                 'id',
                 'po_number',
@@ -212,6 +234,8 @@ class DashboardController extends Controller
             'pendingPos',
             'chartData',
             'month',
+            'dateFrom',
+            'dateTo',
             'year'
         ));
     }
@@ -227,6 +251,8 @@ class DashboardController extends Controller
         $schoolId = $request->input('school_id');
         $poNumber = $request->input('po_number');
         $month    = $request->input('month');
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
         $year     = $request->input('year', date('Y'));
 
         $rows = Invoice::with(['user:id,username', 'customer:id,name,school_code'])
@@ -237,7 +263,13 @@ class DashboardController extends Controller
             ->when($month, function ($q) use ($month) {
                 $q->whereYear('invoice_date',  substr($month, 0, 4))
                     ->whereMonth('invoice_date', substr($month, 5, 2));
-            }, fn($q) => $q->whereYear('invoice_date', $year))
+            }, function ($q) use ($dateFrom, $dateTo, $year) {
+                if ($dateFrom && $dateTo) {
+                    $q->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+                } else {
+                    $q->whereYear('invoice_date', $year);
+                }
+            })
             ->select(
                 'id',
                 'po_number',
@@ -274,6 +306,8 @@ class DashboardController extends Controller
             'schoolId',
             'poNumber',
             'month',
+            'dateFrom',
+            'dateTo',
             'year'
         ));
     }
@@ -305,6 +339,8 @@ class DashboardController extends Controller
     private function adminDashboard(Request $request, User $user)
     {
         $month        = $request->input('month');
+        $dateFrom     = $request->input('date_from');
+        $dateTo       = $request->input('date_to');
         $state        = $request->input('state');
         $leadSourceId = $request->input('lead_source_id');
         $year         = $request->input('year', date('Y'));
@@ -325,6 +361,8 @@ class DashboardController extends Controller
         if ($month) {
             $poQuery->whereYear('invoice_date',  substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
+        } elseif ($dateFrom && $dateTo) {
+            $poQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
         } else {
             $poQuery->whereYear('invoice_date', $year);
         }
@@ -377,6 +415,8 @@ class DashboardController extends Controller
             'chartData',
             'recentUsers',
             'month',
+            'dateFrom',
+            'dateTo',
             'state',
             'leadSourceId',
             'year'

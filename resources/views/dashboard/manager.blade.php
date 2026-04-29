@@ -48,6 +48,18 @@
                    value="{{ $month ?? '' }}" placeholder="Filter by month">
         </div>
 
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label small mb-1">Date From</label>
+            <input type="date" name="date_from" class="form-control form-control-sm"
+                   value="{{ $dateFrom ?? '' }}">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label small mb-1">Date To</label>
+            <input type="date" name="date_to" class="form-control form-control-sm"
+                   value="{{ $dateTo ?? '' }}">
+        </div>
+
         <div class="col-lg-3 col-md-6 d-flex gap-2">
             <button class="btn btn-primary btn-sm w-100">
                 <i class="feather icon-filter me-1"></i> Filter

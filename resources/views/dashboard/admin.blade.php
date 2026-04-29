@@ -31,9 +31,19 @@
                 </select>
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month') }}">
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">Date From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">Date To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
             </div>
 
             <div class="col-lg-3 col-md-6">
@@ -42,8 +52,8 @@
                     placeholder="e.g. Maharashtra">
             </div>
 
-            <div class="col-lg-3 d-flex gap-2">
-                <button class="btn btn-primary btn-sm w-100">Filter</button>
+            <div class="col-lg-12 d-flex gap-2 justify-content-end mt-2">
+                <button class="btn btn-primary btn-sm">Filter</button>
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
             </div>
 

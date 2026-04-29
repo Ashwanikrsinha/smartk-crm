@@ -19,7 +19,7 @@
         <i class="feather icon-info me-2"></i>
         Enter <strong>Billed Amount </strong> for offline/Tally bills or
         <strong>Collection Amount </strong> for payments received.
-        PDC cheques marked as "Cleared" are auto-included in D.
+        PDC cheques marked as "Cleared" are auto-included in Collections Amount.
     </div>
 
     {{-- ═══ FILTERS ════════════════════════════════════════════ --}}
