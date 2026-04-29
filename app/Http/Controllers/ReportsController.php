@@ -41,7 +41,8 @@ class ReportsController extends Controller
 
         // ── Build query ────────────────────────────────────
         $query = Invoice::with([
-            'user:id,username',
+            'user:id,username,reportive_id',
+            'user.reportiveTo:id,username',
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
         ])
@@ -110,6 +111,7 @@ class ReportsController extends Controller
 
         // Store filters in session for export
         session(['report_filters' => $request->all()]);
+        // return $rows;
 
         return view('reports.index', compact(
             'rows',

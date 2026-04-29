@@ -185,6 +185,7 @@
                         <th>PO Number</th>
                         <th>Date</th>
                         @if (!auth()->user()->isSalesPerson())
+                            <th>SM Name</th>
                             <th>SP Name</th>
                         @endif
                         <th>School</th>
@@ -209,6 +210,7 @@
                             </td>
                             <td>{{ $row->invoice_date->format('d M, Y') }}</td>
                             @if (!auth()->user()->isSalesPerson())
+                                <td>{{ $row->user->reportiveTo?->username }}</td>
                                 <td>{{ $row->user->username }}</td>
                             @endif
                             <td>

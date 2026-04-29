@@ -34,7 +34,8 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
         $teamIds = $this->user->teamMemberIds();
 
         $query = Invoice::with([
-            'user:id,username',
+            'user:id,username,reportive_id',
+            'user.reportiveTo:id,username',
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
         ])
@@ -71,6 +72,7 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
             'PO Number',
             'PO Date',
             'Sales Person',
+            'Sales Manager',
             'School Name',
             'School Code',
             'State',
@@ -92,6 +94,7 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
             $invoice->po_number,
             $invoice->invoice_date->format('d/m/Y'),
             $invoice->user->username,
+            $invoice->user->reportiveTo?->username,
             $invoice->customer->name,
             $invoice->customer->school_code,
             $invoice->customer->state,
