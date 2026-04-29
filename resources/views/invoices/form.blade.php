@@ -37,7 +37,7 @@
         </div>
 
         {{-- Lead From --}}
-        <div class="col-lg-3 mb-3">
+        {{-- <div class="col-lg-3 mb-3">
             <label class="form-label">Lead From</label>
             <select name="lead_source_id" id="lead-source" class="form-control">
                 <option value="">Select lead source...</option>
@@ -48,6 +48,14 @@
                     </option>
                 @endforeach
             </select>
+        </div> --}}
+        <input type="hidden" name="lead_source_id" id="lead-source"
+            value="{{ $invoice->customer->lead_source_id ?? old('lead_source_id') }}">
+        <div class="col-lg-3 mb-3">
+            <label class="form-label">Lead Source</label>
+            <input type="text" disabled name="lead_source_name" class="form-control" id="lead-source-name"
+                value="{{ isset($invoice) ? $invoice->lead_source_name : old('lead_source_name') }}"
+                placeholder="Lead source name">
         </div>
 
         {{-- Contact Person --}}
@@ -257,13 +265,45 @@
         <i class="feather icon-file-text me-2 text-primary"></i>Additional Details
     </h6>
     <div class="row">
-        <div class="col-lg-6 mb-3">
+        <div class="col-lg-12 mb-3">
             <label class="form-label">Remarks</label>
             <textarea name="remarks" class="form-control" rows="3" placeholder="Any notes or special instructions...">{{ isset($invoice) ? $invoice->remarks : old('remarks') }}</textarea>
         </div>
-        <div class="col-lg-6 mb-3">
+    </div>
+    <div class="row">
+        <div class="col-lg-12 mb-3">
             <label class="form-label">Terms & Conditions</label>
-            <textarea name="terms" class="form-control" rows="3" placeholder="Payment terms, delivery conditions...">{{ isset($invoice) ? $invoice->terms : old('terms') }}</textarea>
+            <textarea name="terms" readonly class="form-control" rows="6"
+                placeholder="Payment terms, delivery conditions...">{{ isset($invoice)
+                    ? $invoice->terms
+                    : '             1. S. Chand Edutech Pvt. Ltd. would retain the License to the product given and it is
+                not to be copied, modified, translated, decompiled, or otherwise used in any other
+                manner than for teaching children in the school.
+                2. The Educational Institute can use the program only at its location set out in the
+                Order Form.
+                3. In the event of education institute failing to make the payment to Edutech mutually
+                agreed on in the Purchase order, Edutech remedies include terminating this PO
+                without notice and recalling the material already delivered under the PO. If the
+
+                outstanding amount is not paid, even after the mutually agreed T&amp;C, interest of 2%
+                per month is paid in full.
+                4. Edutech shall not be held responsible or liable for not performing any of its
+                obligations or undertakings provided for in this form if such performance is
+                prevented, delayed or hindered by an act of god, fire, flood, explosion, riots, inability
+                to procure labour, equipments, facilities, supplies, failure of transportation, strikes,
+                lock outs not within the reasonable control of Edutech.
+                5. All payments shall be non-refundable once made.
+                6. Once order is received, number of kits ordered cannot be reduced.
+                7. All the outstanding payments must be cleared within 3 Months of order delivery.
+                8. In case of any dishonour of a PDC, S. Chand Edutech shall immediately bring the
+                matter to the knowledge of the school.
+                9. The school shall take immediate steps to ensure that the reason for dishonour is
+                removed &amp; intimate S. Chand Edutech to represent the cheque again within 2
+                working days or remit the amount via RTGS/NEFT.
+                10. Cheque dishonouring charges shall be borne by the school.
+                11. Any missing material needs to be notified by the school within 15 working days after
+                receiving the material, after that if the school notify us then the school will pay the
+                delivery charges as well the missing material charges.' }}</textarea>
         </div>
     </div>
 </div>
@@ -328,12 +368,14 @@
                     $('#school-city').val(data.city);
                     $('#school-pin').val(data.pin_code);
                     $('#school-email').val(data.email);
+                    $('#lead-source-name').val(data.lead_source_name);
+                    $('#lead-source').val(data.lead_source_id);
 
                     // Set lead source
-                    const leadSelectize = $('#lead-source')[0].selectize;
-                    if (leadSelectize && data.lead_source_id) {
-                        leadSelectize.setValue(data.lead_source_id);
-                    }
+                    // const leadSelectize = $('#lead-source')[0].selectize;
+                    // if (leadSelectize && data.lead_source_id) {
+                    //     leadSelectize.setValue(data.lead_source_id);
+                    // }
                 });
             }
 

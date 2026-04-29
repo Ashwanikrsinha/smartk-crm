@@ -169,6 +169,7 @@ class DashboardController extends Controller
         $noOfSchools     = (clone $baseQuery)->distinct('customer_id')->count('customer_id');
         $totalSaleAmount = (clone $baseQuery)->sum('amount');
         $totalCollection = (clone $baseQuery)->sum('collected_amount');
+        $totalBillingAmount = (clone $baseQuery)->sum('billing_amount');
         $totalPending    = (clone $baseQuery)->sum('outstanding_amount');
 
         // School-wise table rows
@@ -205,6 +206,7 @@ class DashboardController extends Controller
             'noOfSchools',
             'totalSaleAmount',
             'totalCollection',
+            'totalBillingAmount',
             'totalPending',
             'schoolRows',
             'pendingPos',

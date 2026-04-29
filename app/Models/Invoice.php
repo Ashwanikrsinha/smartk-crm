@@ -14,11 +14,12 @@ class Invoice extends Model
 
     public $timestamps = false;
 
-    protected $dates = ['invoice_date', 'approved_at', 'delivery_due_date','collected_at','school_mail_sent_at','sp_mail_sent_at','accounts_mail_sent_at'];
+    protected $dates = ['invoice_date', 'approved_at', 'delivery_due_date','collected_at','school_mail_sent_at','sp_mail_sent_at','accounts_mail_sent_at','submited_at'];
     protected $casts = [
         'invoice_date'   => 'date',
         'approved_at'    => 'datetime',
         'school_mail_sent_at' => 'datetime',
+        'submited_at' => 'datetime',
         'sp_mail_sent_at' => 'datetime',
         'accounts_mail_sent_at' => 'datetime',
         'delivery_due_date' => 'date',
@@ -31,6 +32,7 @@ class Invoice extends Model
     const STATUS_SUBMITTED = 'submitted';
     const STATUS_APPROVED  = 'approved';
     const STATUS_REJECTED  = 'rejected';
+    const STATUS_EXPIRED  = 'expired';
 
     // ── Relationships ───────────────────────────────────────
 
@@ -104,6 +106,10 @@ class Invoice extends Model
     public function isSubmitted(): bool
     {
         return $this->status === self::STATUS_SUBMITTED;
+    }
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATUS_EXPIRED;
     }
     public function isApproved(): bool
     {

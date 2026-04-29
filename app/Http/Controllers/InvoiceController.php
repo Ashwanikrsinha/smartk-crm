@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\LeadSource;
 use App\Models\State;
 use App\Notifications\PoApproved;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,14 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
+
+        $threeDaysAgo = Carbon::now()->subDays(3);
+
+        Invoice::where('status', 'submitted')
+            ->where('submited_at', '<=', $threeDaysAgo)
+            ->update([
+                'status' => 'expired',
+            ]);
         if ($request->ajax()) {
 
             $teamIds = auth()->user()->teamMemberIds();
@@ -86,7 +95,7 @@ class InvoiceController extends Controller
             $status = $request->action === 'submit'
                 ? Invoice::STATUS_SUBMITTED
                 : Invoice::STATUS_DRAFT;
-
+            $submitedAt = $request->action === 'submit' ? now() : null;
             $invoice = Invoice::create([
                 'invoice_number'   => Invoice::invoiceNumber(),
                 'po_number'        => Invoice::generatePoNumber(),
@@ -102,6 +111,7 @@ class InvoiceController extends Controller
                 'terms'            => $request->terms,
                 'amount'           => $request->total_po_amount,
                 'pending_po_amount' => $request->total_po_amount, // B=0 initially, so C=A
+                'submited_at'       => $submitedAt
             ]);
 
             $invoice->createInvoiceItems($request);
@@ -166,6 +176,7 @@ class InvoiceController extends Controller
 
             // If re-submitting a rejected PO, clear rejection reason
             $rejectionReason = $status === Invoice::STATUS_SUBMITTED ? null : $invoice->rejection_reason;
+            $submitedAt = $status === Invoice::STATUS_SUBMITTED ? now() : $invoice->submited_at;
 
             $invoice->update([
                 'invoice_date'      => $request->invoice_date,
@@ -180,6 +191,7 @@ class InvoiceController extends Controller
                 'terms'             => $request->terms,
                 'amount'            => $request->total_po_amount,
                 'pending_po_amount' => $request->total_po_amount - $invoice->billing_amount,
+                'submited_at'       => $submitedAt
             ]);
 
             $invoice->invoiceItems()->delete();
@@ -463,6 +475,7 @@ class InvoiceController extends Controller
             'pin_code'     => $customer->pin_code,
             'gstin'        => $customer->gstin,
             'lead_source_id' => $customer->lead_source_id,
+            'lead_source_name' => $customer->leadSource->name,
             'email'        => $customer->email,
         ]);
     }

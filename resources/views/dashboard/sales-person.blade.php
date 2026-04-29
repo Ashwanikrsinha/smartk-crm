@@ -44,6 +44,13 @@
             <div class="bg-white rounded shadow-sm p-3 text-center">
                 <div class="text-warning mb-1"><i class="feather icon-trending-up fs-4"></i></div>
                 <h5 class="fw-bold mb-0">₹{{ number_format($totalSaleAmount, 0) }}</h5>
+                <small class="text-muted">Total Po Amount</small>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="bg-white rounded shadow-sm p-3 text-center">
+                <div class="text-warning mb-1"><i class="feather icon-trending-up fs-4"></i></div>
+                <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection+$totalBillingAmount, 0) }}</h5>
                 <small class="text-muted">Total Sale Amount</small>
             </div>
         </div>
@@ -53,6 +60,13 @@
                 <div class="text-success mb-1"><i class="feather icon-dollar-sign fs-4"></i></div>
                 <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection, 0) }}</h5>
                 <small class="text-muted">Total Collection</small>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="bg-white rounded shadow-sm p-3 text-center">
+                <div class="text-success mb-1"><i class="feather icon-dollar-sign fs-4"></i></div>
+                <h5 class="fw-bold mb-0">₹{{ number_format($totalBillingAmount, 0) }}</h5>
+                <small class="text-muted">Total Billing Amount</small>
             </div>
         </div>
 

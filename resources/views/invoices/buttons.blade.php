@@ -16,7 +16,7 @@
 
 {{-- Approve / Reject — SM only, submitted POs only --}}
 @can('approve', $invoice)
-    @if ($invoice->isSubmitted())
+    @if ($invoice->isSubmitted() && !$invoice->isExpired())
         <button type="button" class="btn btn-sm text-success" title="Approve" data-bs-toggle="modal"
             data-bs-target="#approve-modal-{{ $invoice->id }}">
             <i class="feather icon-check-circle"></i>

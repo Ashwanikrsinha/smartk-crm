@@ -22,7 +22,7 @@ class InvoiceStoreRequest extends FormRequest
             'phone_number'      => 'nullable|string|max:15',
             'address'           => 'nullable|string|max:500',
             'remarks'           => 'nullable|string|max:1000',
-            'terms'             => 'nullable|string|max:2000',
+            'terms'             => 'nullable|string',
             'total_po_amount'   => 'required|numeric|min:0.01',
             'action'            => 'required|in:draft,submit',
 
