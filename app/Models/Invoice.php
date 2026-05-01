@@ -268,5 +268,23 @@ class Invoice extends Model
         }
     }
 
+    /**
+     * All activity log entries for this PO.
+     * Ordered newest first.
+     */
+    public function logs()
+    {
+        return $this->hasMany(PoLog::class, 'invoice_id')
+                    ->orderByDesc('created_at');
+    }
+
+    /**
+     * All dispatches made against this PO.
+     */
+    public function dispatches()
+    {
+        return $this->hasMany(Dispatch::class, 'invoice_id');
+    }
+
 
 }

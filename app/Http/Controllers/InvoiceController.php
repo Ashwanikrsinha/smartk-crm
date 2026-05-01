@@ -133,9 +133,14 @@ class InvoiceController extends Controller
             'invoiceItems.unit',
             'customer.leadSource',
             'user',
+            'user.reportiveTo',
             'approvedBy',
             'pdcs',
             'collections.collectedBy',
+            'billingEntries.enteredBy',
+            'logs.user',
+            'dispatches.items.product.category',
+            'dispatches.dispatchedBy',
         ]);
 
         return view('invoices.show', compact('invoice'));
@@ -309,6 +314,47 @@ class InvoiceController extends Controller
     //         });
     // }
 
+    // public function approve(Request $request, Invoice $invoice)
+    // {
+    //     $this->authorize('approve', $invoice);
+
+    //     if (!$invoice->isSubmitted()) {
+    //         return back()->with('error', 'Only submitted orders can be approved.');
+    //     }
+
+    //     // 1. Mark approved
+    //     $invoice->update([
+    //         'status'           => Invoice::STATUS_APPROVED,
+    //         'approved_by'      => auth()->id(),
+    //         'approved_at'      => now(),
+    //         'rejection_reason' => null,
+    //     ]);
+
+    //     // 2. ALWAYS generate and save the DOCX first (synchronous, not queued)
+    //     //    So the file exists in storage before any mail job runs.
+    //     try {
+    //         app(PoDocumentService::class)->generate($invoice);
+    //     } catch (\Throwable $e) {
+    //         Log::error('PO DOCX generation failed on approval', [
+    //             'invoice_id' => $invoice->id,
+    //             'error'      => $e->getMessage(),
+    //         ]);
+    //         // Don't abort — approval is done, document can be regenerated manually
+    //     }
+
+    //     // 3. DB notification to SP
+    //     $invoice->user->notify(new PoApproved($invoice));
+
+    //     // 4. Queue mail jobs (each independently retries on failure)
+    //     dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
+    //     dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
+    //     dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
+
+    //     return back()->with(
+    //         'success',
+    //         "PO {$invoice->po_number} approved. Document saved. Mails queued for School, SP, and Accounts."
+    //     );
+    // }
     public function approve(Request $request, Invoice $invoice)
     {
         $this->authorize('approve', $invoice);
@@ -317,7 +363,6 @@ class InvoiceController extends Controller
             return back()->with('error', 'Only submitted orders can be approved.');
         }
 
-        // 1. Mark approved
         $invoice->update([
             'status'           => Invoice::STATUS_APPROVED,
             'approved_by'      => auth()->id(),
@@ -325,30 +370,26 @@ class InvoiceController extends Controller
             'rejection_reason' => null,
         ]);
 
-        // 2. ALWAYS generate and save the DOCX first (synchronous, not queued)
-        //    So the file exists in storage before any mail job runs.
+        PoLog::record($invoice, PoLog::ACTION_APPROVED, [
+            'remarks' => 'PO approved by ' . auth()->user()->username,
+        ]);
+
+        // Generate document + queue mails
         try {
             app(PoDocumentService::class)->generate($invoice);
         } catch (\Throwable $e) {
             Log::error('PO DOCX generation failed on approval', [
-                'invoice_id' => $invoice->id,
-                'error'      => $e->getMessage(),
+                'invoice_id' => $invoice->id, 'error' => $e->getMessage()
             ]);
-            // Don't abort — approval is done, document can be regenerated manually
         }
 
-        // 3. DB notification to SP
         $invoice->user->notify(new PoApproved($invoice));
 
-        // 4. Queue mail jobs (each independently retries on failure)
         dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
         dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
         dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
 
-        return back()->with(
-            'success',
-            "PO {$invoice->po_number} approved. Document saved. Mails queued for School, SP, and Accounts."
-        );
+        return back()->with('success', "PO {$invoice->po_number} approved.");
     }
     public function downloadDocument(Invoice $invoice)
     {
@@ -451,6 +492,9 @@ class InvoiceController extends Controller
         if (!$invoice->isSubmitted()) {
             return back()->with('error', 'Only submitted orders can be rejected.');
         }
+        PoLog::record($invoice, PoLog::ACTION_REJECTED, [
+            'remarks' => 'Rejected: ' . $request->rejection_reason,
+        ]);
 
         $invoice->update([
             'status'           => Invoice::STATUS_REJECTED,

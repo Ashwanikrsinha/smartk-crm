@@ -3,41 +3,26 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">Collections & Billing</h5>
-            <small class="text-muted">Update billing  and collection  for approved orders</small>
+            <small class="text-muted">Update billing (B) and collection (D) per order</small>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('bills.index') }}" class="btn btn-sm btn-outline-primary">
-                <i class="feather icon-file-text me-1"></i> CRM Bills
-            </a>
-            <a href="{{ route('reports.export', request()->all()) }}" class="btn btn-sm btn-outline-success">
-                <i class="feather icon-download me-1"></i> Export
-            </a>
-        </div>
+        <a href="{{ route('reports.export', request()->all()) }}" class="btn btn-sm btn-outline-success">
+            <i class="feather icon-download me-1"></i> Export
+        </a>
     </header>
-
-    <div class="alert alert-info py-2 mb-4">
-        <i class="feather icon-info me-2"></i>
-        Enter <strong>Billed Amount </strong> for offline/Tally bills or
-        <strong>Collection Amount </strong> for payments received.
-        PDC cheques marked as "Cleared" are auto-included in Collections Amount.
-    </div>
 
     {{-- ═══ FILTERS ════════════════════════════════════════════ --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('collections.index') }}" class="row g-2 align-items-end">
-
             <div class="col-lg-2 col-md-6">
-                <label class="form-label small mb-1">Team Member (SP)</label>
+                <label class="form-label small mb-1">SP</label>
                 <select name="sp_id" class="form-control form-control-sm">
                     <option value="">All SPs</option>
                     @foreach ($allSps as $sp)
-                        <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>
-                            {{ $sp->username }}
+                        <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>{{ $sp->username }}
                         </option>
                     @endforeach
                 </select>
             </div>
-
             <div class="col-lg-3 col-md-6">
                 <label class="form-label small mb-1">School</label>
                 <select name="school_id" class="form-control form-control-sm">
@@ -49,224 +34,231 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">PO Number</label>
                 <input type="text" name="po_number" class="form-control form-control-sm" value="{{ $poNumber ?? '' }}"
                     placeholder="PO-2025-...">
             </div>
-
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
             </div>
-
             <div class="col-lg-3 d-flex gap-2">
                 <button class="btn btn-primary btn-sm w-100">Filter</button>
                 <a href="{{ route('collections.index') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
             </div>
-
         </form>
     </div>
 
     {{-- ═══ SUMMARY WIDGETS ════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-        @php
-            $widgets = [
-                ['label' => 'Total PO Amount', 'val' => $totals['po_amount'], 'c' => 'warning'],
-                ['label' => 'Total Billed', 'val' => $totals['billing_amount'], 'c' => 'info'],
-                ['label' => 'Pending PO', 'val' => $totals['pending_po'], 'c' => 'secondary'],
-                ['label' => 'Total Collected', 'val' => $totals['collected'], 'c' => 'success'],
-                ['label' => 'Outstanding', 'val' => $totals['outstanding'], 'c' => 'danger'],
-            ];
-        @endphp
-        @foreach ($widgets as $w)
+        @foreach ([['A: PO Amount', $totals['po_amount'], 'warning'], ['B: Total Billed', $totals['billing_amount'], 'info'], ['C: Pending PO', $totals['pending_po'], 'secondary'], ['D: Collected', $totals['collected'], 'success'], ['E: Outstanding', $totals['outstanding'], 'danger']] as [$label, $val, $color])
             <div class="col-6 col-lg">
-                <div class="bg-white rounded shadow-sm p-3 text-center border-top border-{{ $w['c'] }} border-3">
-                    <h5 class="fw-bold text-{{ $w['c'] }} mb-1">₹{{ number_format($w['val'], 0) }}</h5>
-                    <small class="text-muted">{{ $w['label'] }}</small>
+                <div class="bg-white rounded shadow-sm p-3 text-center border-top border-{{ $color }} border-3">
+                    <h5 class="fw-bold text-{{ $color }} mb-1">₹{{ number_format($val, 0) }}</h5>
+                    <small class="text-muted">{{ $label }}</small>
                 </div>
             </div>
         @endforeach
     </div>
 
-    {{-- ═══ MAIN TABLE ══════════════════════════════════════════ --}}
+    {{-- ═══ PO TABLE WITH PER-ROW ENTRY PANELS ════════════════ --}}
     <div class="bg-white rounded shadow-sm p-3">
-
-        <h6 class="fw-bold border-bottom pb-2 mb-3">
+        <h6 class="fw-bold border-bottom pb-2 mb-0">
             <i class="feather icon-list me-2 text-primary"></i>
-            Order-wise Update — Enter Billed and Collection Amount
+            Order-wise — Click a row to update Billing (B) or Collection (D)
         </h6>
 
-        <form action="{{ route('collections.bulk-store') }}" method="POST" id="collection-form">
-            @csrf
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>PO Number</th>
-                            <th>SP</th>
-                            <th>School</th>
-                            <th class="text-end text-warning" style="min-width:90px"> PO Amt</th>
-                            <th class="text-end text-info" style="min-width:130px">
-                                 Billed
-                                <i class="feather icon-edit-2 text-info ms-1" title="Editable"></i>
-                            </th>
-                            <th class="text-end text-secondary" style="min-width:90px">Pend. PO</th>
-                            <th class="text-end text-success" style="min-width:130px">
-                                 Collected
-                                <i class="feather icon-edit-2 text-success ms-1" title="Editable"></i>
-                            </th>
-                            <th class="text-end text-danger" style="min-width:90px">E: Outstanding</th>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>PO Number</th>
+                        <th>SP</th>
+                        <th>School</th>
+                        <th class="text-end text-warning">A: PO Amt</th>
+                        <th class="text-end text-info">
+                            B: Billed <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                        </th>
+                        <th class="text-end text-secondary">C: Pend. PO</th>
+                        <th class="text-end text-success">
+                            D: Collected <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                        </th>
+                        <th class="text-end text-danger">E: Outstanding</th>
+                        <th class="text-center">Entry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($rows as $row)
+                        {{-- ── Data row ────────────────────────────── --}}
+                        <tr class="po-row" data-id="{{ $row->id }}">
+                            <td>
+                                <a href="{{ route('invoices.show', $row->id) }}" class="text-primary fw-bold">
+                                    {{ $row->po_number }}
+                                </a>
+                            </td>
+                            <td class="small">{{ $row->user->username }}</td>
+                            <td class="small">
+                                {{ $row->customer->name }}
+                                <span class="text-muted d-block"
+                                    style="font-size:0.7rem">{{ $row->customer->school_code }}</span>
+                            </td>
+                            <td class="text-end fw-bold text-warning">₹{{ number_format($row->amount, 0) }}</td>
+                            <td class="text-end" id="billed-cell-{{ $row->id }}">
+                                ₹{{ number_format($row->billing_amount, 0) }}</td>
+                            <td class="text-end" id="pending-po-cell-{{ $row->id }}">
+                                ₹{{ number_format($row->pending_po_amount, 0) }}</td>
+                            <td class="text-end" id="collected-cell-{{ $row->id }}">
+                                ₹{{ number_format($row->collected_amount, 0) }}</td>
+                            <td class="text-end fw-bold {{ $row->outstanding_amount > 0 ? 'text-danger' : 'text-success' }}"
+                                id="outstanding-cell-{{ $row->id }}">
+                                ₹{{ number_format($row->outstanding_amount, 0) }}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary toggle-entry-panel"
+                                    data-id="{{ $row->id }}" title="Add entry">
+                                    <i class="feather icon-plus-circle"></i>
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($rows as $row)
-                            <tr id="row-{{ $row->id }}">
-                                <td>
-                                    <a href="{{ route('invoices.show', $row->id) }}" class="text-primary fw-bold">
-                                        {{ $row->po_number }}
-                                    </a>
-                                    <input type="hidden" name="collections[{{ $row->id }}][invoice_id]"
-                                        value="{{ $row->id }}">
-                                </td>
-                                <td class="small">{{ $row->user->username }}</td>
-                                <td class="small">
-                                    {{ $row->customer->name }}
-                                    <span class="text-muted d-block"
-                                        style="font-size:0.7rem">{{ $row->customer->school_code }}</span>
-                                </td>
 
-                                {{-- A: PO Amount --}}
-                                <td class="text-end fw-bold text-warning">₹{{ number_format($row->amount, 0) }}</td>
+                        {{-- ── Per-row entry panel (hidden by default) ─ --}}
+                        <tr class="entry-panel-row d-none" id="entry-panel-{{ $row->id }}">
+                            <td colspan="9" class="p-0">
+                                <div class="border-start border-4 border-primary bg-light p-3">
 
-                                {{-- B: Billed (editable — for manual/Tally billing) --}}
-                                <td class="text-end">
-                                    <div class="d-flex align-items-center gap-1 justify-content-end">
-                                        <span class="text-muted small">₹</span>
-                                        <input type="number" step="0.01" min="0"
-                                            name="collections[{{ $row->id }}][billed_amount]"
-                                            class="form-control form-control-sm text-end billed-input" style="width:100px"
-                                            placeholder="0.00" data-invoice-id="{{ $row->id }}"
-                                            data-po-amount="{{ $row->amount }}"
-                                            data-collected="{{ $row->collected_amount }}">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-12">
+                                            <small class="text-muted fw-bold text-uppercase">
+                                                Entry for {{ $row->po_number }} — {{ $row->customer->name }}
+                                                <span class="text-info ms-2">
+                                                    Current Billed: ₹{{ number_format($row->billing_amount, 2) }}
+                                                </span>
+                                                <span class="text-success ms-2">
+                                                    Current Collected: ₹{{ number_format($row->collected_amount, 2) }}
+                                                </span>
+                                            </small>
+                                        </div>
                                     </div>
-                                    <small class="text-muted d-block text-end" style="font-size:0.7rem">
-                                        Current: ₹{{ number_format($row->billing_amount, 0) }}
-                                    </small>
-                                </td>
 
-                                {{-- C: Pending PO (auto-calc) --}}
-                                <td class="text-end text-secondary" id="pending-po-{{ $row->id }}">
-                                    ₹{{ number_format($row->amount - $row->billing_amount, 0) }}
-                                </td>
+                                    <div class="row g-2">
+                                        {{-- B: Billed amount input --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1 text-info fw-bold">
+                                                B: Add Billing Amount (₹)
+                                            </label>
+                                            <input type="number" step="0.01" min="0"
+                                                class="form-control form-control-sm billed-input"
+                                                data-id="{{ $row->id }}" placeholder="0.00">
+                                        </div>
 
-                                {{-- D: Collected (editable) --}}
-                                <td class="text-end">
-                                    <div class="d-flex align-items-center gap-1 justify-content-end">
-                                        <span class="text-muted small">₹</span>
-                                        <input type="number" step="0.01" min="0"
-                                            name="collections[{{ $row->id }}][collected_amount]"
-                                            class="form-control form-control-sm text-end collection-input"
-                                            style="width:100px" placeholder="0.00" data-invoice-id="{{ $row->id }}"
-                                            data-billing="{{ $row->billing_amount }}">
+                                        {{-- D: Collection amount input --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1 text-success fw-bold">
+                                                D: Add Collection Amount (₹)
+                                            </label>
+                                            <input type="number" step="0.01" min="0"
+                                                class="form-control form-control-sm collected-input"
+                                                data-id="{{ $row->id }}" placeholder="0.00">
+                                        </div>
+
+                                        {{-- Payment Mode --}}
+                                        <div class="col-lg-1">
+                                            <label class="form-label small mb-1">Payment Mode</label>
+                                            <select class="form-control form-control-sm payment-mode"
+                                                data-id="{{ $row->id }}">
+                                                <option value="cheque">Cheque</option>
+                                                <option value="neft">NEFT</option>
+                                                <option value="upi">UPI</option>
+                                                <option value="cash">Cash</option>
+                                            </select>
+                                        </div>
+
+                                        {{-- Billing Source --}}
+                                        <div class="col-lg-1">
+                                            <label class="form-label small mb-1">Bill Source</label>
+                                            <select class="form-control form-control-sm billing-source"
+                                                data-id="{{ $row->id }}">
+                                                <option value="manual">Manual/Tally</option>
+                                                <option value="crm">CRM</option>
+                                            </select>
+                                        </div>
+
+                                        {{-- Bill Ref --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1">Bill Ref. No.</label>
+                                            <input type="text" class="form-control form-control-sm billing-reference"
+                                                data-id="{{ $row->id }}" placeholder="Tally/bill ref.">
+                                        </div>
+
+                                        {{-- Collection Ref --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1">Collection Ref. No.</label>
+                                            <input type="text"
+                                                class="form-control form-control-sm collection-reference"
+                                                data-id="{{ $row->id }}" placeholder="Cheque/UTR/UPI ref.">
+                                        </div>
+
+                                        {{-- Date --}}
+                                        <div class="col-lg-1">
+                                            <label class="form-label small mb-1">Date <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="date" class="form-control form-control-sm entry-date"
+                                                data-id="{{ $row->id }}" value="{{ date('Y-m-d') }}">
+                                        </div>
+
+                                        {{-- Remarks --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1">Remarks</label>
+                                            <input type="text" class="form-control form-control-sm entry-remarks"
+                                                data-id="{{ $row->id }}" placeholder="Optional notes...">
+                                        </div>
+
+                                        {{-- Save button (full width on next row) --}}
+                                        <div class="col-12 d-flex gap-2 align-items-center mt-1">
+                                            <button class="btn btn-success btn-sm save-entry-btn"
+                                                data-id="{{ $row->id }}">
+                                                <i class="feather icon-save me-1"></i> Save Entry
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm cancel-entry-btn"
+                                                data-id="{{ $row->id }}">
+                                                Cancel
+                                            </button>
+                                            <span
+                                                class="entry-feedback-{{ $row->id }} text-success small ms-2 d-none">
+                                                ✓ Saved successfully
+                                            </span>
+                                            <span
+                                                class="entry-error-{{ $row->id }} text-danger small ms-2 d-none"></span>
+                                        </div>
                                     </div>
-                                    <small class="text-muted d-block text-end" style="font-size:0.7rem">
-                                        Current: ₹{{ number_format($row->collected_amount, 0) }}
-                                    </small>
-                                </td>
+                                </div>
+                            </td>
+                        </tr>
 
-                                {{-- E: Outstanding (auto-calc) --}}
-                                <td class="text-end fw-bold {{ $row->outstanding_amount > 0 ? 'text-danger' : 'text-success' }}"
-                                    id="outstanding-{{ $row->id }}">
-                                    ₹{{ number_format($row->outstanding_amount, 0) }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
-                                    No approved orders found. Adjust filters and try again.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">No approved orders found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
 
-                    @if ($rows->count())
-                        <tfoot class="table-dark fw-bold">
-                            <tr>
-                                <td colspan="3" class="text-end">Total</td>
-                                <td class="text-end">₹{{ number_format($totals['po_amount'], 0) }}</td>
-                                <td class="text-end">₹{{ number_format($totals['billing_amount'], 0) }}</td>
-                                <td class="text-end">₹{{ number_format($totals['pending_po'], 0) }}</td>
-                                <td class="text-end">₹{{ number_format($totals['collected'], 0) }}</td>
-                                <td class="text-end">₹{{ number_format($totals['outstanding'], 0) }}</td>
-                            </tr>
-                        </tfoot>
-                    @endif
-                </table>
-            </div>
-
-            {{-- Payment / Billing Details Panel ─────────────────── --}}
-            <div id="entry-details-panel" class="border rounded p-3 mt-3 bg-light d-none">
-                <h6 class="fw-bold mb-3"><i class="feather icon-sliders me-2"></i>Entry Details</h6>
-                <div class="row g-2">
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Payment Mode</label>
-                        <select name="payment_mode" class="form-control form-control-sm">
-                            <option value="cheque">Cheque</option>
-                            <option value="neft">NEFT</option>
-                            <option value="upi">UPI</option>
-                            <option value="cash">Cash</option>
-                        </select>
-                    </div>
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Billing Source</label>
-                        <select name="billing_source" class="form-control form-control-sm">
-                            <option value="manual">Manual / Tally</option>
-                            <option value="crm">CRM</option>
-                        </select>
-                    </div>
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Bill Ref. No.</label>
-                        <input type="text" name="billing_reference" class="form-control form-control-sm"
-                            placeholder="Tally/Bill ref.">
-                    </div>
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Collection Ref. No.</label>
-                        <input type="text" name="reference_number" class="form-control form-control-sm"
-                            placeholder="Cheque/UTR/UPI ref.">
-                    </div>
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Date <span class="text-danger">*</span></label>
-                        <input type="date" name="collected_at" class="form-control form-control-sm"
-                            value="{{ date('Y-m-d') }}">
-                    </div>
-
-                    <div class="col-lg-2">
-                        <label class="form-label small">Remarks</label>
-                        <input type="text" name="collection_remarks" class="form-control form-control-sm"
-                            placeholder="Optional notes...">
-                    </div>
-
-                </div>
-            </div>
-
-            @if ($rows->count())
-                <div class="d-flex justify-content-end mt-3">
-                    <button type="submit" class="btn btn-success"
-                        onclick="return confirm('Save these billing and collection updates?')">
-                        <i class="feather icon-save me-1"></i> Submit Updates
-                    </button>
-                </div>
-            @endif
-
-        </form>
+                {{-- Totals row --}}
+                @if ($rows->count())
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="3" class="text-end">Total</td>
+                            <td class="text-end">₹{{ number_format($totals['po_amount'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['billing_amount'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['pending_po'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['collected'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['outstanding'], 0) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                @endif
+            </table>
+        </div>
     </div>
 @endsection
 
@@ -276,40 +268,101 @@
 
             $('select').selectize();
 
-            // Show entry details panel when any input is touched
-            $(document).on('input', '.billed-input, .collection-input', function() {
-                $('#entry-details-panel').removeClass('d-none');
-                recalcRow($(this).closest('tr'));
+            // ── Toggle per-row entry panel ────────────────────────
+            $(document).on('click', '.toggle-entry-panel', function() {
+                var id = $(this).data('id');
+                var $panel = $('#entry-panel-' + id);
+                $panel.toggleClass('d-none');
+                $(this).find('i').toggleClass('icon-plus-circle icon-minus-circle');
             });
 
-            function recalcRow(row) {
-                const poAmt = parseFloat(row.find('.billed-input').data('po-amount')) || 0;
-                const newBilled = parseFloat(row.find('.billed-input').val()) || 0;
-                const newColl = parseFloat(row.find('.collection-input').val()) || 0;
-                const invId = row.find('.billed-input').data('invoice-id');
+            $(document).on('click', '.cancel-entry-btn', function() {
+                var id = $(this).data('id');
+                $('#entry-panel-' + id).addClass('d-none');
+                $('.toggle-entry-panel[data-id="' + id + '"] i')
+                    .removeClass('icon-minus-circle').addClass('icon-plus-circle');
+                resetPanel(id);
+            });
 
-                // Current stored values (already in DB)
-                const curBilled = parseFloat(row.find('.billed-input').data('current-billed') || 0);
-                const curColl = parseFloat(row.find('.collection-input').data('billing') || 0);
+            // ── Save entry (AJAX) ─────────────────────────────────
+            $(document).on('click', '.save-entry-btn', function() {
+                var id = $(this).data('id');
+                var $btn = $(this);
+                var $ok = $('.entry-feedback-' + id);
+                var $err = $('.entry-error-' + id);
 
-                // Preview: total after adding new entry
-                const totalBilled = curBilled + newBilled;
-                const totalColl = curColl + newColl;
+                var billedAmt = parseFloat($('.billed-input[data-id="' + id + '"]').val()) || 0;
+                var collectedAmt = parseFloat($('.collected-input[data-id="' + id + '"]').val()) || 0;
+                var entryDate = $('.entry-date[data-id="' + id + '"]').val();
 
-                const pendingPo = Math.max(poAmt - totalBilled, 0);
-                const outstanding = Math.max(totalBilled - totalColl, 0);
+                if (billedAmt <= 0 && collectedAmt <= 0) {
+                    $err.text('Enter at least one amount (B or D).').removeClass('d-none');
+                    $ok.addClass('d-none');
+                    return;
+                }
+                if (!entryDate) {
+                    $err.text('Date is required.').removeClass('d-none');
+                    return;
+                }
 
-                $(`#pending-po-${invId}`).text('₹' + fmt(pendingPo));
-                $(`#outstanding-${invId}`)
-                    .text('₹' + fmt(outstanding))
-                    .toggleClass('text-danger fw-bold', outstanding > 0)
-                    .toggleClass('text-success', outstanding === 0);
+                $btn.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
+                $ok.addClass('d-none');
+                $err.addClass('d-none');
+
+                $.ajax({
+                    url: '{{ route('collections.save-single') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        invoice_id: id,
+                        billed_amount: billedAmt,
+                        collected_amount: collectedAmt,
+                        payment_mode: $('.payment-mode[data-id="' + id + '"]').val(),
+                        billing_source: $('.billing-source[data-id="' + id + '"]').val(),
+                        billing_reference: $('.billing-reference[data-id="' + id + '"]').val(),
+                        reference_number: $('.collection-reference[data-id="' + id + '"]').val(),
+                        entry_date: entryDate,
+                        remarks: $('.entry-remarks[data-id="' + id + '"]').val(),
+                    },
+                    success: function(res) {
+                        // Update cells live
+                        $('#billed-cell-' + id).text('₹' + formatNum(res.billing_amount));
+                        $('#pending-po-cell-' + id).text('₹' + formatNum(res.pending_po));
+                        $('#collected-cell-' + id).text('₹' + formatNum(res.collected_amount));
+                        $('#outstanding-cell-' + id)
+                            .text('₹' + formatNum(res.outstanding))
+                            .toggleClass('text-danger fw-bold', res.outstanding > 0)
+                            .toggleClass('text-success', res.outstanding <= 0);
+
+                        $ok.removeClass('d-none');
+                        resetPanel(id);
+                        $btn.prop('disabled', false).html(
+                            '<i class="feather icon-save me-1"></i> Save Entry');
+                    },
+                    error: function(xhr) {
+                        var msg = xhr.responseJSON?.error || 'Save failed. Please try again.';
+                        $err.text(msg).removeClass('d-none');
+                        $btn.prop('disabled', false).html(
+                            '<i class="feather icon-save me-1"></i> Save Entry');
+                    }
+                });
+            });
+
+            function resetPanel(id) {
+                $('.billed-input[data-id="' + id + '"]').val('');
+                $('.collected-input[data-id="' + id + '"]').val('');
+                $('.billing-reference[data-id="' + id + '"]').val('');
+                $('.collection-reference[data-id="' + id + '"]').val('');
+                $('.entry-remarks[data-id="' + id + '"]').val('');
+                $('.entry-date[data-id="' + id + '"]').val('{{ date('Y-m-d') }}');
             }
 
-            function fmt(n) {
-                return Math.round(n).toLocaleString('en-IN');
+            function formatNum(n) {
+                return (parseFloat(n) || 0).toLocaleString('en-IN', {
+                    minimumFractionDigits: 0
+                });
             }
-
         });
     </script>
 @endpush

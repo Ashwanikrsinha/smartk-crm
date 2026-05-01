@@ -374,6 +374,9 @@
                 </div>
             @endif
 
+            @include('invoices.partials.po-log', ['invoice' => $invoice])
+            @include('invoices.partials.dispatch-history', ['invoice' => $invoice])
+
             {{-- Remarks / Terms --}}
             @if ($invoice->remarks || $invoice->terms)
                 <div class="bg-white rounded shadow-sm p-4">
