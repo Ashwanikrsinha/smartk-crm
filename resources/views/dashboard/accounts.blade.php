@@ -124,9 +124,9 @@
                             <th>SP Name</th>
                             <th>School Name</th>
                             <th class="text-end text-warning"> PO Amount</th>
-                            <th class="text-end text-info">Sales/Billing</th>
+                            <th class="text-end text-info" style="min-width:140px">Billing  </th>
                             <th class="text-end text-secondary">Pending PO</th>
-                            <th class="text-end text-success" style="min-width:140px">Collection</th>
+                            <th class="text-end text-success" style="min-width:140px">Collection  </th>
                             <th class="text-end text-danger">Outstanding</th>
                         </tr>
                     </thead>
@@ -143,26 +143,42 @@
                                     {{ $row->customer->name }}
                                     <small class="text-muted d-block">{{ $row->customer->school_code }}</small>
                                 </td>
-                                <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
-                                <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
-                                <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
+                                <td class="text-end">₹{{ number_format($row->amount, 0) }}</td>
 
-                                {{-- Editable Collection (D) --}}
+                                {{-- Editable Billing   --}}
                                 <td class="text-end">
                                     <div class="d-flex align-items-center gap-1 justify-content-end">
                                         <span class="text-muted small">₹</span>
                                         <input type="number" step="0.01" min="0"
-                                            name="collections[{{ $row->id }}][amount]"
-                                            class="form-control form-control-sm text-end collection-input"
-                                            style="width: 110px;" value="{{ $row->collected_amount }}"
-                                            max="{{ $row->billing_amount }}" data-invoice-id="{{ $row->id }}"
-                                            data-billing="{{ $row->billing_amount }}" placeholder="0.00">
+                                            name="collections[{{ $row->id }}][billed_amount]"
+                                            class="form-control form-control-sm text-end billing-input"
+                                            style="width: 100px;" value=""
+                                            data-invoice-id="{{ $row->id }}"
+                                            placeholder="0.00">
                                         <input type="hidden" name="collections[{{ $row->id }}][invoice_id]"
                                             value="{{ $row->id }}">
                                     </div>
+                                    <small class="text-muted d-block text-end mt-1">
+                                        Current: ₹{{ number_format($row->billing_amount, 0) }}
+                                    </small>
+                                </td>
+
+                                <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 0) }}</td>
+
+                                {{-- Editable Collection   --}}
+                                <td class="text-end">
+                                    <div class="d-flex align-items-center gap-1 justify-content-end">
+                                        <span class="text-muted small">₹</span>
+                                        <input type="number" step="0.01" min="0"
+                                            name="collections[{{ $row->id }}][collected_amount]"
+                                            class="form-control form-control-sm text-end collection-input"
+                                            style="width: 100px;" value=""
+                                            data-invoice-id="{{ $row->id }}"
+                                            placeholder="0.00">
+                                    </div>
                                     <small class="text-muted d-block text-end mt-1 current-collected"
                                         id="collected-{{ $row->id }}">
-                                        Current: ₹{{ number_format($row->collected_amount, 2) }}
+                                        Current: ₹{{ number_format($row->collected_amount, 0) }}
                                     </small>
                                 </td>
 
@@ -249,17 +265,27 @@
             $('select').selectize();
 
             // Show payment details when any amount is changed
-            $(document).on('input', '.collection-input', function() {
-                const billing = parseFloat($(this).data('billing')) || 0;
-                const collected = parseFloat($(this).val()) || 0;
-                const outstanding = Math.max(billing - collected, 0);
+            $(document).on('input', '.collection-input, .billing-input', function() {
                 const invoiceId = $(this).data('invoice-id');
+                const row = $(this).closest('tr');
+
+                // Base data from cells (numeric)
+                const currentBilled = parseFloat(row.find('td:nth-child(5) small').text().replace(/[^0-9.]/g, '')) || 0;
+                const currentCollected = parseFloat(row.find('td:nth-child(7) small').text().replace(/[^0-9.]/g, '')) || 0;
+
+                // New additions from inputs
+                const addBilled = parseFloat(row.find('.billing-input').val()) || 0;
+                const addCollected = parseFloat(row.find('.collection-input').val()) || 0;
+
+                const newBilled = currentBilled + addBilled;
+                const newCollected = currentCollected + addCollected;
+                const newOutstanding = Math.max(newBilled - newCollected, 0);
 
                 // Update outstanding column in real-time
                 const outstandingCell = $('#outstanding-' + invoiceId);
-                outstandingCell.text('₹' + outstanding.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-                outstandingCell.toggleClass('text-danger fw-bold', outstanding > 0);
-                outstandingCell.toggleClass('text-success', outstanding === 0);
+                outstandingCell.text('₹' + newOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0}));
+                outstandingCell.toggleClass('text-danger fw-bold', newOutstanding > 0);
+                outstandingCell.toggleClass('text-success', newOutstanding === 0);
 
                 // Show payment details section
                 $('#payment-details-section').removeClass('d-none');

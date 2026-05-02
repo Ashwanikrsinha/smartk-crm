@@ -6,9 +6,14 @@
             <h5 class="mb-0">Reports</h5>
             <small class="text-muted">Filter and export purchase order data</small>
         </div>
-        <a href="{{ route('reports.export', request()->all()) }}" class="btn btn-success btn-sm">
-            <i class="feather icon-download me-1"></i> Export Excel
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('reports.po-log-all', request()->all()) }}" class="btn btn-outline-info btn-sm">
+                <i class="feather icon-activity me-1"></i> Export Update History (Logs)
+            </a>
+            <a href="{{ route('reports.export', request()->all()) }}" class="btn btn-success btn-sm">
+                <i class="feather icon-download me-1"></i> Export Excel
+            </a>
+        </div>
     </header>
 
 

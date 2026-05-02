@@ -16,13 +16,16 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class PoLogExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize
 {
     protected ?int $invoiceId;
+    protected array $filters;
 
     /**
      * @param int|null $invoiceId  Null = export ALL logs (for reports page)
+     * @param array $filters
      */
-    public function __construct(?int $invoiceId = null)
+    public function __construct(?int $invoiceId = null, array $filters = [])
     {
         $this->invoiceId = $invoiceId;
+        $this->filters   = $filters;
     }
 
     public function title(): string
@@ -33,8 +36,9 @@ class PoLogExport implements FromQuery, WithHeadings, WithMapping, WithStyles, W
     public function query()
     {
         $query = PoLog::with([
-            'invoice.customer:id,name,school_code',
-            'invoice.user:id,username',
+            'invoice.customer:id,name,school_code,state,city,lead_source_id',
+            'invoice.user:id,username,reportive_id',
+            'invoice.user.reportiveTo:id,username',
             'user:id,username',
         ])->orderByDesc('created_at');
 
@@ -43,7 +47,30 @@ class PoLogExport implements FromQuery, WithHeadings, WithMapping, WithStyles, W
         } else {
             // Scope by team for non-admin
             $teamIds = auth()->user()->teamMemberIds();
-            $query->whereHas('invoice', fn($q) => $q->whereIn('user_id', $teamIds));
+            $query->whereHas('invoice', function($q) use ($teamIds) {
+                $q->whereIn('user_id', $teamIds);
+
+                // Apply same filters as PurchaseOrdersExport
+                $f = $this->filters;
+                if (!empty($f['sp_id']))       $q->where('user_id', $f['sp_id']);
+                if (!empty($f['school_id']))   $q->where('customer_id', $f['school_id']);
+                if (!empty($f['status']))      $q->where('status', $f['status']);
+
+                if (!empty($f['lead_source_id'])) {
+                    $q->whereHas('customer', fn($c) => $c->where('lead_source_id', $f['lead_source_id']));
+                }
+                if (!empty($f['state'])) {
+                    $q->whereHas('customer', fn($c) => $c->where('state', $f['state']));
+                }
+                if (!empty($f['month'])) {
+                    $q->whereYear('invoice_date',  substr($f['month'], 0, 4))
+                      ->whereMonth('invoice_date', substr($f['month'], 5, 2));
+                } elseif (!empty($f['date_from']) && !empty($f['date_to'])) {
+                    $q->whereBetween('invoice_date', [$f['date_from'], $f['date_to']]);
+                } elseif (!empty($f['year'])) {
+                    $q->whereYear('invoice_date', $f['year']);
+                }
+            });
         }
 
         return $query;
@@ -64,11 +91,11 @@ class PoLogExport implements FromQuery, WithHeadings, WithMapping, WithStyles, W
             'Payment Mode',
             'Billing Source',
             'Reference No.',
-            'A: PO Amount (₹)',
-            'B: Billed Amount (₹)',
-            'C: Pending PO (₹)',
-            'D: Collected (₹)',
-            'E: Outstanding (₹)',
+            'PO Amount (₹)',
+            'Billed Amount (₹)',
+            'Pending PO (₹)',
+            'Collected (₹)',
+            'Outstanding (₹)',
             'Entered By',
             'Remarks',
         ];

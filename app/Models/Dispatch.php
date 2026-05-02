@@ -12,6 +12,9 @@ class Dispatch extends Model
     protected $guarded = [];
 
     protected $dates = ['dispatch_date'];
+    protected $casts = [
+        'dispatch_date' => 'date',
+    ];
 
     public static function generateNumber(): string
     {

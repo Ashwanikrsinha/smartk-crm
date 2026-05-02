@@ -6,8 +6,8 @@
         <h5 class="mb-0">Warehouse Dashboard</h5>
         <small class="text-muted">Pending dispatches for approved purchase orders</small>
     </div>
-    <a href="{{ route('dispatches.create.select') }}" class="btn btn-primary btn-sm">
-        <i class="feather icon-truck me-1"></i> New Dispatch
+    <a href="{{ route('dispatches.index') }}" class="btn btn-primary btn-sm">
+        <i class="feather icon-truck me-1"></i> Refresh
     </a>
 </header>
 
@@ -88,7 +88,7 @@
                 {{-- PO Number — show only on first item row --}}
                 @if($idx === 0)
                 <td rowspan="{{ $rowCount }}" class="fw-bold text-primary">
-                    <a href="{{ route('dispatches.po-summary', $po->id) }}" class="text-primary">
+                    <a href="{{ route('dispatches.create', ['invoice_id' => $po->id]) }}" class="text-primary">
                         {{ $po->po_number }}
                     </a>
                 </td>
@@ -134,9 +134,9 @@
                 <td rowspan="{{ $rowCount }}" class="text-center">
                     @if($po->dispatches->count() > 0)
                     <span class="badge bg-info">{{ $po->dispatches->count() }} dispatch(es)</span>
-                    <a href="{{ route('dispatches.po-summary', $po->id) }}"
+                    <a href="{{ route('dispatches.show', $po->dispatches->last()->id) }}"
                        class="btn btn-xs btn-link p-0 d-block mt-1 text-info">
-                        View details
+                        View last dispatch
                     </a>
                     @else
                     <span class="badge bg-warning text-dark">None yet</span>

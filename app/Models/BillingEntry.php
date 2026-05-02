@@ -33,11 +33,17 @@ class BillingEntry extends Model
     protected static function booted(): void
     {
         static::saved(function (BillingEntry $entry) {
-            $entry->invoice->recalculateBilling();
+            $entry->invoice->recalculateBilling($entry->billed_amount, [
+                'billing_source'    => $entry->source,
+                'reference_number'  => $entry->reference_number,
+                'remarks'           => $entry->remarks,
+            ]);
         });
 
         static::deleted(function (BillingEntry $entry) {
-            $entry->invoice->recalculateBilling();
+            $entry->invoice->recalculateBilling(-$entry->billed_amount, [
+                'remarks' => 'Entry deleted: ' . $entry->remarks,
+            ]);
         });
     }
 }

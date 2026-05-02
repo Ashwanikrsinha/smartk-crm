@@ -13,15 +13,16 @@
     </header>
 
     @php
+        $isWarehouse = auth()->user()->role?->name === 'Warehouse';
         $columns = [
             'po_number',
             'date',
             'school',
             'sales_person',
-            'PO Amount',
-            'Billed',
-            'Collected',
-            'Outstanding',
+            $isWarehouse ? '—' : 'PO Amount',
+            $isWarehouse ? '—' : 'Billed',
+            $isWarehouse ? '—' : 'Collected',
+            $isWarehouse ? '—' : 'Outstanding',
             'status',
             'actions',
         ];

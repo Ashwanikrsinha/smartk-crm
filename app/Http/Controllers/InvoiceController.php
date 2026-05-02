@@ -27,6 +27,7 @@ use App\Jobs\SendPoMailToSp;
 use App\Jobs\SendPoMailToAccounts;
 use App\Http\Requests\InvoiceStoreRequest;
 use App\Http\Requests\InvoiceUpdateRequest;
+use App\Models\PoLog;
 
 class InvoiceController extends Controller
 {
@@ -68,14 +69,16 @@ class InvoiceController extends Controller
                     'outstanding_amount'
                 );
 
+            $isWarehouse = auth()->user()->role?->name === 'Warehouse';
+
             return DataTables::of($invoices)
                 ->editColumn('po_number', fn($i) => $i->po_number ?? "PO-{$i->invoice_number}")
                 ->editColumn('invoice_date', fn($i) => $i->invoice_date->format('d M, Y'))
                 ->editColumn('status', fn($i) => $this->statusBadge($i->status))
-                ->editColumn('amount',            fn($i) => '₹' . number_format($i->amount, 2))
-                ->editColumn('billing_amount',    fn($i) => '₹' . number_format($i->billing_amount, 2))
-                ->editColumn('collected_amount',  fn($i) => '₹' . number_format($i->collected_amount, 2))
-                ->editColumn('outstanding_amount', fn($i) => '₹' . number_format($i->outstanding_amount, 2))
+                ->editColumn('amount',            fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->amount, 2))
+                ->editColumn('billing_amount',    fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->billing_amount, 2))
+                ->editColumn('collected_amount',  fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->collected_amount, 2))
+                ->editColumn('outstanding_amount', fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->outstanding_amount, 2))
                 ->addColumn('action', fn($i) => view('invoices.buttons', ['invoice' => $i]))
                 ->rawColumns(['status', 'action'])
                 ->make(true);

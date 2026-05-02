@@ -23,11 +23,11 @@
                 <th>By</th>
                 <th class="text-end">Amount</th>
                 <th>Ref. No.</th>
-                <th class="text-end">A: PO Amt</th>
-                <th class="text-end">B: Billed</th>
-                <th class="text-end">C: Pend. PO</th>
-                <th class="text-end">D: Collected</th>
-                <th class="text-end">E: Outstanding</th>
+                <th class="text-end"> PO Amt</th>
+                <th class="text-end"> Billed</th>
+                <th class="text-end"> Pend. PO</th>
+                <th class="text-end"> Collected</th>
+                <th class="text-end"> Outstanding</th>
                 <th>Remarks</th>
             </tr>
         </thead>

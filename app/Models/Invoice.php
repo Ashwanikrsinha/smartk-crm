@@ -179,7 +179,7 @@ class Invoice extends Model
      *   - billing_entries table (both 'crm' and 'manual' sources)
      * Called by: BillingEntry::booted() on saved/deleted
      */
-    public function recalculateBilling(): void
+    public function recalculateBilling(float $transactionAmount = 0, array $extra = []): void
     {
         $totalBilled = $this->billingEntries()->sum('billed_amount');
 
@@ -189,6 +189,11 @@ class Invoice extends Model
             // Also recalculate E since B changed
             'outstanding_amount' => $totalBilled - $this->attributes['collected_amount'],
         ]);
+
+        // Record log for billing update
+        PoLog::record($this, PoLog::ACTION_BILLED, array_merge([
+            'amount' => $transactionAmount
+        ], $extra));
     }
 
     /**
@@ -198,7 +203,7 @@ class Invoice extends Model
      *   - pdcs table where status = 'cleared' (advance PDC amounts)
      * Called by: Collection::booted() and Pdc status update
      */
-    public function recalculateCollections(): void
+    public function recalculateCollections(float $transactionAmount = 0, array $extra = []): void
     {
         $manualCollections = $this->collections()->sum('collected_amount');
         $clearedPdcs       = $this->pdcs()->where('status', 'cleared')->sum('amount');
@@ -209,6 +214,11 @@ class Invoice extends Model
             'collected_amount'   => $totalCollected,
             'outstanding_amount' => $this->attributes['billing_amount'] - $totalCollected,
         ]);
+
+        // Record log for collection update
+        PoLog::record($this, PoLog::ACTION_COLLECTED, array_merge([
+            'amount' => $transactionAmount
+        ], $extra));
     }
 
     public static function invoiceNumber(): int

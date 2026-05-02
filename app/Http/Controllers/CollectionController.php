@@ -145,6 +145,67 @@ class CollectionController extends Controller
             ->with('success', 'Billing and collection records updated. All dashboards refreshed.');
     }
 
+    public function saveSingle(Request $request)
+    {
+        if (!auth()->user()->isAccounts() && !auth()->user()->isAdmin()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'invoice_id'        => 'required|exists:invoices,id',
+            'billed_amount'     => 'nullable|numeric|min:0',
+            'collected_amount'  => 'nullable|numeric|min:0',
+            'payment_mode'      => 'required|in:cheque,neft,upi,cash',
+            'entry_date'        => 'required|date',
+            'billing_source'    => 'nullable|in:manual,crm',
+            'billing_reference' => 'nullable|string|max:100',
+            'reference_number'  => 'nullable|string|max:100',
+            'remarks'           => 'nullable|string|max:500',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $invoice = Invoice::findOrFail($request->invoice_id);
+
+            // Billed entry
+            $billedAmt = (float) ($request->billed_amount ?? 0);
+            if ($billedAmt > 0) {
+                BillingEntry::create([
+                    'invoice_id'       => $invoice->id,
+                    'billed_amount'    => $billedAmt,
+                    'source'           => $request->billing_source ?? BillingEntry::SOURCE_MANUAL,
+                    'reference_number' => $request->billing_reference,
+                    'remarks'          => $request->remarks ?? 'Manual billing entry',
+                    'entered_by'       => auth()->id(),
+                    'billed_at'        => $request->entry_date,
+                ]);
+            }
+
+            // Collection entry
+            $collectedAmt = (float) ($request->collected_amount ?? 0);
+            if ($collectedAmt > 0) {
+                Collection::create([
+                    'invoice_id'       => $invoice->id,
+                    'collected_amount' => $collectedAmt,
+                    'payment_mode'     => $request->payment_mode,
+                    'reference_number' => $request->reference_number,
+                    'remarks'          => $request->remarks,
+                    'collected_by'     => auth()->id(),
+                    'collected_at'     => $request->entry_date,
+                ]);
+            }
+
+            $invoice->refresh();
+
+            return response()->json([
+                'success'          => true,
+                'billing_amount'   => $invoice->billing_amount,
+                'collected_amount' => $invoice->collected_amount,
+                'pending_po'       => $invoice->pending_po_amount,
+                'outstanding'      => $invoice->outstanding_amount,
+            ]);
+        });
+    }
+
     // -------------------------------------------------------
     // AJAX — collection history for a specific PO
     // -------------------------------------------------------
@@ -164,6 +225,9 @@ class CollectionController extends Controller
                 ->get(),
             'cleared_pdcs' => $invoice->pdcs()
                 ->where('status', 'cleared')
+                ->get(),
+            'logs' => $invoice->logs()
+                ->with('user:id,username')
                 ->get(),
         ]);
     }

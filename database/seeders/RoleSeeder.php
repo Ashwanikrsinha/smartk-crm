@@ -217,11 +217,13 @@ class RoleSeeder extends Seeder
                 // Dispatch queue
                 'browse_dispatch_queue',
                 'browse_inventory',
+                'view_all_orders',
 
                 // Dispatch logs
-                'create_dispatch_queue',
-                'edit_dispatch_queue',
-                'show_dispatch_queue',
+                'browse_dispatches',
+                'create_dispatches',
+                'edit_dispatches',
+                'show_dispatches',
             ],
 
             // --------------------------------------------------

@@ -1,5 +1,5 @@
 @if ($invoice->isApproved())
-    <div class="bg-white rounded shadow-sm p-4 mb-4">
+    <div class="bg-white rounded shadow-sm p-4 mb-4" id="dispatch-history">
 
         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
             <h6 class="fw-bold mb-0">
@@ -7,10 +7,10 @@
                 Dispatch History
                 <span class="badge bg-secondary ms-1">{{ $invoice->dispatches->count() }}</span>
             </h6>
-            @if (auth()->user()->hasPermission('browse_dispatch_queue'))
+            @if($invoice->status === 'approved')
                 <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
                     class="btn btn-sm btn-outline-primary">
-                    <i class="feather icon-plus me-1"></i> New Dispatch
+                    <i class="feather icon-plus me-1"></i> Record New Dispatch
                 </a>
             @endif
         </div>

@@ -38,11 +38,17 @@ class Collection extends Model
     protected static function booted(): void
     {
         static::saved(function (Collection $collection) {
-            $collection->invoice->recalculateCollections();
+            $collection->invoice->recalculateCollections($collection->collected_amount, [
+                'payment_mode'     => $collection->payment_mode,
+                'reference_number' => $collection->reference_number,
+                'remarks'          => $collection->remarks,
+            ]);
         });
 
         static::deleted(function (Collection $collection) {
-            $collection->invoice->recalculateCollections();
+            $collection->invoice->recalculateCollections(-$collection->collected_amount, [
+                'remarks' => 'Entry deleted: ' . $collection->remarks,
+            ]);
         });
     }
 }

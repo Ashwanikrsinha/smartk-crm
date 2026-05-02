@@ -40,7 +40,19 @@ class Pdc extends Model
         static::updated(function (Pdc $pdc) {
             // Only recalculate if status changed
             if ($pdc->wasChanged('status')) {
-                $pdc->invoice->recalculateCollections();
+                // If cleared, pass the amount. If it was cleared and now it's not, pass negative.
+                $amount = 0;
+                if ($pdc->status === self::STATUS_CLEARED) {
+                    $amount = $pdc->amount;
+                } elseif ($pdc->getOriginal('status') === self::STATUS_CLEARED) {
+                    $amount = -$pdc->amount;
+                }
+
+                $pdc->invoice->recalculateCollections($amount, [
+                    'payment_mode'     => 'pdc',
+                    'reference_number' => $pdc->cheque_number,
+                    'remarks'          => "PDC {$pdc->pdc_label} marked as {$pdc->status}",
+                ]);
             }
         });
     }

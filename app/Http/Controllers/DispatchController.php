@@ -35,7 +35,11 @@ class DispatchController extends Controller
                 'dispatchedBy:id,username',
                 'items',
             ])
-            ->whereHas('invoice', fn($q) => $q->whereIn('user_id', $teamIds))
+            ->whereHas('invoice', function($q) use ($teamIds, $user) {
+                if (!$user->role?->name === 'Warehouse') {
+                    $q->whereIn('user_id', $teamIds);
+                }
+            })
             ->select('id', 'invoice_id', 'dispatch_number', 'dispatch_date',
                      'bilty_number', 'challan_number', 'vehicle_number', 'dispatched_by');
 
@@ -55,15 +59,36 @@ class DispatchController extends Controller
         }
 
         // For warehouse dashboard — approved POs with pending dispatch
-        $approvedPos = Invoice::with([
+        $query = Invoice::with([
             'customer:id,name,school_code',
             'invoiceItems.product.category',
             'dispatches.items',
         ])
-        ->where('status', Invoice::STATUS_APPROVED)
-        ->whereIn('user_id', $teamIds)
-        ->orderByDesc('invoice_date')
-        ->get(['id', 'po_number', 'invoice_date', 'delivery_due_date', 'customer_id', 'user_id']);
+        ->where('status', Invoice::STATUS_APPROVED);
+
+        // Warehouse sees everything, others see team data
+        if ($user->role?->name !== 'Warehouse') {
+            $query->whereIn('user_id', $teamIds);
+        }
+
+        $approvedPos = $query->orderByDesc('invoice_date')->get();
+
+        // Calculate remaining qty for each PO to filter out fully dispatched ones
+        foreach ($approvedPos as $po) {
+            $dispatched = \App\Models\DispatchItem::whereHas('dispatch', fn($q) => $q->where('invoice_id', $po->id))
+                ->selectRaw('invoice_item_id, SUM(quantity_dispatched) as done')
+                ->groupBy('invoice_item_id')
+                ->get()->keyBy('invoice_item_id');
+
+            foreach ($po->invoiceItems as $item) {
+                $item->remaining_qty = max($item->quantity - ($dispatched[$item->id]->done ?? 0), 0);
+            }
+
+            $po->is_fully_dispatched = $po->invoiceItems->every(fn($i) => $i->remaining_qty <= 0);
+        }
+
+        // Filter out fully dispatched POs
+        $approvedPos = $approvedPos->reject(fn($p) => $p->is_fully_dispatched);
 
         return view('dispatches.index', compact('approvedPos'));
     }
@@ -124,10 +149,23 @@ class DispatchController extends Controller
             'items'             => 'required|array|min:1',
             'items.*.invoice_item_id'       => 'required|exists:invoice_items,id',
             'items.*.product_id'            => 'required|exists:items,id',
-            'items.*.quantity_dispatched'   => 'required|numeric|min:0.01',
+            'items.*.quantity_dispatched'   => 'nullable|numeric|min:0',
         ]);
 
         $invoice = Invoice::findOrFail($request->invoice_id);
+
+        // Check if at least one item has quantity > 0
+        $hasQty = false;
+        foreach ($request->items as $item) {
+            if ((float)($item['quantity_dispatched'] ?? 0) > 0) {
+                $hasQty = true;
+                break;
+            }
+        }
+
+        if (!$hasQty) {
+            return back()->withInput()->with('error', 'Please enter quantity for at least one item to dispatch.');
+        }
 
         DB::transaction(function () use ($request, $invoice) {
             $dispatch = Dispatch::create([
@@ -144,12 +182,13 @@ class DispatchController extends Controller
             ]);
 
             foreach ($request->items as $item) {
-                if ((float)$item['quantity_dispatched'] <= 0) continue;
+                $qty = (float)($item['quantity_dispatched'] ?? 0);
+                if ($qty <= 0) continue;
 
                 $dispatch->items()->create([
                     'invoice_item_id'     => $item['invoice_item_id'],
                     'product_id'          => $item['product_id'],
-                    'quantity_dispatched' => $item['quantity_dispatched'],
+                    'quantity_dispatched' => $qty,
                     'remarks'             => $item['remarks'] ?? null,
                 ]);
             }

@@ -6,14 +6,14 @@ style="z-index: 90;">
     </button>
 
     <h6 class="text-primary d-none d-md-block">
-        <i class="feather icon-grid me-2"></i> 
+        <i class="feather icon-grid me-2"></i>
         {{ config('app.name') }}
     </h6>
 
     <div class="d-flex justify-content-between align-items-center">
 
         {{-- off canvas opener --}}
-        <button class="btn btn-transparent p-0 position-relative me-2 me-lg-3" 
+        <button class="btn btn-transparent p-0 position-relative me-2 me-lg-3"
             data-bs-toggle="offcanvas" data-bs-target="#off-canvas-right" aria-controls="off-canvas-right">
             <span class="p-1 rounded d-inline-block bg-danger position-absolute top-0 end-0"></span>
             <i class="feather icon-bell text-primary"></i>
@@ -33,8 +33,8 @@ style="z-index: 90;">
                 </form>
             </div>
         </div>
-    </div>    
-     
+    </div>
+
 </header>
 
 
@@ -99,7 +99,7 @@ style="z-index: 90;">
                  <i class="feather icon-check-circle fs-4"></i>
                 </div>
              </article>
- 
+
              <article class="bg-warning text-white rounded px-3 py-2 mb-3">
                  <div class="d-flex align-items-center justify-content-between">
                   <div>
@@ -109,8 +109,8 @@ style="z-index: 90;">
                   <i class="feather icon-check-circle fs-4"></i>
                  </div>
               </article>
- 
- 
+
+
         </div>
 
       </div>

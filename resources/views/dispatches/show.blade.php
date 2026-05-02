@@ -29,7 +29,13 @@
                 <tr><th class="text-muted">Dispatch Date</th>
                     <td>{{ $dispatch->dispatch_date->format('d M, Y') }}</td></tr>
                 <tr><th class="text-muted">PO Number</th>
-                    <td><a href="{{ route('invoices.show', $dispatch->invoice) }}">{{ $dispatch->invoice->po_number }}</a></td></tr>
+                    <td>
+                        @if(auth()->user()->role?->name === 'Warehouse')
+                            <strong>{{ $dispatch->invoice->po_number }}</strong>
+                        @else
+                            <a href="{{ route('invoices.show', $dispatch->invoice) }}">{{ $dispatch->invoice->po_number }}</a>
+                        @endif
+                    </td></tr>
                 <tr><th class="text-muted">School</th>
                     <td>{{ $dispatch->invoice->customer->name }}<br>
                         <small class="text-muted">{{ $dispatch->invoice->customer->school_code }}</small></td></tr>

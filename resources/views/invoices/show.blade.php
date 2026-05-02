@@ -208,7 +208,8 @@
         </div>
     @endif
 
-    {{-- ═══ FINANCIAL SUMMARY ════════════════════════════════ --}}
+    {{-- ═══ FINANCIAL SUMMARY (Hidden for Warehouse) ════════════════════════════════ --}}
+    @if(auth()->user()->role?->name !== 'Warehouse')
     <div class="row g-3 mb-4">
         @php
             $cards = [
@@ -228,6 +229,7 @@
             </div>
         @endforeach
     </div>
+    @endif
 
     <div class="row g-3">
 
@@ -320,8 +322,10 @@
                                 <th>#</th>
                                 <th>Product</th>
                                 <th class="text-end">Qty</th>
+                                @if(auth()->user()->role?->name !== 'Warehouse')
                                 <th class="text-end">Rate</th>
                                 <th class="text-end">Amount</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -335,22 +339,27 @@
                                         @endif
                                     </td>
                                     <td class="text-end">{{ $item->quantity }}</td>
+                                    @if(auth()->user()->role?->name !== 'Warehouse')
                                     <td class="text-end">₹{{ number_format($item->rate, 2) }}</td>
                                     <td class="text-end">₹{{ number_format($item->amount, 2) }}</td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
+                        @if(auth()->user()->role?->name !== 'Warehouse')
                         <tfoot class="table-light fw-bold">
                             <tr>
                                 <td colspan="4" class="text-end">Total PO Amount</td>
                                 <td class="text-end">₹{{ number_format($invoice->amount, 2) }}</td>
                             </tr>
                         </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
 
-            {{-- Collection history --}}
+            {{-- Collection history (Hidden for Warehouse) --}}
+            @if(auth()->user()->role?->name !== 'Warehouse')
             @if ($invoice->collections->count())
                 <div class="bg-white rounded shadow-sm p-4 mb-3">
                     <h6 class="fw-bold border-bottom pb-2 mb-3">Collection History</h6>
@@ -375,6 +384,8 @@
             @endif
 
             @include('invoices.partials.po-log', ['invoice' => $invoice])
+            @endif
+
             @include('invoices.partials.dispatch-history', ['invoice' => $invoice])
 
             {{-- Remarks / Terms --}}

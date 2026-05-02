@@ -30,8 +30,91 @@ class DashboardController extends Controller
             return $this->accountsDashboard($request, $user);
         }
 
+        if ($user->role?->name === 'Warehouse') {
+            return $this->warehouseDashboard($request, $user);
+        }
+
         // Fallback for Warehouse / other roles
         return view('dashboard.default');
+    }
+
+    private function warehouseDashboard(Request $request, User $user)
+    {
+        $year      = $request->input('year', date('Y'));
+        $month     = $request->input('month');
+        $dateFrom  = $request->input('date_from');
+        $dateTo    = $request->input('date_to');
+
+        $totalOrderedQty = 0;
+        $totalDoneQty    = 0;
+
+        // Approved POs only for warehouse.
+        $query = Invoice::with([
+                'customer:id,name,school_code',
+                'invoiceItems.product.category',
+                'invoiceItems.unit',
+                'dispatches.items'
+            ])
+            ->where('status', Invoice::STATUS_APPROVED);
+
+        // Apply filters
+        if ($month) {
+            $query->whereYear('invoice_date', substr($month, 0, 4))
+                  ->whereMonth('invoice_date', substr($month, 5, 2));
+        } elseif ($dateFrom && $dateTo) {
+            $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        } else {
+            $query->whereYear('invoice_date', $year);
+        }
+
+        $allRows = $query->orderBy('delivery_due_date', 'asc')->get();
+
+        // Calculate remaining qty for each item (WE NEED THIS FOR ALL TO CALCULATE TOTALS)
+        foreach ($allRows as $invoice) {
+            $dispatched = \App\Models\DispatchItem::whereHas('dispatch', fn($q) => $q->where('invoice_id', $invoice->id))
+                ->selectRaw('invoice_item_id, SUM(quantity_dispatched) as done')
+                ->groupBy('invoice_item_id')
+                ->get()->keyBy('invoice_item_id');
+
+            foreach ($invoice->invoiceItems as $item) {
+                $item->done_qty = (float)($dispatched[$item->id]->done ?? 0);
+                $item->remaining_qty = round((float)$item->quantity - $item->done_qty, 3);
+                if ($item->remaining_qty < 0) $item->remaining_qty = 0;
+
+                $totalOrderedQty += (float)$item->quantity;
+                $totalDoneQty    += $item->done_qty;
+            }
+
+            $invoice->is_fully_dispatched = $invoice->invoiceItems->every(fn($i) => $i->remaining_qty <= 0);
+        }
+
+        $totalPendingQty = max($totalOrderedQty - $totalDoneQty, 0);
+
+        // Filter rows for table (only those with something left to dispatch)
+        // Since we need pagination, we should ideally do this filtering in the query,
+        // but because remaining_qty is calculated in PHP, we'll paginate the collection.
+        $filteredRows = $allRows->reject(fn($i) => $i->is_fully_dispatched);
+
+        $perPage = 15;
+        $page = $request->input('page', 1);
+        $rows = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filteredRows->forPage($page, $perPage),
+            $filteredRows->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('dashboard.warehouse', compact(
+            'rows',
+            'totalOrderedQty',
+            'totalDoneQty',
+            'totalPendingQty',
+            'year',
+            'month',
+            'dateFrom',
+            'dateTo'
+        ));
     }
 
     // ═══════════════════════════════════════════════════

@@ -3,7 +3,7 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">Collections & Billing</h5>
-            <small class="text-muted">Update billing (B) and collection (D) per order</small>
+            <small class="text-muted">Update billing   and collection   per order</small>
         </div>
         <a href="{{ route('reports.export', request()->all()) }}" class="btn btn-sm btn-outline-success">
             <i class="feather icon-download me-1"></i> Export
@@ -52,7 +52,7 @@
 
     {{-- ═══ SUMMARY WIDGETS ════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-        @foreach ([['A: PO Amount', $totals['po_amount'], 'warning'], ['B: Total Billed', $totals['billing_amount'], 'info'], ['C: Pending PO', $totals['pending_po'], 'secondary'], ['D: Collected', $totals['collected'], 'success'], ['E: Outstanding', $totals['outstanding'], 'danger']] as [$label, $val, $color])
+        @foreach ([['PO Amount', $totals['po_amount'], 'warning'], ['Total Billed', $totals['billing_amount'], 'info'], [' Pending PO', $totals['pending_po'], 'secondary'], [' Collected', $totals['collected'], 'success'], [' Outstanding', $totals['outstanding'], 'danger']] as [$label, $val, $color])
             <div class="col-6 col-lg">
                 <div class="bg-white rounded shadow-sm p-3 text-center border-top border-{{ $color }} border-3">
                     <h5 class="fw-bold text-{{ $color }} mb-1">₹{{ number_format($val, 0) }}</h5>
@@ -66,7 +66,7 @@
     <div class="bg-white rounded shadow-sm p-3">
         <h6 class="fw-bold border-bottom pb-2 mb-0">
             <i class="feather icon-list me-2 text-primary"></i>
-            Order-wise — Click a row to update Billing (B) or Collection (D)
+            Order-wise — Click a row to update Billing   or Collection
         </h6>
 
         <div class="table-responsive">
@@ -76,15 +76,15 @@
                         <th>PO Number</th>
                         <th>SP</th>
                         <th>School</th>
-                        <th class="text-end text-warning">A: PO Amt</th>
+                        <th class="text-end text-warning">PO Amt</th>
                         <th class="text-end text-info">
-                            B: Billed <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                            Billed <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
                         </th>
-                        <th class="text-end text-secondary">C: Pend. PO</th>
+                        <th class="text-end text-secondary"> Pend. PO</th>
                         <th class="text-end text-success">
-                            D: Collected <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                             Collected <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
                         </th>
-                        <th class="text-end text-danger">E: Outstanding</th>
+                        <th class="text-end text-danger"> Outstanding</th>
                         <th class="text-center">Entry</th>
                     </tr>
                 </thead>
@@ -142,20 +142,20 @@
                                     </div>
 
                                     <div class="row g-2">
-                                        {{-- B: Billed amount input --}}
+                                        {{-- Billed amount input --}}
                                         <div class="col-lg-2">
                                             <label class="form-label small mb-1 text-info fw-bold">
-                                                B: Add Billing Amount (₹)
+                                                Add Billing Amount (₹)
                                             </label>
                                             <input type="number" step="0.01" min="0"
                                                 class="form-control form-control-sm billed-input"
                                                 data-id="{{ $row->id }}" placeholder="0.00">
                                         </div>
 
-                                        {{-- D: Collection amount input --}}
+                                        {{--  Collection amount input --}}
                                         <div class="col-lg-2">
                                             <label class="form-label small mb-1 text-success fw-bold">
-                                                D: Add Collection Amount (₹)
+                                                 Add Collection Amount (₹)
                                             </label>
                                             <input type="number" step="0.01" min="0"
                                                 class="form-control form-control-sm collected-input"
@@ -163,7 +163,7 @@
                                         </div>
 
                                         {{-- Payment Mode --}}
-                                        <div class="col-lg-1">
+                                        <div class="col-lg-2">
                                             <label class="form-label small mb-1">Payment Mode</label>
                                             <select class="form-control form-control-sm payment-mode"
                                                 data-id="{{ $row->id }}">
@@ -175,7 +175,7 @@
                                         </div>
 
                                         {{-- Billing Source --}}
-                                        <div class="col-lg-1">
+                                        <div class="col-lg-2">
                                             <label class="form-label small mb-1">Bill Source</label>
                                             <select class="form-control form-control-sm billing-source"
                                                 data-id="{{ $row->id }}">
@@ -200,7 +200,7 @@
                                         </div>
 
                                         {{-- Date --}}
-                                        <div class="col-lg-1">
+                                        <div class="col-lg-2">
                                             <label class="form-label small mb-1">Date <span
                                                     class="text-danger">*</span></label>
                                             <input type="date" class="form-control form-control-sm entry-date"
@@ -230,6 +230,31 @@
                                             </span>
                                             <span
                                                 class="entry-error-{{ $row->id }} text-danger small ms-2 d-none"></span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Recent Logs for this PO --}}
+                                    <div class="mt-3 border-top pt-2">
+                                        <h6 class="small fw-bold text-muted mb-2">Recent Activity Logs (Ledger)</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered bg-white mb-0" style="font-size:0.75rem">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Action</th>
+                                                        <th class="text-end">Amount</th>
+                                                        <th class="text-end">PO Amt</th>
+                                                        <th class="text-end text-info">Billed</th>
+                                                        <th class="text-end text-success">Collected</th>
+                                                        <th class="text-end text-danger">Outstanding</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="logs-body-{{ $row->id }}">
+                                                    <tr>
+                                                        <td colspan="7" class="text-center py-2 text-muted">Loading logs...</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -274,7 +299,43 @@
                 var $panel = $('#entry-panel-' + id);
                 $panel.toggleClass('d-none');
                 $(this).find('i').toggleClass('icon-plus-circle icon-minus-circle');
+
+                if (!$panel.hasClass('d-none')) {
+                    fetchLogs(id);
+                }
             });
+
+            function fetchLogs(id) {
+                var $body = $('#logs-body-' + id);
+                $body.html('<tr><td colspan="7" class="text-center py-2 text-muted">Loading logs...</td></tr>');
+
+                $.get('/collections/invoice/' + id, function(res) {
+                    if (!res.logs || res.logs.length === 0) {
+                        $body.html('<tr><td colspan="7" class="text-center py-2 text-muted">No logs found.</td></tr>');
+                        return;
+                    }
+
+                    var html = '';
+                    res.logs.forEach(function(log) {
+                        var date = new Date(log.created_at).toLocaleDateString('en-IN', {
+                            day: '2-digit', month: 'short', year: 'numeric'
+                        });
+                        var actionLabel = log.action.charAt(0).toUpperCase() + log.action.slice(1);
+                        var amount = log.amount > 0 ? '₹' + formatNum(log.amount) : '—';
+
+                        html += '<tr>' +
+                            '<td>' + date + '</td>' +
+                            '<td>' + actionLabel + '</td>' +
+                            '<td class="text-end fw-bold">' + amount + '</td>' +
+                            '<td class="text-end">₹' + formatNum(log.snapshot_po_amount) + '</td>' +
+                            '<td class="text-end text-info">₹' + formatNum(log.snapshot_billed_amount) + '</td>' +
+                            '<td class="text-end text-success">₹' + formatNum(log.snapshot_collected) + '</td>' +
+                            '<td class="text-end text-danger fw-bold">₹' + formatNum(log.snapshot_outstanding) + '</td>' +
+                        '</tr>';
+                    });
+                    $body.html(html);
+                });
+            }
 
             $(document).on('click', '.cancel-entry-btn', function() {
                 var id = $(this).data('id');
@@ -336,6 +397,7 @@
                             .toggleClass('text-success', res.outstanding <= 0);
 
                         $ok.removeClass('d-none');
+                        fetchLogs(id); // Refresh logs
                         resetPanel(id);
                         $btn.prop('disabled', false).html(
                             '<i class="feather icon-save me-1"></i> Save Entry');

@@ -149,4 +149,18 @@ class ReportsController extends Controller
             $filename
         );
     }
+
+    public function exportPoLog(Request $request, $invoiceId = null)
+    {
+        if(!auth()->user()->hasPermission('export_reports')) {
+            return back()->with('error', 'You do not have permission to export reports.');
+        }
+
+        $filename = 'SmartK_PO_Logs_' . ($invoiceId ? "Invoice_{$invoiceId}_" : "All_") . date('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(
+            new \App\Exports\PoLogExport($invoiceId, $request->all()),
+            $filename
+        );
+    }
 }
