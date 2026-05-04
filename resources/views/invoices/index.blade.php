@@ -54,11 +54,13 @@
                     },
                     {
                         data: 'customer.name',
-                        name: 'customer.name'
+                        name: 'customer.name',
+                        sortable: false
                     },
                     {
                         data: 'user.username',
-                        name: 'user.username'
+                        name: 'user.username',
+                        sortable: false
                     },
                     {
                         data: 'amount',

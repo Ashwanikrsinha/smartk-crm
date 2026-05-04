@@ -70,7 +70,7 @@
 
 <div class="row">
 
-    <div class="col-lg-6 mb-3">
+    <div class="col-lg-5 mb-3">
         <label class="form-label">School Address</label>
         <input type="text" name="address" class="form-control" value="{{ $customer->address ?? old('address') }}"
             placeholder="Street / Area">
@@ -93,7 +93,7 @@
             placeholder="City" required>
     </div>
 
-    <div class="col-lg-1 mb-3">
+    <div class="col-lg-2 mb-3">
         <label class="form-label">Pin Code</label>
         <input type="text" name="pin_code" class="form-control" value="{{ $customer->pin_code ?? old('pin_code') }}"
             placeholder="6-digit" maxlength="6">

@@ -302,10 +302,14 @@
         @endif
 
         {{-- Notifications (all roles) --}}
+        @php $unreadCount = auth()->user()->unreadNotifications->count(); @endphp
         <a href="{{ route('notifications.index') }}"
-            class="list-group-item list-group-item-action border-0
+            class="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center
            {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
-            <i class="feather icon-bell me-2"></i> Notifications
+            <span><i class="feather icon-bell me-2"></i> Notifications</span>
+            @if($unreadCount > 0)
+                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
+            @endif
         </a>
 
     </section>

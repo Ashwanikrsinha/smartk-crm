@@ -15,7 +15,9 @@ style="z-index: 90;">
         {{-- off canvas opener --}}
         <button class="btn btn-transparent p-0 position-relative me-2 me-lg-3"
             data-bs-toggle="offcanvas" data-bs-target="#off-canvas-right" aria-controls="off-canvas-right">
-            <span class="p-1 rounded d-inline-block bg-danger position-absolute top-0 end-0"></span>
+            @if(auth()->user()->unreadNotifications->count() > 0)
+                <span class="p-1 rounded d-inline-block bg-danger position-absolute top-0 end-0"></span>
+            @endif
             <i class="feather icon-bell text-primary"></i>
         </button>
 
@@ -45,6 +47,57 @@ style="z-index: 90;">
   </div>
   <div class="offcanvas-body">
 
+    @php
+        $user = auth()->user();
+        $unreadCount = $user->unreadNotifications->count();
+        $recentNotifications = $user->unreadNotifications->take(5);
+    @endphp
+
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Unread Notifications</h6>
+            <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
+        </div>
+
+        @if($unreadCount > 0)
+            <div class="list-group list-group-flush mb-3">
+                @foreach($recentNotifications as $notification)
+                    <div class="list-group-item px-0 py-2 border-0 border-bottom">
+                        <div class="d-flex w-100 justify-content-between mb-1">
+                            <small class="text-primary fw-bold">
+                                @if ($notification->type == 'App\Notifications\NewTaskNotification') Task
+                                @elseif ($notification->type == 'App\Notifications\NewTaskCommentNotification') Comment
+                                @elseif (in_array($notification->type, ['App\Notifications\NewLeaveNotification', 'App\Notifications\LeaveUpdateNotification'])) Leave
+                                @else Notification @endif
+                            </small>
+                            <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                        </div>
+                        <p class="mb-1 small text-dark">
+                            @if ($notification->type == 'App\Notifications\NewTaskNotification')
+                                {{ $notification->data['assignor_name'] ?? 'System' }} assigned Task #{{ $notification->data['task_number'] }}
+                            @elseif ($notification->type == 'App\Notifications\NewTaskCommentNotification')
+                                {{ $notification->data['comment_by'] ?? 'User' }} commented on Task #{{ $notification->data['task_number'] }}
+                            @elseif ($notification->type == 'App\Notifications\NewLeaveNotification')
+                                {{ $notification->data['leave_by'] ?? 'User' }} applied for Leave #{{ $notification->data['leave_number'] }}
+                            @elseif ($notification->type == 'App\Notifications\LeaveUpdateNotification')
+                                Leave #{{ $notification->data['leave_number'] }} is now {{ $notification->data['status'] }}
+                            @endif
+                        </p>
+                    </div>
+                @endforeach
+            </div>
+            <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-primary w-100">View All Notifications</a>
+        @else
+            <div class="text-center py-4">
+                <i class="feather icon-bell-off fs-1 text-muted mb-2"></i>
+                <p class="text-muted small">No new notifications</p>
+                <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-outline-secondary">Notification History</a>
+            </div>
+        @endif
+    </div>
+
+    <hr>
+
     <ul class="nav justify-content-center border rounded px-2 py-1 mb-3" id="pills-tab" role="tablist">
         <li class="nav-item w-50" role="presentation">
           <button class="badge bg-primary w-100 active border-0 py-2" data-bs-toggle="pill" data-bs-target="#assigned-tasks" type="button" role="tab">Assigned Tasks</button>
@@ -54,13 +107,29 @@ style="z-index: 90;">
         </li>
       </ul>
 
+      @php
+        // Get dynamic task counts for the current user
+        $assignedCompleted = \App\Models\Task::where('assignee_id', $user->id)->whereNotNull('completed_at')->count();
+        $assignedPending   = \App\Models\Task::where('assignee_id', $user->id)->whereNull('completed_at')->count();
+
+        $selfCompleted = \App\Models\Task::where('assignor_id', $user->id)->where('assignee_id', $user->id)->whereNotNull('completed_at')->count();
+        $selfPending   = \App\Models\Task::where('assignor_id', $user->id)->where('assignee_id', $user->id)->whereNull('completed_at')->count();
+
+        // Leaves - if manager, show pending leaves of team
+        $pendingLeaves = 0;
+        if($user->isSalesManager() || $user->isAdmin()){
+            $teamIds = $user->teamMemberIds();
+            $pendingLeaves = \App\Models\Leave::whereIn('user_id', $teamIds)->where('status', 'pending')->count();
+        }
+      @endphp
+
       <div class="tab-content">
 
         <div class="tab-pane fade show active" id="assigned-tasks" role="tabpanel">
             <article class="bg-success text-white rounded px-3 py-2 mb-3">
                <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h5 class="mb-1">15</h5>
+                    <h5 class="mb-1">{{ $assignedCompleted }}</h5>
                     <h6 class="mb-0">Completed</h6>
                 </div>
                 <i class="feather icon-check-circle fs-4"></i>
@@ -70,30 +139,31 @@ style="z-index: 90;">
             <article class="bg-warning text-white rounded px-3 py-2 mb-3">
                 <div class="d-flex align-items-center justify-content-between">
                  <div>
-                     <h5 class="mb-1">12</h5>
+                     <h5 class="mb-1">{{ $assignedPending }}</h5>
                      <h6 class="mb-0">Pending</h6>
                  </div>
-                 <i class="feather icon-check-circle fs-4"></i>
+                 <i class="feather icon-alert-circle fs-4"></i>
                 </div>
              </article>
 
-
-             <article class="alert-primary rounded px-3 py-2 mb-3">
+             @if($pendingLeaves > 0)
+             <article class="alert-primary rounded px-3 py-2 mb-3 border-0">
                 <div class="d-flex align-items-center justify-content-between">
                  <div>
-                     <h5 class="mb-1">5</h5>
-                     <h6 class="mb-0">Employee Leaves</h6>
+                     <h5 class="mb-1">{{ $pendingLeaves }}</h5>
+                     <h6 class="mb-0">Pending Leaves</h6>
                  </div>
-                 <i class="feather icon-check-circle fs-4"></i>
+                 <i class="feather icon-calendar fs-4"></i>
                 </div>
              </article>
+             @endif
         </div>
 
         <div class="tab-pane fade" id="self-tasks" role="tabpanel">
             <article class="bg-success text-white rounded px-3 py-2 mb-3">
                 <div class="d-flex align-items-center justify-content-between">
                  <div>
-                     <h5 class="mb-1">15</h5>
+                     <h5 class="mb-1">{{ $selfCompleted }}</h5>
                      <h6 class="mb-0">Completed</h6>
                  </div>
                  <i class="feather icon-check-circle fs-4"></i>
@@ -103,14 +173,12 @@ style="z-index: 90;">
              <article class="bg-warning text-white rounded px-3 py-2 mb-3">
                  <div class="d-flex align-items-center justify-content-between">
                   <div>
-                      <h5 class="mb-1">12</h5>
+                      <h5 class="mb-1">{{ $selfPending }}</h5>
                       <h6 class="mb-0">Pending</h6>
                   </div>
-                  <i class="feather icon-check-circle fs-4"></i>
+                  <i class="feather icon-alert-circle fs-4"></i>
                  </div>
               </article>
-
-
         </div>
 
       </div>

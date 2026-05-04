@@ -30,12 +30,12 @@
                 { data: 'bill_number', name: 'bill_number' },
                 { data: 'bill_date', name: 'bill_date' },
                 { data: 'type', name: 'type' },
-                { data: 'customer.name', name: 'customer.name' },
+                { data: 'customer.name', name: 'customer.name', sortable: false },
                 { data: 'total_amount', name: 'total_amount' },
                 { data: 'status', name: 'status', searchable: false },
                 { data: 'action', 'orderable': false, searchable: false}
             ],
         });
-    });   
+    });
 </script>
 @endpush

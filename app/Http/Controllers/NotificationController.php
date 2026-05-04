@@ -14,7 +14,7 @@ class NotificationController extends Controller
      */
     public function __invoke(Request $request)
     {  
-       $notifications = auth()->user()->unreadNotifications; 
+       $notifications = auth()->user()->notifications()->paginate(20); 
        return view('notifications.index', compact('notifications'));
     }
 
