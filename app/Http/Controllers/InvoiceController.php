@@ -28,6 +28,10 @@ use App\Jobs\SendPoMailToAccounts;
 use App\Http\Requests\InvoiceStoreRequest;
 use App\Http\Requests\InvoiceUpdateRequest;
 use App\Models\PoLog;
+use App\Notifications\PoAwaitingBm;
+use App\Notifications\PoBmRejected;
+use App\Notifications\PoFullyApproved;
+use App\Notifications\PoRejected;
 
 class InvoiceController extends Controller
 {
@@ -52,7 +56,7 @@ class InvoiceController extends Controller
 
             $invoices = Invoice::with([
                 'customer:id,name,school_code',
-                'user:id,username',
+                'user:id,username,emp_code',
             ])
                 ->whereIn('user_id', $teamIds)
                 ->select(
@@ -74,6 +78,7 @@ class InvoiceController extends Controller
             return DataTables::of($invoices)
                 ->editColumn('po_number', fn($i) => $i->po_number ?? "PO-{$i->invoice_number}")
                 ->editColumn('invoice_date', fn($i) => $i->invoice_date->format('d M, Y'))
+                ->editColumn('user_name_emp_code', fn($i) => $i->user->username . " ({$i->user->emp_code})")
                 ->editColumn('status', fn($i) => $this->statusBadge($i->status))
                 ->editColumn('amount',            fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->amount, 2))
                 ->editColumn('billing_amount',    fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->billing_amount, 2))
@@ -95,9 +100,15 @@ class InvoiceController extends Controller
     {
         DB::transaction(function () use ($request) {
 
-            $status = $request->action === 'submit'
-                ? Invoice::STATUS_SUBMITTED
-                : Invoice::STATUS_DRAFT;
+            if (auth()->user()->isSalesPerson()) {
+                $status = $request->action === 'submit'
+                    ? Invoice::STATUS_SUBMITTED
+                    : Invoice::STATUS_DRAFT;
+            } else {
+                $status = $request->action === 'submit'
+                    ? Invoice::STATUS_SM_APPROVED
+                    : Invoice::STATUS_DRAFT;
+            }
             $submitedAt = $request->action === 'submit' ? now() : null;
             $invoice = Invoice::create([
                 'invoice_number'   => Invoice::invoiceNumber(),
@@ -122,6 +133,9 @@ class InvoiceController extends Controller
 
             if ($request->filled('attachments.0')) {
                 $invoice->createInvoiceAttachments($request);
+            }
+            if (!auth()->user()->isSalesPerson()) {
+                return $this->approve($request,$invoice);
             }
         });
 
@@ -358,41 +372,124 @@ class InvoiceController extends Controller
     //         "PO {$invoice->po_number} approved. Document saved. Mails queued for School, SP, and Accounts."
     //     );
     // }
+    // public function approve(Request $request, Invoice $invoice)
+    // {
+    //     $this->authorize('approve', $invoice);
+
+    //     if (!$invoice->isSubmitted()) {
+    //         return back()->with('error', 'Only submitted orders can be approved.');
+    //     }
+
+    //     $invoice->update([
+    //         'status'           => Invoice::STATUS_APPROVED,
+    //         'approved_by'      => auth()->id(),
+    //         'approved_at'      => now(),
+    //         'rejection_reason' => null,
+    //     ]);
+
+    //     PoLog::record($invoice, PoLog::ACTION_APPROVED, [
+    //         'remarks' => 'PO approved by ' . auth()->user()->username,
+    //     ]);
+
+    //     // Generate document + queue mails
+    //     try {
+    //         app(PoDocumentService::class)->generate($invoice);
+    //     } catch (\Throwable $e) {
+    //         Log::error('PO DOCX generation failed on approval', [
+    //             'invoice_id' => $invoice->id, 'error' => $e->getMessage()
+    //         ]);
+    //     }
+
+    //     $invoice->user->notify(new PoApproved($invoice));
+
+    //     dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
+    //     dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
+    //     dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
+
+    //     return back()->with('success', "PO {$invoice->po_number} approved.");
+    // }
     public function approve(Request $request, Invoice $invoice)
     {
         $this->authorize('approve', $invoice);
 
-        if (!$invoice->isSubmitted()) {
-            return back()->with('error', 'Only submitted orders can be approved.');
+        if ($invoice->isSubmitted()) {
+            // SM approves → moves to sm_approved, waits for BM
+            $invoice->update([
+                'status'      => Invoice::STATUS_SM_APPROVED,
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+                'rejection_reason'    => null,
+                'sm_rejection_reason' => null,
+            ]);
+
+            PoLog::record($invoice, PoLog::ACTION_APPROVED, [
+                'remarks' => 'SM approved by ' . auth()->user()->username . '. Awaiting BM approval.',
+            ]);
+
+            // Notify BM(s) — all users with BusinessManager role
+            User::where('role_id', function ($q) {
+                $q->select('id')->from('roles')->where('name', 'BusinessManager');
+            })->get()->each(function ($bm) use ($invoice) {
+
+                $bm->notify(new PoAwaitingBm($invoice));
+            });
+
+            // Notify SP
+            $invoice->user->notify(new PoApproved($invoice));
+
+            return back()->with(
+                'success',
+                "PO {$invoice->po_number} approved by SM. Awaiting Business Manager final approval."
+            );
+        }
+
+        // Admin acting at SM level on a submitted PO
+        // if (auth()->user()->isAdmin() && $invoice->isSubmitted()) {
+        //     return $this->smApproveAction($invoice);
+        // }
+
+        return back()->with('error', 'Cannot approve at this stage.');
+    }
+
+    public function bmApprove(Request $request, Invoice $invoice)
+    {
+        $this->authorize('approve', $invoice);
+
+        if (!$invoice->isSmApproved() && !(auth()->user()->isAdmin() && $invoice->isSubmitted())) {
+            return back()->with('error', 'PO must be SM-approved before BM can approve.');
         }
 
         $invoice->update([
             'status'           => Invoice::STATUS_APPROVED,
-            'approved_by'      => auth()->id(),
-            'approved_at'      => now(),
+            'bm_approved_by'   => auth()->id(),
+            'bm_approved_at'   => now(),
             'rejection_reason' => null,
         ]);
 
         PoLog::record($invoice, PoLog::ACTION_APPROVED, [
-            'remarks' => 'PO approved by ' . auth()->user()->username,
+            'remarks' => 'Final approval by BM: ' . auth()->user()->username,
         ]);
 
-        // Generate document + queue mails
+        // Generate document and send mails — only on FULL approval
         try {
             app(PoDocumentService::class)->generate($invoice);
         } catch (\Throwable $e) {
-            Log::error('PO DOCX generation failed on approval', [
-                'invoice_id' => $invoice->id, 'error' => $e->getMessage()
+            Log::error('PO DOCX generation failed', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage()
             ]);
         }
 
-        $invoice->user->notify(new PoApproved($invoice));
+        $invoice->user->notify(new PoFullyApproved($invoice));
 
         dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
         dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
         dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
 
-        return back()->with('success', "PO {$invoice->po_number} approved.");
+        return back()->with(
+            'success',
+            "PO {$invoice->po_number} fully approved. Mail sent to school, SP, and Accounts."
+        );
     }
     public function downloadDocument(Invoice $invoice)
     {
@@ -482,6 +579,30 @@ class InvoiceController extends Controller
         }
     }
 
+    // public function reject(Request $request, Invoice $invoice)
+    // {
+    //     $this->authorize('approve', $invoice);
+
+    //     $request->validate([
+    //         'rejection_reason' => 'required|string|min:20',
+    //     ], [
+    //         'rejection_reason.min' => 'Rejection reason must be at least 20 characters.',
+    //     ]);
+
+    //     if (!$invoice->isSubmitted()) {
+    //         return back()->with('error', 'Only submitted orders can be rejected.');
+    //     }
+    //     PoLog::record($invoice, PoLog::ACTION_REJECTED, [
+    //         'remarks' => 'Rejected: ' . $request->rejection_reason,
+    //     ]);
+
+    //     $invoice->update([
+    //         'status'           => Invoice::STATUS_REJECTED,
+    //         'rejection_reason' => $request->rejection_reason,
+    //     ]);
+
+    //     return back()->with('success', "PO {$invoice->po_number} rejected and returned to SP.");
+    // }
     public function reject(Request $request, Invoice $invoice)
     {
         $this->authorize('approve', $invoice);
@@ -493,18 +614,56 @@ class InvoiceController extends Controller
         ]);
 
         if (!$invoice->isSubmitted()) {
-            return back()->with('error', 'Only submitted orders can be rejected.');
+            return back()->with('error', 'Only submitted POs can be rejected by SM.');
         }
-        PoLog::record($invoice, PoLog::ACTION_REJECTED, [
-            'remarks' => 'Rejected: ' . $request->rejection_reason,
-        ]);
 
         $invoice->update([
-            'status'           => Invoice::STATUS_REJECTED,
+            'status'              => Invoice::STATUS_REJECTED,
+            'sm_rejection_reason' => $request->rejection_reason,
+        ]);
+
+        PoLog::record($invoice, PoLog::ACTION_REJECTED, [
+            'remarks' => 'SM rejected: ' . $request->rejection_reason,
+        ]);
+        $invoice->user->notify(new PoRejected($invoice));
+
+        return back()->with('success', "PO {$invoice->po_number} rejected and returned to SP.");
+    }
+
+    // ── BM REJECT (sm_approved → bm_rejected) ────────────────
+
+    public function bmReject(Request $request, Invoice $invoice)
+    {
+        $this->authorize('approve', $invoice);
+
+        $request->validate([
+            'rejection_reason' => 'required|string|min:20',
+        ]);
+
+        if (!$invoice->isSmApproved()) {
+            return back()->with('error', 'Only SM-approved POs can be rejected by BM.');
+        }
+
+        $invoice->update([
+            'status'           => Invoice::STATUS_BM_REJECTED,
             'rejection_reason' => $request->rejection_reason,
         ]);
 
-        return back()->with('success', "PO {$invoice->po_number} rejected and returned to SP.");
+        PoLog::record($invoice, PoLog::ACTION_REJECTED, [
+            'remarks' => 'BM rejected: ' . $request->rejection_reason,
+        ]);
+
+        // Notify SM and SP
+        if ($invoice->approvedBy) {
+
+            $invoice->approvedBy->notify(new PoBmRejected($invoice));
+        }
+        $invoice->user->notify(new PoBmRejected($invoice));
+
+        return back()->with(
+            'success',
+            "PO {$invoice->po_number} returned by BM for correction."
+        );
     }
 
     public function getSchool(Customer $customer): JsonResponse
@@ -555,7 +714,7 @@ class InvoiceController extends Controller
             ->salesPersons()
             ->active()
             ->orderBy('username')
-            ->get(['id', 'username']);
+            ->get(['id', 'username', 'emp_code']);
         return [
             'categories'   => Category::orderBy('name')->get(['id', 'name']),
             'units'        => Unit::orderBy('name')->pluck('name', 'id'),

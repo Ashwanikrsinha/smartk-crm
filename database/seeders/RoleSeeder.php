@@ -231,6 +231,43 @@ class RoleSeeder extends Seeder
             //    Full system access. All permissions.
             // --------------------------------------------------
             'Administrator' => '*', // handled separately below
+
+            'BusinessManager' => [
+                // POs — view all, approve at BM level only
+                'browse_invoices',
+                'show_invoices',
+                'bm_approve_invoices',
+                'view_all_pos',
+
+                // Schools — read only
+                'browse_customers',
+                'show_customers',
+
+                // Visits — read only
+                'browse_visits',
+                'show_visits',
+
+                // Reports — full export
+                'export_reports',
+
+                // Dashboard widgets (same as SM — full financials view)
+                'view_all_data',       // gives full teamMemberIds() scope
+
+                // Bills — view only (not create/edit)
+                'browse_bills',
+
+                // Targets — view only
+                'browse_targets',
+                'show_targets',
+
+                // Leaves — view only
+                'browse_leaves',
+                'show_leaves',
+
+                // Tasks — view only
+                'browse_tasks',
+                'show_tasks',
+            ],
         ];
 
         foreach ($rolePermissions as $roleName => $permissions) {

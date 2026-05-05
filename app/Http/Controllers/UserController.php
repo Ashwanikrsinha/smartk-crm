@@ -41,7 +41,7 @@ class UserController extends Controller
     }
 
     public function create()
-    {   
+    {
         $roles = Role::orderBy('name')->pluck('name', 'id');
         $users = User::active()->orderBy('username')->pluck('username', 'id');
         $departments = Department::orderBy('name')->pluck('name', 'id');
@@ -55,6 +55,8 @@ class UserController extends Controller
         $validatedData = $request->validated();
         $validatedData['password'] = bcrypt($request->password);
         $validatedData['is_disable'] = $request->has('is_disable');
+        // $validatedData['emp_code'] = User::generateEmpCode();
+        $validatedData['emp_code'] = $request->emp_code;
 
         User::create($validatedData);
 
@@ -71,7 +73,7 @@ class UserController extends Controller
     {
 
         $roles = Role::orderBy('name')->pluck('name', 'id');
-        $users = User::active()->orderBy('username')->pluck('username', 'id');
+        $users = User::active()->orderBy('username')->pluck('username', 'id', 'emp_code');
         $departments = Department::orderBy('name')->pluck('name', 'id');
 
         return view('users.edit', compact('user', 'roles', 'users', 'departments'));

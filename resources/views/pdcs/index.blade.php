@@ -33,7 +33,7 @@
                         searchable: false
                     },
                     {
-                        data: 'sp',
+                        data: 'user_name_emp_code',
                         orderable: false,
                         searchable: false
                     },

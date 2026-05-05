@@ -33,7 +33,7 @@ class CollectionController extends Controller
         $month    = $request->input('month');
         $year     = $request->input('year', date('Y'));
 
-        $rows = Invoice::with(['user:id,username', 'customer:id,name,school_code'])
+        $rows = Invoice::with(['user:id,username,emp_code', 'customer:id,name,school_code'])
             ->where('status', Invoice::STATUS_APPROVED)
             ->when($spId,     fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId))
@@ -65,7 +65,7 @@ class CollectionController extends Controller
             'outstanding'      => $rows->sum('outstanding_amount'),
         ];
 
-        $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username']);
+        $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
         $schools = Customer::orderBy('name')->get(['id', 'name', 'school_code']);
 
         return view('collections.index', compact(

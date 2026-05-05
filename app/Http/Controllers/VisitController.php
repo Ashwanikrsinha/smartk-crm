@@ -35,7 +35,7 @@ class VisitController extends Controller
             $teamIds = auth()->user()->teamMemberIds();
             $visits = Visit::with([
                 'customer' => function ($query) { $query->select('id', 'name', 'segment_id'); },
-                'user' => function ($query) { $query->select('id', 'username'); },
+                'user' => function ($query) { $query->select('id', 'username', 'emp_code'); },
                 'purpose'
                 ])
                 ->whereIn('user_id', $teamIds)
@@ -47,6 +47,9 @@ class VisitController extends Controller
                     })
                     ->editColumn('visit_date', function ($visit) {
                         return $visit->visit_date->format('d M, Y');
+                    })
+                    ->editColumn('user_name_emp_code', function ($visit) {
+                        return $visit->user->username . " ({$visit->user->emp_code})";
                     })
                     ->editColumn('customer.name', function ($visit) {
                         return Str::limit($visit->customer->name, 20);

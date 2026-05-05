@@ -13,14 +13,14 @@
 
         <div class="dropdown shadow-sm me-2">
         <button class="btn bg-white dropdown-toggle" type="button" id="settings-dropdown" data-bs-toggle="dropdown">
-          <i class="feather icon-settings"></i>  
+          <i class="feather icon-settings"></i>
         </button>
-    
+
         <div class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="settings-dropdown">
             <a href="{{ route('purposes.index') }}" class="dropdown-item">Purposes</a>
         </div>
       </div>
-    
+
 
       <div class="d-flex align-items-center">
 
@@ -30,11 +30,11 @@
           </span>
           <input type="date" class="form-control" id="visit-date">
         </div>
-        
+
         <a href="{{ route('visits.create') }}" class="btn btn-primary">Visit</a>
-        
+
       </div>
-  
+
     </div>
 
   @endcan
@@ -71,7 +71,7 @@
                 { data: 'id', visible: false, searchable: false },
                 { data: 'visit_number', name: 'visit_number' },
                 { data: 'visit_date', name: 'visit_date' },
-                { data: 'user.username', name: 'user.username', sortable : false },
+                { data: 'user_name_emp_code', name: 'user_name_emp_code', sortable : false },
                 { data: 'customer.name', name: 'customer.name', sortable : false },
                 { data: 'purpose.name', name: 'purpose.name', sortable : false },
                 { data: 'level', name: 'level', sortable : false },
@@ -83,8 +83,8 @@
         $('#visit-date').change(function(){
           table.column(2).search($(this).val()).draw();
       });
-      
-    });   
+
+    });
 
 </script>
 @endpush

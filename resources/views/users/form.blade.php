@@ -6,6 +6,11 @@
         <input type="text" class="form-control" name="username" value="{{ $user->username ?? old('username') }}"
             required>
     </div>
+    <div class="col-lg-6 mb-3">
+        <label for="" class="form-label">Employee Code</label>
+        <input type="text" class="form-control" name="emp_code" value="{{ $user->emp_code ?? old('emp_code') }}"
+            required>
+    </div>
 
 
     <div class="col-lg-6 mb-3">

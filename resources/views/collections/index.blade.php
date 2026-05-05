@@ -18,7 +18,7 @@
                 <select name="sp_id" class="form-control form-control-sm">
                     <option value="">All SPs</option>
                     @foreach ($allSps as $sp)
-                        <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>{{ $sp->username }}
+                        <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>{{ $sp->username }} ({{ $sp->emp_code }})
                         </option>
                     @endforeach
                 </select>

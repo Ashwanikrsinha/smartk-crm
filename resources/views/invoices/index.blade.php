@@ -58,8 +58,8 @@
                         sortable: false
                     },
                     {
-                        data: 'user.username',
-                        name: 'user.username',
+                        data: 'user_name_emp_code',
+                        name: 'user_name_emp_code',
                         sortable: false
                     },
                     {

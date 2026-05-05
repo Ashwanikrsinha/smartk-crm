@@ -124,7 +124,7 @@
                 value="{{ isset($invoice) ? $invoice->customer->pin_code : old('pin_code') }}"
                 placeholder="6-digit pin">
         </div>
-        @if (!auth()->user()->isSalesPerson())
+        {{-- @if (!auth()->user()->isSalesPerson())
             <div class="col-lg-4 mb-3">
                 <label class="form-label">Employee <span class="text-danger">*</span></label>
                 <select name="user_id" id="user-select" class="form-control" required>
@@ -132,12 +132,12 @@
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}"
                             {{ isset($invoice) && $invoice->user_id == $user->id ? 'selected' : '' }}>
-                            {{ $user->username }}
+                            {{ $user->username }} ({{ $user->emp_code }})
                         </option>
                     @endforeach
                 </select>
             </div>
-        @endif
+        @endif --}}
 
         {{-- Visit (optional) --}}
         <div class="col-lg-4 mb-3">

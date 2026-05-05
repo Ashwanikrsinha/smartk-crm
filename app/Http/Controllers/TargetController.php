@@ -23,7 +23,7 @@ class TargetController extends Controller
             $user    = auth()->user();
             $teamIds = $user->teamMemberIds();
 
-            $targets = Target::with('user:id,username')
+            $targets = Target::with('user:id,username,emp_code')
                 ->whereIn('user_id', $teamIds)
                 ->select('id', 'user_id', 'target_amount', 'month', 'year');
 
@@ -53,6 +53,7 @@ class TargetController extends Controller
                                 <div class=\"progress-bar bg-{$color}\" style=\"width:{$pct}%\">{$pct}%</div>
                             </div>";
                 })
+                ->editColumn('user_name_emp_code', fn($t) => $t->user->username . " ({$t->user->emp_code})")
                 ->addColumn('action', fn($t) => view('targets.buttons', ['target' => $t])->render())
                 ->rawColumns(['achievement_pct', 'action'])
                 ->make(true);

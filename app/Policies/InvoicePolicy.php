@@ -105,24 +105,30 @@ class InvoicePolicy
     }
 
     /**
-     * Who can edit a PO?
-     * SP can edit ONLY if:
-     *   - They created it
-     *   - It's in draft or rejected state
-     * SM/Admin can edit any time.
+     * SP edits own POs only in draft/rejected/bm_rejected state.
+     * SM edits team POs any time before BM approval.
+     * Admin edits all.
+     * BM cannot edit.
      */
     public function update(User $user, Invoice $invoice): bool
     {
-        if (!$user->hasPermission('edit_invoices')) {
-            return false;
-        }
+        if (!$user->hasPermission('edit_invoices')) return false;
 
-        // SP can only edit their own POs in editable states
         if ($user->isSalesPerson()) {
             return $invoice->user_id === $user->id && $invoice->isEditable();
         }
 
-        // SM can edit team POs, Admin can edit all
+        if ($user->isSalesManager()) {
+            return in_array($invoice->user_id, $user->teamMemberIds())
+                && in_array($invoice->status, [
+                    Invoice::STATUS_DRAFT,
+                    Invoice::STATUS_SUBMITTED,
+                    Invoice::STATUS_REJECTED,
+                    Invoice::STATUS_BM_REJECTED,
+                ]);
+        }
+
+        // Admin
         return in_array($invoice->user_id, $user->teamMemberIds());
     }
 
@@ -140,16 +146,29 @@ class InvoicePolicy
     }
 
     /**
-     * Who can approve/reject a PO?
-     * Only SM (for their team) and Admin.
+     * SM approves: submitted → sm_approved
+     * BM approves: sm_approved → approved
+     * Each role can only act at their level.
      */
     public function approve(User $user, Invoice $invoice): bool
     {
-        if (!$user->hasPermission('approve_invoices')) {
-            return false;
+        // SM: can approve submitted POs from their team
+        if ($user->isSalesManager() && $user->hasPermission('approve_invoices')) {
+            return $invoice->isSubmitted()
+                && in_array($invoice->user_id, $user->teamMemberIds());
         }
 
-        return in_array($invoice->user_id, $user->teamMemberIds());
+        // BM: can approve sm_approved POs from ANYONE
+        if ($user->isBusinessManager() && $user->hasPermission('bm_approve_invoices')) {
+            return $invoice->isSmApproved();
+        }
+
+        // Admin can do both
+        if ($user->isAdmin()) {
+            return $invoice->isSubmitted() || $invoice->isSmApproved();
+        }
+
+        return false;
     }
     public function export(User $user, Invoice $invoice): bool
     {

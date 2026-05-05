@@ -2,7 +2,11 @@
 @section('content')
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="mb-0">Admin — Marketing Dashboard</h5>
+            @if (auth()->user()->isBusinessManager())
+                <h5 class="mb-0">Business Manager —Dashboard</h5>
+            @else
+                <h5 class="mb-0">Admin — Marketing Dashboard</h5>
+            @endif
             <small class="text-muted">System-wide overview</small>
         </div>
         <div class="d-flex gap-2">

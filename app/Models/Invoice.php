@@ -33,6 +33,8 @@ class Invoice extends Model
     const STATUS_APPROVED  = 'approved';
     const STATUS_REJECTED  = 'rejected';
     const STATUS_EXPIRED  = 'expired';
+    const STATUS_SM_APPROVED = 'sm_approved';
+    const STATUS_BM_REJECTED = 'bm_rejected';
 
     // ── Relationships ───────────────────────────────────────
 
@@ -86,6 +88,10 @@ class Invoice extends Model
     {
         return $this->hasMany(Bill::class, 'invoice_id');
     }
+    public function bmApprovedBy()
+    {
+        return $this->belongsTo(User::class, 'bm_approved_by');
+    }
 
     // ── Status Helpers ──────────────────────────────────────
 
@@ -95,7 +101,10 @@ class Invoice extends Model
             self::STATUS_DRAFT,
             self::STATUS_SUBMITTED,
             self::STATUS_APPROVED,
+            self::STATUS_SM_APPROVED,
             self::STATUS_REJECTED,
+            self::STATUS_BM_REJECTED,
+            self::STATUS_EXPIRED,
         ];
     }
 
@@ -122,7 +131,43 @@ class Invoice extends Model
 
     public function isEditable(): bool
     {
-        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_REJECTED]);
+        return in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_REJECTED,
+            self::STATUS_BM_REJECTED,
+        ]);
+    }
+    public function isBmRejected(): bool  { return $this->status === self::STATUS_BM_REJECTED; }
+    public function isSmApproved(): bool  { return $this->status === self::STATUS_SM_APPROVED; }
+    public function isFullyApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public static function statusColor(string $status): string
+    {
+        return match($status) {
+            self::STATUS_DRAFT       => 'secondary',
+            self::STATUS_SUBMITTED   => 'warning',
+            self::STATUS_SM_APPROVED => 'info',
+            self::STATUS_APPROVED    => 'success',
+            self::STATUS_REJECTED    => 'danger',
+            self::STATUS_BM_REJECTED => 'danger',
+            default                  => 'secondary',
+        };
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match($status) {
+            self::STATUS_DRAFT       => 'Draft',
+            self::STATUS_SUBMITTED   => 'Pending SM',
+            self::STATUS_SM_APPROVED => 'Pending BM',
+            self::STATUS_APPROVED    => 'Approved',
+            self::STATUS_REJECTED    => 'Rejected by SM',
+            self::STATUS_BM_REJECTED => 'Rejected by BM',
+            default                  => ucfirst($status),
+        };
     }
 
     // ── Financial Calculations A / B / C / D / E ────────────

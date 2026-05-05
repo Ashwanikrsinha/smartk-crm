@@ -31,7 +31,7 @@
                             <option value="">All SPs</option>
                             @foreach ($teamMembers as $sp)
                                 <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>
-                                    {{ $sp->username }}
+                                    {{ $sp->username }} ({{ $sp->emp_code }})
                                 </option>
                             @endforeach
                         </select>
@@ -215,8 +215,8 @@
                             </td>
                             <td>{{ $row->invoice_date->format('d M, Y') }}</td>
                             @if (!auth()->user()->isSalesPerson())
-                                <td>{{ $row->user->reportiveTo?->username }}</td>
-                                <td>{{ $row->user->username }}</td>
+                                <td>{{ $row->user->reportiveTo?->username }} ({{ $row->user->reportiveTo?->emp_code }})</td>
+                                <td>{{ $row->user->username }} ({{ $row->user->emp_code }})</td>
                             @endif
                             <td>
                                 {{ $row->customer->name }}

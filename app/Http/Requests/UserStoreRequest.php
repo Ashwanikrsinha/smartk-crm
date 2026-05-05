@@ -25,6 +25,7 @@ class UserStoreRequest extends FormRequest
     {
         return [
             'username' => 'bail|required|unique:users',
+            'emp_code' => 'bail|required|unique:users',
             'email' => 'required|email|unique:users',
             'role_id' => 'required|integer',
             'department_id' => 'required|integer',

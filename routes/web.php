@@ -108,6 +108,10 @@ Route::middleware('auth')->group(function () {
     Route::get('invoices/visits/{customer}',      [Controllers\InvoiceController::class, 'getVisitsBySchool'])->name('invoices.visits');
     Route::get('invoices/item-row-template',      [Controllers\InvoiceController::class, 'itemRowTemplate'])->name('invoices.item-row-template');
 
+    // Business Manager actions
+    Route::patch('invoices/{invoice}/bm/reject',          [Controllers\InvoiceController::class, 'bmReject'])->name('invoices.bm-reject');
+    Route::patch('invoices/{invoice}/bm/approve',          [Controllers\InvoiceController::class, 'bmApprove'])->name('invoices.bm-approve');
+
     // PO workflow actions — BEFORE resource()
     Route::patch('invoices/{invoice}/approve',    [Controllers\InvoiceController::class, 'approve'])->name('invoices.approve');
     Route::patch('invoices/{invoice}/reject',     [Controllers\InvoiceController::class, 'reject'])->name('invoices.reject');

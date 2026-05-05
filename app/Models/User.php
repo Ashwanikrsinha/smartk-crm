@@ -12,7 +12,7 @@ class User extends Authenticatable
 
     protected $guarded = [];
 
-    public $timestamps = false;
+    // public $timestamps = false;
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -24,7 +24,13 @@ class User extends Authenticatable
     // -------------------------------------------------------
     // RELATIONSHIPS
     // -------------------------------------------------------
-
+    public static function generateEmpCode(): string
+    {
+        $year = date('Y');
+        $last = self::whereYear('created_at', $year)->max('id') ?? 0;
+        $seq  = str_pad($last + 1, 4, '0', STR_PAD_LEFT);
+        return "EMP-{$year}-{$seq}";
+    }
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
@@ -82,11 +88,12 @@ class User extends Authenticatable
      */
     public function teamMemberIds(): array
     {
-        if ($this->hasPermission('view_all_data')) {
-            // Administrator
+        // Admin and BM — full system scope
+        if ($this->hasPermission('view_all_data') || $this->isBusinessManager()) {
             return User::pluck('id')->toArray();
         }
 
+        // Sales Manager — self + direct SP reports
         if ($this->hasPermission('view_team_data')) {
             // Sales Manager — self + direct reports
             return User::where('reportive_id', $this->id)
@@ -95,6 +102,7 @@ class User extends Authenticatable
                 ->toArray();
         }
 
+        // Accounts — all users (they see all approved POs)
         if ($this->hasPermission('view_all_orders')) {
             // Accounts team — all users
             return User::pluck('id')->toArray();
@@ -134,6 +142,15 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role?->name === 'Administrator';
+    }
+
+    /**
+     * Is this user a Business Manager?
+     * BM sees ALL data system-wide — no team scoping.
+     */
+    public function isBusinessManager(): bool
+    {
+        return $this->role?->name === 'BusinessManager';
     }
 
     public function scopeActive($query)

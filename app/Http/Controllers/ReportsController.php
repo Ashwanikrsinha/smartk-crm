@@ -41,8 +41,8 @@ class ReportsController extends Controller
 
         // ── Build query ────────────────────────────────────
         $query = Invoice::with([
-            'user:id,username,reportive_id',
-            'user.reportiveTo:id,username',
+            'user:id,username,reportive_id,emp_code',
+            'user.reportiveTo:id,username,emp_code',
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
         ])
@@ -98,7 +98,7 @@ class ReportsController extends Controller
             ->salesPersons()
             ->active()
             ->orderBy('username')
-            ->get(['id', 'username']);
+            ->get(['id', 'username', 'emp_code']);
 
         $schools = Customer::whereHas('invoices', fn($q) => $q->whereIn('user_id', $teamIds))
             ->orderBy('name')

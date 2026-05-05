@@ -81,6 +81,10 @@ class PermissionSeeder extends Seeder
             // Items
             'edit_items',
             'browse_items',
+            // Business Manager
+            'bm_approve_invoices',     // BM: final approval of sm_approved POs
+            'view_all_pos',            // BM: sees all POs across all SMs/teams
+
         ];
 
         foreach ($actionPermissions as $perm) {

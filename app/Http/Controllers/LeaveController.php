@@ -24,7 +24,7 @@ class LeaveController extends Controller
         if ($request->ajax()) {
 
             $user  = auth()->user();
-            $query = Leave::select('leaves.*')->with('user:id,username');
+            $query = Leave::select('leaves.*')->with('user:id,username,emp_code');
 
             // Scope: SP sees own, SM sees their team's, Admin sees all
             if ($user->isSalesPerson()) {

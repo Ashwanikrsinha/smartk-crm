@@ -6,7 +6,7 @@
             <small class="text-muted">Dispatch Queue — Approved Purchase Orders</small>
         </div>
         <div class="d-flex gap-2">
-             <a href="{{ route('dispatches.index') }}" class="btn btn-sm btn-outline-primary">
+            <a href="{{ route('dispatches.index') }}" class="btn btn-sm btn-outline-primary">
                 <i class="feather icon-list me-1"></i> Dispatch History
             </a>
         </div>
@@ -15,6 +15,26 @@
     {{-- ═══ FILTERS ════════════════════════════════════════════ --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">Product Type</label>
+                <select name="product_type" id="product_type" class="form-control form-control-sm">
+                    <option value="all" {{ $productType == 'all' ? 'selected' : '' }}>All</option>
+                    @foreach ($productTypes as $type)
+                        <option value="{{ $type->id }}" {{ $productType == $type->id ? 'selected' : '' }}>
+                            {{ $type->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">Product</label>
+                <select name="product_id" id="product_id" class="form-control form-control-sm">
+                    <option value="all" {{ $productId == 'all' ? 'selected' : '' }}>All</option>
+                    @foreach ($products as $product)
+                        <option value="{{ $product->id }}" {{ $productId == $product->id ? 'selected' : '' }}>
+                            {{ $product->name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-lg-3 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
@@ -28,10 +48,19 @@
                 <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo ?? '' }}">
             </div>
             <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">From Due Date</label>
+                <input type="date" name="due_date_from" class="form-control form-control-sm" value="{{ $duedateFrom ?? '' }}">
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">To Due Date</label>
+                <input type="date" name="due_date_to" class="form-control form-control-sm" value="{{ $duedateTo ?? '' }}">
+            </div>
+            <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Year</label>
                 <select name="year" class="form-control form-control-sm">
                     @for ($y = date('Y'); $y >= date('Y') - 4; $y--)
-                        <option value="{{ $y }}" {{ ($year ?? date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                        <option value="{{ $y }}" {{ ($year ?? date('Y')) == $y ? 'selected' : '' }}>
+                            {{ $y }}</option>
                     @endfor
                 </select>
             </div>
@@ -44,39 +73,91 @@
 
     {{-- ═══ SUMMARY TILES ══════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-4">
+
+        <div class="col-md-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center border-top border-info border-3">
+                <h5>{{ $totalProductTypes }}</h5>
+                <small>Total Product Types</small>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center border-top border-dark border-3">
+                <h5>{{ $totalProducts }}</h5>
+                <small>Total Products</small>
+            </div>
+        </div>
+
+        <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-primary border-3">
-                <h5 class="fw-bold text-primary mb-1">{{ number_format($totalOrderedQty, 0) }}</h5>
-                <small class="text-muted">Total Units Ordered</small>
+                <h5>{{ number_format($totalOrderedQty) }}</h5>
+                <small>Total Units Ordered</small>
             </div>
         </div>
-        <div class="col-6 col-lg-4">
+
+        <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-success border-3">
-                <h5 class="fw-bold text-success mb-1">{{ number_format($totalDoneQty, 0) }}</h5>
-                <small class="text-muted">Units Dispatched</small>
+                <h5>{{ $totalDispatchedProducts }}</h5>
+                <small>Products Dispatched</small>
             </div>
         </div>
-        <div class="col-6 col-lg-4">
+
+        <div class="col-md-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center border-top border-warning border-3">
+                <h5>{{ $totalPendingProducts }}</h5>
+                <small>Products Pending</small>
+            </div>
+        </div>
+
+        <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-danger border-3">
-                <h5 class="fw-bold text-danger mb-1">{{ number_format($totalPendingQty, 0) }}</h5>
-                <small class="text-muted">Units Pending</small>
+                <h5>{{ number_format($totalPendingQty) }}</h5>
+                <small>Units Pending</small>
             </div>
         </div>
+
     </div>
 
     <style>
-        .warehouse-table th, .warehouse-table td {
+        .warehouse-table th,
+        .warehouse-table td {
             white-space: nowrap;
             padding: 0.5rem 0.75rem !important;
         }
-        .col-po { min-width: 120px; }
-        .col-date { min-width: 100px; }
-        .col-school { min-width: 200px; white-space: normal !important; }
-        .col-type { min-width: 120px; }
-        .col-product { min-width: 180px; white-space: normal !important; }
-        .col-qty { min-width: 100px; }
-        .col-due { min-width: 120px; }
-        .col-action { min-width: 100px; }
+
+        .col-po {
+            min-width: 120px;
+        }
+
+        .col-date {
+            min-width: 100px;
+        }
+
+        .col-school {
+            min-width: 200px;
+            white-space: normal !important;
+        }
+
+        .col-type {
+            min-width: 120px;
+        }
+
+        .col-product {
+            min-width: 180px;
+            white-space: normal !important;
+        }
+
+        .col-qty {
+            min-width: 100px;
+        }
+
+        .col-due {
+            min-width: 120px;
+        }
+
+        .col-action {
+            min-width: 100px;
+        }
     </style>
 
     <div class="bg-white rounded shadow-sm p-4">
@@ -106,11 +187,12 @@
                             $rowCount = $visibleItems->count();
                         @endphp
 
-                        @foreach($visibleItems as $item)
+                        @foreach ($visibleItems as $item)
                             <tr>
-                                @if($loop->first)
+                                @if ($loop->first)
                                     <td rowspan="{{ $rowCount }}">
-                                        <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}" class="fw-bold">
+                                        <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
+                                            class="fw-bold">
                                             {{ $invoice->po_number }}
                                         </a>
                                     </td>
@@ -126,16 +208,18 @@
                                 <td>{{ $item->product->category->name ?? '—' }}</td>
                                 <td>{{ $item->product->name }}</td>
                                 <td class="text-end">
-                                    <div class="text-muted small">Total: {{ (float)$item->quantity }}</div>
-                                    <div class="text-danger fw-bold">Left: {{ (float)$item->remaining_qty }}</div>
+                                    <div class="text-muted small">Total: {{ (float) $item->quantity }}</div>
+                                    <div class="text-danger fw-bold">Left: {{ (float) $item->remaining_qty }}</div>
                                 </td>
 
-                                @if($loop->first)
-                                    <td rowspan="{{ $rowCount }}" class="{{ $invoice->delivery_due_date && $invoice->delivery_due_date->isPast() ? 'text-danger fw-bold' : '' }}">
+                                @if ($loop->first)
+                                    <td rowspan="{{ $rowCount }}"
+                                        class="{{ $invoice->delivery_due_date && $invoice->delivery_due_date->isPast() ? 'text-danger fw-bold' : '' }}">
                                         {{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}
                                     </td>
                                     <td rowspan="{{ $rowCount }}" class="text-center">
-                                        <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}" class="btn btn-xs btn-primary btn-sm">
+                                        <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
+                                            class="btn btn-xs btn-primary btn-sm">
                                             <i class="feather icon-send me-1"></i> Dispatch
                                         </a>
                                     </td>
@@ -151,7 +235,7 @@
             </table>
         </div>
 
-        @if($rows->hasPages())
+        @if ($rows->hasPages())
             <div class="mt-4 d-flex justify-content-center">
                 {{ $rows->links() }}
             </div>

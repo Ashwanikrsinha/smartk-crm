@@ -27,7 +27,7 @@ class PdcController extends Controller
             $pdcs = Pdc::with([
                 'invoice:id,po_number,customer_id,user_id',
                 'invoice.customer:id,name,school_code',
-                'invoice.user:id,username',
+                'invoice.user:id,username,emp_code',
             ])
                 ->whereHas('invoice', fn($q) => $q->whereIn('user_id', $teamIds))
                 ->select(
@@ -46,6 +46,7 @@ class PdcController extends Controller
                 ->editColumn('amount',      fn($p) => '₹' . number_format($p->amount, 2))
                 ->editColumn('status',      fn($p) => $this->statusBadge($p->status))
                 ->addColumn('po_number',    fn($p) => $p->invoice->po_number)
+                ->editColumn('user_name_emp_code', fn($p) => $p->invoice->user->username . " ({$p->invoice->user->emp_code})")
                 ->addColumn('school',       fn($p) => $p->invoice->customer->name)
                 ->addColumn('sp',           fn($p) => $p->invoice->user->username)
                 ->addColumn('action',       fn($p) => view('pdcs.buttons', ['pdc' => $p]))

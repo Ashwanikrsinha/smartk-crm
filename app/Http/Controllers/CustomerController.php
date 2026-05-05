@@ -32,7 +32,7 @@ class CustomerController extends Controller
             $teamIds = auth()->user()->teamMemberIds();
 
             $schools = Customer::with([
-                'createdBy:id,username',
+                'createdBy:id,username,emp_code',
                 'leadSource:id,name',
             ])
                 ->whereIn('created_by', $teamIds)
@@ -51,7 +51,7 @@ class CustomerController extends Controller
             return DataTables::of($schools)
                 ->editColumn('school_code', fn($s) => "<strong>{$s->school_code}</strong>")
                 ->addColumn('lead_source',  fn($s) => $s->leadSource?->name ?? '—')
-                ->addColumn('created_by',   fn($s) => $s->createdBy?->username ?? '—')
+                ->editColumn('user_name_emp_code', fn($s) => $s->createdBy?->username . " ({$s->createdBy?->emp_code})")
                 ->addColumn('po_count',     fn($s) => $s->invoices()->count())
                 ->addColumn('action',       fn($s) => view('customers.buttons', ['customer' => $s]))
                 ->rawColumns(['school_code', 'action'])

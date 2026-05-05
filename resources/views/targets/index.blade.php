@@ -29,7 +29,7 @@ $(document).ready(function () {
         order:      [[1, 'desc']],
         ajax:       '{{ route('targets.index') }}',
         columns: [
-            { data: 'user.username',     name: 'user.username', sortable: false },
+            { data: 'user_name_emp_code', name: 'user_name_emp_code', sortable: false },
             { data: 'month',             name: 'month', searchable: false },
             { data: 'target_amount',     name: 'target_amount', searchable: false },
             { data: 'achieved',          orderable: false, searchable: false },

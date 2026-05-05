@@ -26,6 +26,7 @@ class UserUpdateRequest extends FormRequest
     {
         return [
             'username' => 'bail|required|'.Rule::unique('users', 'username')->ignore($this->user),
+            'emp_code' => 'bail|required|'.Rule::unique('users', 'emp_code')->ignore($this->user),
             'email' => 'bail|required|max:100|'.Rule::unique('users', 'email')->ignore($this->user),
             'role_id' => 'required|integer',
             'department_id' => 'required|integer',

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\User;
 use App\Models\Collection;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +16,7 @@ class DashboardController extends Controller
     public function __invoke(Request $request)
     {
         $user = auth()->user();
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isBusinessManager()) {
             return $this->adminDashboard($request, $user);
         }
 
@@ -44,48 +46,134 @@ class DashboardController extends Controller
         $month     = $request->input('month');
         $dateFrom  = $request->input('date_from');
         $dateTo    = $request->input('date_to');
+        $duedateFrom  = $request->input('due_date_from');
+        $duedateTo    = $request->input('due_date_to');
+        $productType = $request->input('product_type', 'all');
+        $productId   = $request->input('product_id', 'all');
 
         $totalOrderedQty = 0;
         $totalDoneQty    = 0;
 
         // Approved POs only for warehouse.
         $query = Invoice::with([
-                'customer:id,name,school_code',
-                'invoiceItems.product.category',
-                'invoiceItems.unit',
-                'dispatches.items'
-            ])
+            'customer:id,name,school_code',
+            'invoiceItems.product.category',
+            'invoiceItems.unit',
+            'dispatches.items'
+        ])
             ->where('status', Invoice::STATUS_APPROVED);
 
         // Apply filters
         if ($month) {
             $query->whereYear('invoice_date', substr($month, 0, 4))
-                  ->whereMonth('invoice_date', substr($month, 5, 2));
+                ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
         } else {
             $query->whereYear('invoice_date', $year);
         }
 
+        if ($duedateFrom && $duedateTo) {
+            $query->whereBetween('delivery_due_date', [$duedateFrom, $duedateTo]);
+        }
+
+
+
+        if ($productType !== 'all') {
+            $query->whereHas('invoiceItems.product', function ($q) use ($productType) {
+                $q->where('category_id', $productType);
+            });
+        }
+
+        if ($productId !== 'all') {
+            $query->whereHas('invoiceItems', function ($q) use ($productId) {
+                $q->where('product_id', $productId);
+            });
+        }
+
+        // if ($user->isBusinessManager()) {
+        //     $query->where('invoiceItems.product_id', '!=', 0);
+        // }
+
         $allRows = $query->orderBy('delivery_due_date', 'asc')->get();
 
         // Calculate remaining qty for each item (WE NEED THIS FOR ALL TO CALCULATE TOTALS)
+        // foreach ($allRows as $invoice) {
+        //     $dispatched = \App\Models\DispatchItem::whereHas('dispatch', fn($q) => $q->where('invoice_id', $invoice->id))
+        //         ->selectRaw('invoice_item_id, SUM(quantity_dispatched) as done')
+        //         ->groupBy('invoice_item_id')
+        //         ->get()->keyBy('invoice_item_id');
+
+        //     foreach ($invoice->invoiceItems as $item) {
+        //         $item->done_qty = (float)($dispatched[$item->id]->done ?? 0);
+        //         $item->remaining_qty = round((float)$item->quantity - $item->done_qty, 3);
+        //         if ($item->remaining_qty < 0) $item->remaining_qty = 0;
+
+        //         $totalOrderedQty += (float)$item->quantity;
+        //         $totalDoneQty    += $item->done_qty;
+        //     }
+
+        //     $invoice->is_fully_dispatched = $invoice->invoiceItems->every(fn($i) => $i->remaining_qty <= 0);
+        // }
         foreach ($allRows as $invoice) {
-            $dispatched = \App\Models\DispatchItem::whereHas('dispatch', fn($q) => $q->where('invoice_id', $invoice->id))
+
+            $dispatched = \App\Models\DispatchItem::whereHas('dispatch', function ($q) use ($invoice) {
+                $q->where('invoice_id', $invoice->id);
+            })
                 ->selectRaw('invoice_item_id, SUM(quantity_dispatched) as done')
                 ->groupBy('invoice_item_id')
-                ->get()->keyBy('invoice_item_id');
+                ->get()
+                ->keyBy('invoice_item_id');
 
-            foreach ($invoice->invoiceItems as $item) {
+            foreach ($invoice->invoiceItems as $key => $item) {
+
                 $item->done_qty = (float)($dispatched[$item->id]->done ?? 0);
-                $item->remaining_qty = round((float)$item->quantity - $item->done_qty, 3);
-                if ($item->remaining_qty < 0) $item->remaining_qty = 0;
+                $item->remaining_qty = round(
+                    (float)$item->quantity - $item->done_qty,
+                    3
+                );
+
+                if ($item->remaining_qty < 0) {
+                    $item->remaining_qty = 0;
+                }
+
+                /*
+        |--------------------------------------------------------------------------
+        | ITEM LEVEL FILTERING
+        |--------------------------------------------------------------------------
+        */
+
+                // Product type filter
+                if (
+                    $productType !== 'all' &&
+                    optional($item->product)->category_id != $productType
+                ) {
+                    unset($invoice->invoiceItems[$key]);
+                    continue;
+                }
+
+                // Product filter
+                if (
+                    $productId !== 'all' &&
+                    $item->product_id != $productId
+                ) {
+                    unset($invoice->invoiceItems[$key]);
+                    continue;
+                }
 
                 $totalOrderedQty += (float)$item->quantity;
-                $totalDoneQty    += $item->done_qty;
+                $totalDoneQty += $item->done_qty;
             }
 
-            $invoice->is_fully_dispatched = $invoice->invoiceItems->every(fn($i) => $i->remaining_qty <= 0);
+            // reindex collection
+            $invoice->setRelation(
+                'invoiceItems',
+                $invoice->invoiceItems->values()
+            );
+
+            $invoice->is_fully_dispatched =
+                $invoice->invoiceItems->isEmpty() ||
+                $invoice->invoiceItems->every(fn($i) => $i->remaining_qty <= 0);
         }
 
         $totalPendingQty = max($totalOrderedQty - $totalDoneQty, 0);
@@ -104,16 +192,53 @@ class DashboardController extends Controller
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
+        $products = Product::all();
+        $productTypes = Category::all();
+        $totalProductTypes = collect($allRows)
+            ->flatMap(fn($invoice) => $invoice->invoiceItems)
+            ->pluck('product.category_id')
+            ->unique()
+            ->count();
+
+        $totalProducts = collect($allRows)
+            ->flatMap(fn($invoice) => $invoice->invoiceItems)
+            ->pluck('product_id')
+            ->unique()
+            ->count();
+
+        $totalDispatchedProducts = collect($allRows)
+            ->flatMap(fn($invoice) => $invoice->invoiceItems)
+            ->where('done_qty', '>', 0)
+            ->pluck('product_id')
+            ->unique()
+            ->count();
+
+        $totalPendingProducts = collect($allRows)
+            ->flatMap(fn($invoice) => $invoice->invoiceItems)
+            ->where('remaining_qty', '>', 0)
+            ->pluck('product_id')
+            ->unique()
+            ->count();
 
         return view('dashboard.warehouse', compact(
             'rows',
             'totalOrderedQty',
             'totalDoneQty',
             'totalPendingQty',
+            'totalProductTypes',
+            'totalProducts',
+            'totalDispatchedProducts',
+            'totalPendingProducts',
             'year',
             'month',
             'dateFrom',
-            'dateTo'
+            'dateTo',
+            'productType',
+            'productId',
+            'products',
+            'productTypes',
+            'duedateFrom',
+            'duedateTo'
         ));
     }
 

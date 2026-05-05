@@ -9,7 +9,7 @@
 </header>
 
 @php
-  $columns = ['id', 'username', 'email', 'department', 'role', 'status', 'actions'];
+  $columns = ['id','Employee Code', 'username', 'email', 'department', 'role', 'status', 'actions'];
 @endphp
 
 <x-datatable id="users" :columns="$columns" />
@@ -28,6 +28,7 @@
              ajax: '{{ route('users.index') }}',
              columns: [
                 { data: 'id', visible: false, searchable: false },
+                { data: 'emp_code', name: 'emp_code' },
                 { data: 'username', name: 'username' },
                 { data: 'email', name: 'email' },
                 { data: 'department.name', name: 'department.name' },
@@ -36,6 +37,6 @@
                 { data: 'action', 'orderable': false, searchable: false}
             ],
         });
-    });   
+    });
 </script>
 @endpush
