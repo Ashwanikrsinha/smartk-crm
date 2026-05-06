@@ -6,6 +6,23 @@
             <small class="text-muted">Dispatch Queue — Approved Purchase Orders</small>
         </div>
         <div class="d-flex gap-2">
+            {{-- Export button passes current filter state as query params --}}
+            <a href="{{ route(
+                'warehouse.export',
+                request()->only([
+                    'year',
+                    'month',
+                    'date_from',
+                    'date_to',
+                    'due_date_from',
+                    'due_date_to',
+                    'product_type',
+                    'product_id',
+                ]),
+            ) }}"
+                class="btn btn-sm btn-success">
+                <i class="feather icon-download me-1"></i> Export
+            </a>
             <a href="{{ route('dispatches.index') }}" class="btn btn-sm btn-outline-primary">
                 <i class="feather icon-list me-1"></i> Dispatch History
             </a>
@@ -21,7 +38,8 @@
                     <option value="all" {{ $productType == 'all' ? 'selected' : '' }}>All</option>
                     @foreach ($productTypes as $type)
                         <option value="{{ $type->id }}" {{ $productType == $type->id ? 'selected' : '' }}>
-                            {{ $type->name }}</option>
+                            {{ $type->name }}
+                        </option>
                     @endforeach
                 </select>
             </div>
@@ -31,7 +49,8 @@
                     <option value="all" {{ $productId == 'all' ? 'selected' : '' }}>All</option>
                     @foreach ($products as $product)
                         <option value="{{ $product->id }}" {{ $productId == $product->id ? 'selected' : '' }}>
-                            {{ $product->name }}</option>
+                            {{ $product->name }}
+                        </option>
                     @endforeach
                 </select>
             </div>
@@ -49,18 +68,21 @@
             </div>
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">From Due Date</label>
-                <input type="date" name="due_date_from" class="form-control form-control-sm" value="{{ $duedateFrom ?? '' }}">
+                <input type="date" name="due_date_from" class="form-control form-control-sm"
+                    value="{{ $duedateFrom ?? '' }}">
             </div>
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">To Due Date</label>
-                <input type="date" name="due_date_to" class="form-control form-control-sm" value="{{ $duedateTo ?? '' }}">
+                <input type="date" name="due_date_to" class="form-control form-control-sm"
+                    value="{{ $duedateTo ?? '' }}">
             </div>
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Year</label>
                 <select name="year" class="form-control form-control-sm">
                     @for ($y = date('Y'); $y >= date('Y') - 4; $y--)
                         <option value="{{ $y }}" {{ ($year ?? date('Y')) == $y ? 'selected' : '' }}>
-                            {{ $y }}</option>
+                            {{ $y }}
+                        </option>
                     @endfor
                 </select>
             </div>
@@ -73,49 +95,42 @@
 
     {{-- ═══ SUMMARY TILES ══════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-info border-3">
                 <h5>{{ $totalProductTypes }}</h5>
                 <small>Total Product Types</small>
             </div>
         </div>
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-dark border-3">
                 <h5>{{ $totalProducts }}</h5>
                 <small>Total Products</small>
             </div>
         </div>
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-primary border-3">
                 <h5>{{ number_format($totalOrderedQty) }}</h5>
                 <small>Total Units Ordered</small>
             </div>
         </div>
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-success border-3">
                 <h5>{{ $totalDispatchedProducts }}</h5>
                 <small>Products Dispatched</small>
             </div>
         </div>
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-warning border-3">
                 <h5>{{ $totalPendingProducts }}</h5>
                 <small>Products Pending</small>
             </div>
         </div>
-
         <div class="col-md-2">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-danger border-3">
                 <h5>{{ number_format($totalPendingQty) }}</h5>
                 <small>Units Pending</small>
             </div>
         </div>
-
     </div>
 
     <style>
@@ -161,10 +176,29 @@
     </style>
 
     <div class="bg-white rounded shadow-sm p-4">
-        <h6 class="fw-bold border-bottom pb-2 mb-3">
-            <i class="feather icon-truck me-2 text-primary"></i>
-            Orders Pending Dispatch
-        </h6>
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h6 class="fw-bold mb-0">
+                <i class="feather icon-truck me-2 text-primary"></i>
+                Orders Pending Dispatch
+            </h6>
+            {{-- Inline export link mirrors header button but scoped to table context --}}
+            <a href="{{ route(
+                'warehouse.export',
+                request()->only([
+                    'year',
+                    'month',
+                    'date_from',
+                    'date_to',
+                    'due_date_from',
+                    'due_date_to',
+                    'product_type',
+                    'product_id',
+                ]),
+            ) }}"
+                class="btn btn-sm btn-outline-success">
+                <i class="feather icon-download me-1"></i> Export to Excel
+            </a>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle warehouse-table">

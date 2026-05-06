@@ -119,7 +119,15 @@ class User extends Authenticatable
     {
         return $this->role?->name === 'Manager';
     }
+    public function isWarehouse(): bool
+    {
+        return $this->role?->name === 'Warehouse';
+    }
 
+    public function isMarketing(): bool
+    {
+        return $this->role?->name === 'Marketing';
+    }
     /**
      * Convenience: is this user a Sales Person?
      */
