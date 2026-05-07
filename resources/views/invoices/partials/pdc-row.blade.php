@@ -4,13 +4,13 @@
 
     <div>
         <label class="form-label mb-1 small">Date <span class="text-danger">*</span></label>
-        <input type="date" name="pdc_dates[]" class="form-control form-control-sm" style="width:140px"
+        <input type="date" name="pdc_dates[]" class="form-control form-control-sm" required style="width:140px"
             value="{{ isset($pdc) ? $pdc->cheque_date->format('Y-m-d') : '' }}">
     </div>
 
     <div>
-        <label class="form-label mb-1 small">Cheque Number</label>
-        <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" style="width:160px"
+        <label class="form-label mb-1 small">Cheque Number <span class="text-danger">*</span></label>
+        <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" required style="width:160px"
             placeholder="Cheque no." value="{{ isset($pdc) ? $pdc->cheque_number : '' }}">
     </div>
 

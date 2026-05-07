@@ -15,23 +15,20 @@
     @php
         $isWarehouse = auth()->user()->isWarehouse();
         $isMarketing = auth()->user()->isMarketing();
-        // Both Warehouse and Marketing cannot see financial columns
-        $hideFinancials = $isWarehouse || $isMarketing;
-
-        $columns = [
-            'PO Number',
-            'Date',
-            'School',
-            'Sales Person',
-            $hideFinancials ? null : 'PO Amount',
-            $hideFinancials ? null : 'Billed',
-            $hideFinancials ? null : 'Collected',
-            $hideFinancials ? null : 'Outstanding',
-            'Status',
-            'Actions',
-        ];
-        // Remove null entries cleanly
-        $columns = array_values(array_filter($columns));
+        $columns = array_values(
+            array_filter([
+                'PO Number',
+                'Date',
+                'School',
+                'Sales Person',
+                !$isWarehouse ? 'PO Amount' : null,
+                !$isWarehouse ? 'Billed' : null,
+                !$isWarehouse && !$isMarketing ? 'Collected' : null,
+                !$isWarehouse && !$isMarketing ? 'Outstanding' : null,
+                'Status',
+                'Actions',
+            ]),
+        );
     @endphp
 
     <div class="bg-white rounded shadow-sm p-3">
@@ -43,10 +40,9 @@
     <script>
         $(document).ready(function() {
 
-            const hideFinancials =
-                {{ auth()->user()->isMarketing() || auth()->user()->isWarehouse() ? 'true' : 'false' }};
+            const isWarehouse = {{ auth()->user()->isWarehouse() ? 'true' : 'false' }};
+            const isMarketing = {{ auth()->user()->isMarketing() ? 'true' : 'false' }};
 
-            // Build columns array conditionally
             const columns = [{
                     data: 'po_number',
                     name: 'po_number'
@@ -58,16 +54,17 @@
                 {
                     data: 'customer.name',
                     name: 'customer.name',
-                    sortable: false
+                    orderable: false
                 },
                 {
                     data: 'user_name_emp_code',
                     name: 'user_name_emp_code',
-                    sortable: false
+                    orderable: false
                 },
             ];
 
-            if (!hideFinancials) {
+            // Warehouse: hide amount + billed
+            if (!isWarehouse) {
                 columns.push({
                     data: 'amount',
                     name: 'amount',
@@ -78,6 +75,9 @@
                     name: 'billing_amount',
                     searchable: false
                 });
+            }
+            // Warehouse + Marketing: hide collected + outstanding
+            if (!isWarehouse && !isMarketing) {
                 columns.push({
                     data: 'collected_amount',
                     name: 'collected_amount',

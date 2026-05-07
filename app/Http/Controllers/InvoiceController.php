@@ -42,21 +42,22 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
-
         $threeDaysAgo = Carbon::now()->subDays(3);
 
         Invoice::where('status', 'submitted')
             ->where('submited_at', '<=', $threeDaysAgo)
-            ->update([
-                'status' => 'expired',
-            ]);
+            ->update(['status' => 'expired']);
+
         if ($request->ajax()) {
 
-            $teamIds = auth()->user()->teamMemberIds();
+            $teamIds     = auth()->user()->teamMemberIds();
+            $isWarehouse = auth()->user()->isWarehouse();
+            $isMarketing = auth()->user()->isMarketing();
 
             $invoices = Invoice::with([
                 'customer:id,name,school_code',
                 'user:id,username,emp_code',
+                'approvedBy:id,username,emp_code'
             ])
                 ->whereIn('user_id', $teamIds)
                 ->select(
@@ -70,20 +71,39 @@ class InvoiceController extends Controller
                     'amount',
                     'billing_amount',
                     'collected_amount',
-                    'outstanding_amount'
+                    'outstanding_amount',
+                    'approved_by',
+                    'approved_at'
                 );
 
-            $isWarehouse = auth()->user()->role?->name === 'Warehouse';
-
             return DataTables::of($invoices)
-                ->editColumn('po_number', fn($i) => $i->po_number ?? "PO-{$i->invoice_number}")
+                ->editColumn('po_number',    fn($i) => $i->po_number ?? "PO-{$i->invoice_number}")
                 ->editColumn('invoice_date', fn($i) => $i->invoice_date->format('d M, Y'))
                 ->editColumn('user_name_emp_code', fn($i) => $i->user->username . " ({$i->user->emp_code})")
                 ->editColumn('status', fn($i) => $this->statusBadge($i->status))
-                ->editColumn('amount',            fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->amount, 2))
-                ->editColumn('billing_amount',    fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->billing_amount, 2))
-                ->editColumn('collected_amount',  fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->collected_amount, 2))
-                ->editColumn('outstanding_amount', fn($i) => $isWarehouse ? '—' : '₹' . number_format($i->outstanding_amount, 2))
+
+                // Warehouse sees nothing. Marketing sees amount + billing only.
+                ->editColumn('amount', function ($i) use ($isWarehouse) {
+                    return $isWarehouse
+                        ? '—'
+                        : '₹' . number_format($i->amount, 2);
+                })
+                ->editColumn('billing_amount', function ($i) use ($isWarehouse) {
+                    return $isWarehouse
+                        ? '—'
+                        : '₹' . number_format($i->billing_amount, 2);
+                })
+                ->editColumn('collected_amount', function ($i) use ($isWarehouse, $isMarketing) {
+                    return ($isWarehouse || $isMarketing)
+                        ? '—'
+                        : '₹' . number_format($i->collected_amount, 2);
+                })
+                ->editColumn('outstanding_amount', function ($i) use ($isWarehouse, $isMarketing) {
+                    return ($isWarehouse || $isMarketing)
+                        ? '—'
+                        : '₹' . number_format($i->outstanding_amount, 2);
+                })
+
                 ->addColumn('action', fn($i) => view('invoices.buttons', ['invoice' => $i]))
                 ->rawColumns(['status', 'action'])
                 ->make(true);
@@ -135,7 +155,32 @@ class InvoiceController extends Controller
                 $invoice->createInvoiceAttachments($request);
             }
             if (!auth()->user()->isSalesPerson()) {
-                return $this->approve($request,$invoice);
+                $invoice->update([
+                    'status'      => Invoice::STATUS_SM_APPROVED,
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now(),
+                    'rejection_reason'    => null,
+                    'sm_rejection_reason' => null,
+                ]);
+
+                PoLog::record($invoice, PoLog::ACTION_APPROVED, [
+                    'remarks' => 'SM approved by  Self ' . auth()->user()->username . '. Awaiting BM approval.',
+                ]);
+
+                // Notify BM(s) — all users with BusinessManager role
+                User::where('role_id', function ($q) {
+                    $q->select('id')->from('roles')->where('name', 'BusinessManager');
+                })->get()->each(function ($bm) use ($invoice) {
+
+                    $bm->notify(new PoAwaitingBm($invoice));
+                });
+
+                try {
+                    // Notify SP
+                    $invoice->user->notify(new PoApproved($invoice));
+                } catch (\Exception $e) {
+                    Log::error('Error notifying SP of PO approval:', ['error' => $e]);
+                }
             }
         });
 
@@ -434,8 +479,12 @@ class InvoiceController extends Controller
                 $bm->notify(new PoAwaitingBm($invoice));
             });
 
-            // Notify SP
-            $invoice->user->notify(new PoApproved($invoice));
+            try {
+                // Notify SP
+                $invoice->user->notify(new PoApproved($invoice));
+            } catch (\Exception $e) {
+                Log::error('Error notifying SP of PO approval:', ['error' => $e]);
+            }
 
             return back()->with(
                 'success',
@@ -480,11 +529,16 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $invoice->user->notify(new PoFullyApproved($invoice));
+        try {
+            // Notify SP
+            $invoice->user->notify(new PoFullyApproved($invoice));
 
-        dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
-        dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
-        dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
+            dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
+            dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
+            dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
+        } catch (\Exception $e) {
+            Log::error('Error notifying SP of PO fully approval:', ['error' => $e]);
+        }
 
         return back()->with(
             'success',
@@ -748,10 +802,10 @@ class InvoiceController extends Controller
             // Email to school (if email exists)
             if ($invoice->customer->email) {
                 Mail::to($invoice->customer->email)
-                    ->queue(new \App\Mail\PoApprovedMail($invoice));
+                    ->queue(new PoApprovedMail($invoice));
             }
         } catch (\Exception $e) {
-            Log::error('Error sending approval notification:', $e->getMessage());
+            Log::error('Error sending approval notification:', ['error' => $e]);
             throw $e;
         }
     }

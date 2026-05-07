@@ -196,11 +196,12 @@
                    {{ request()->is('reports') ? 'active' : '' }}">
                         <i class="feather icon-file-text me-2"></i> PO Reports
                     </a>
-
+                    @if (!auth()->user()->isMarketing())
                     <a href="{{ route('reports.po-log-all') }}"
                         class="list-group-item list-group-item-action border-0 ps-4">
                         <i class="feather icon-activity me-2"></i> PO Activity Log
                     </a>
+                    @endif
 
                 </div>
             </div>

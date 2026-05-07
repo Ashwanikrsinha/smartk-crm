@@ -155,7 +155,7 @@ Route::middleware('auth')->group(function () {
     // ═════════════════════════════════════════════════════════════════════════
 
     Route::resource('pdcs', Controllers\PdcController::class)->only(['index','update']);
-    Route::get('warehouse/export', Controllers\WarehouseExportController::class)->name('warehouse.export');
+    Route::get('warehouse/exports', Controllers\WarehouseExportController::class)->name('warehouse.exports');
     // ═════════════════════════════════════════════════════════════════════════
     // DISPATCHES (Warehouse)
     // ═════════════════════════════════════════════════════════════════════════

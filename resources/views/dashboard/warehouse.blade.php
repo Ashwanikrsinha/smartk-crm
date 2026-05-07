@@ -7,8 +7,7 @@
         </div>
         <div class="d-flex gap-2">
             {{-- Export button passes current filter state as query params --}}
-            <a href="{{ route(
-                'warehouse.export',
+            <a href="{{ route('warehouse.exports',
                 request()->only([
                     'year',
                     'month',
@@ -183,7 +182,7 @@
             </h6>
             {{-- Inline export link mirrors header button but scoped to table context --}}
             <a href="{{ route(
-                'warehouse.export',
+                'warehouse.exports',
                 request()->only([
                     'year',
                     'month',

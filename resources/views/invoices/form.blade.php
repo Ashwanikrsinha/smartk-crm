@@ -319,7 +319,7 @@
             <i class="feather icon-save me-1"></i> Save as Draft
         </button>
         <button type="submit" name="action" value="submit" class="btn btn-primary"
-            onclick="return confirm('Submit this PO to your Sales Manager for approval?')">
+            onclick="return confirm({{ auth()->user()->isSalesPerson() ? 'Submit this PO to your Sales Manager for approval?' : 'Submit this PO to your Business Manager for approval.' }})">
             <i class="feather icon-send me-1"></i> Submit for Approval
         </button>
     </div>
@@ -493,12 +493,12 @@
         <div class="pdc-row border rounded p-3 mb-2 d-flex align-items-center gap-3 flex-wrap">
             <span class="badge bg-success">PDC ${idx + 1}</span>
             <div>
-                <label class="form-label mb-1 small">Date</label>
-                <input type="date" name="pdc_dates[]" class="form-control form-control-sm" style="width:140px">
+                <label class="form-label mb-1 small">Date <span class="text-danger">*</span></label>
+                <input type="date" name="pdc_dates[]" class="form-control form-control-sm" required style="width:140px">
             </div>
             <div>
-                <label class="form-label mb-1 small">Cheque Number</label>
-                <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" placeholder="Cheque no." style="width:160px">
+                <label class="form-label mb-1 small">Cheque Number <span class="text-danger">*</span></label>
+                <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" required placeholder="Cheque no." style="width:160px">
             </div>
             <div>
                 <label class="form-label mb-1 small">Bank Name</label>

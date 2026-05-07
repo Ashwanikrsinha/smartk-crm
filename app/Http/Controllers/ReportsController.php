@@ -29,15 +29,15 @@ class ReportsController extends Controller
         $teamIds = $user->teamMemberIds();
 
         // ── Filters ────────────────────────────────────────
-        $spId        = $request->input('sp_id');
-        $schoolId    = $request->input('school_id');
-        $leadSrcId   = $request->input('lead_source_id');
-        $state       = $request->input('state');
-        $status      = $request->input('status');
-        $month       = $request->input('month');
-        $dateFrom    = $request->input('date_from');
-        $dateTo      = $request->input('date_to');
-        $year        = $request->input('year', date('Y'));
+        $spId      = $request->input('sp_id');
+        $schoolId  = $request->input('school_id');
+        $leadSrcId = $request->input('lead_source_id');
+        $state     = $request->input('state');
+        $status    = $request->input('status');
+        $month     = $request->input('month');
+        $dateFrom  = $request->input('date_from');
+        $dateTo    = $request->input('date_to');
+        $year      = $request->input('year', date('Y'));
 
         // ── Build query ────────────────────────────────────
         $query = Invoice::with([
@@ -62,7 +62,6 @@ class ReportsController extends Controller
                 'delivery_due_date'
             );
 
-        // Apply all filters
         if ($spId)      $query->where('user_id', $spId);
         if ($schoolId)  $query->where('customer_id', $schoolId);
         if ($status)    $query->where('status', $status);
@@ -86,11 +85,11 @@ class ReportsController extends Controller
 
         // ── Summary totals ─────────────────────────────────
         $totals = [
-            'po_amount'        => $rows->sum('amount'),
-            'billing_amount'   => $rows->sum('billing_amount'),
-            'pending_po'       => $rows->sum('pending_po_amount'),
-            'collected'        => $rows->sum('collected_amount'),
-            'outstanding'      => $rows->sum('outstanding_amount'),
+            'po_amount'      => $rows->sum('amount'),
+            'billing_amount' => $rows->sum('billing_amount'),
+            'pending_po'     => $rows->sum('pending_po_amount'),
+            'collected'      => $rows->sum('collected_amount'),   // used only for non-Marketing
+            'outstanding'    => $rows->sum('outstanding_amount'), // used only for non-Marketing
         ];
 
         // ── Filter dropdowns ───────────────────────────────
@@ -109,9 +108,7 @@ class ReportsController extends Controller
         $states = Customer::distinct()->whereNotNull('state')
             ->orderBy('state')->pluck('state');
 
-        // Store filters in session for export
         session(['report_filters' => $request->all()]);
-        // return $rows;
 
         return view('reports.index', compact(
             'rows',
@@ -133,13 +130,12 @@ class ReportsController extends Controller
     }
 
     // -------------------------------------------------------
-    // Export to Excel
+    // Export to Excel — Marketing blocked entirely
     // -------------------------------------------------------
 
     public function export(Request $request)
     {
-        // $this->authorize('export', Invoice::class);
-        if(!auth()->user()->hasPermission('export_reports')) {
+        if (!auth()->user()->hasPermission('export_reports')) {
             return back()->with('error', 'You do not have permission to export reports.');
         }
 
@@ -152,7 +148,10 @@ class ReportsController extends Controller
 
     public function exportPoLog(Request $request, $invoiceId = null)
     {
-        if(!auth()->user()->hasPermission('export_reports')) {
+        if (auth()->user()->isMarketing()) {
+            abort(403, 'Marketing team cannot export report data.');
+        }
+        if (!auth()->user()->hasPermission('export_reports')) {
             return back()->with('error', 'You do not have permission to export reports.');
         }
 

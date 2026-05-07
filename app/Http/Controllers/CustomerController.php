@@ -35,7 +35,7 @@ class CustomerController extends Controller
                 'createdBy:id,username,emp_code',
                 'leadSource:id,name',
             ])
-                ->whereIn('created_by', $teamIds)
+                // ->whereIn('created_by', $teamIds)
                 ->select(
                     'id',
                     'school_code',

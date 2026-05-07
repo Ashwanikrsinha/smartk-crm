@@ -17,11 +17,13 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
 {
     protected array $filters;
     protected User  $user;
+    protected bool  $isMarketing;
 
     public function __construct(array $filters, User $user)
     {
-        $this->filters = $filters;
-        $this->user    = $user;
+        $this->filters     = $filters;
+        $this->user        = $user;
+        $this->isMarketing = $user->isMarketing();
     }
 
     public function title(): string
@@ -34,14 +36,12 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
         $teamIds = $this->user->teamMemberIds();
 
         $query = Invoice::with([
-            'user:id,username,reportive_id',
-            'user.reportiveTo:id,username',
+            'user:id,username,reportive_id,emp_code',
+            'user.reportiveTo:id,username,emp_code',
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
-        ])
-            ->whereIn('user_id', $teamIds);
+        ])->whereIn('user_id', $teamIds);
 
-        // Apply same filters as ReportsController
         $f = $this->filters;
 
         if (!empty($f['sp_id']))       $query->where('user_id', $f['sp_id']);
@@ -68,7 +68,8 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
 
     public function headings(): array
     {
-        return [
+        // Marketing: no Collected or Outstanding columns
+        $base = [
             'PO Number',
             'PO Date',
             'Sales Person',
@@ -82,18 +83,24 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
             'PO Amount (₹)',
             'Billed Amount (₹)',
             'Pending PO (₹)',
-            'Collection (₹)',
-            'Outstanding (₹)',
-            'Delivery Due Date',
         ];
+
+        if (!$this->isMarketing) {
+            $base[] = 'Collection (₹)';
+            $base[] = 'Outstanding (₹)';
+        }
+
+        $base[] = 'Delivery Due Date';
+
+        return $base;
     }
 
     public function map($invoice): array
     {
-        return [
+        $row = [
             $invoice->po_number,
             $invoice->invoice_date->format('d/m/Y'),
-            $invoice->user->username,
+            $invoice->user->username . ' (' . $invoice->user->emp_code . ')',
             $invoice->user->reportiveTo?->username,
             $invoice->customer->name,
             $invoice->customer->school_code,
@@ -104,18 +111,28 @@ class PurchaseOrdersExport implements FromQuery, WithHeadings, WithMapping, With
             number_format($invoice->amount, 2),
             number_format($invoice->billing_amount, 2),
             number_format($invoice->amount - $invoice->billing_amount, 2),
-            number_format($invoice->collected_amount, 2),
-            number_format($invoice->outstanding_amount, 2),
-            $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d/m/Y') : '',
         ];
+
+        if (!$this->isMarketing) {
+            $row[] = number_format($invoice->collected_amount, 2);
+            $row[] = number_format($invoice->outstanding_amount, 2);
+        }
+
+        $row[] = $invoice->delivery_due_date
+            ? $invoice->delivery_due_date->format('d/m/Y')
+            : '';
+
+        return $row;
     }
 
     public function styles(Worksheet $sheet): array
     {
-        // Header row styling
-        $sheet->getStyle('A1:O1')->applyFromArray([
-            'font'    => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E7D32']],
+        // Last column letter depends on whether Marketing (N) or others (P)
+        $lastCol = $this->isMarketing ? 'N' : 'P';
+
+        $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E7D32']],
         ]);
 
         // Freeze header row

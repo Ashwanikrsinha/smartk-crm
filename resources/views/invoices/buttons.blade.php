@@ -1,8 +1,10 @@
-{{-- View --}}
+{{-- View — Marketing cannot see PO detail --}}
 @can('view', $invoice)
-    <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm text-primary" title="View PO">
-        <i class="feather icon-eye"></i>
-    </a>
+    @unless (auth()->user()->isMarketing())
+        <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm text-primary" title="View PO">
+            <i class="feather icon-eye"></i>
+        </a>
+    @endunless
 @endcan
 
 {{-- Edit — SP in draft/rejected/bm_rejected, SM before BM approval --}}
@@ -14,7 +16,7 @@
     @endif
 @endcan
 
-{{-- ═══ SM APPROVE / REJECT (submitted POs only) ═══════ --}}
+{{-- SM APPROVE / REJECT (submitted POs only) --}}
 @can('approve', $invoice)
     @if ($invoice->isSubmitted() && (auth()->user()->isSalesManager() || auth()->user()->isAdmin()))
         <button type="button" class="btn btn-sm text-success" title="SM Approve" data-bs-toggle="modal"
@@ -68,7 +70,7 @@
                         <div class="modal-body">
                             <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
                             <textarea name="rejection_reason" class="form-control" rows="4" required minlength="20"
-                                placeholder="Minimum 20 characters — explain what needs correction..."></textarea>
+                                placeholder="Minimum 20 characters..."></textarea>
                             <small class="text-muted">SP will see this reason and can edit & resubmit.</small>
                         </div>
                         <div class="modal-footer">
@@ -82,7 +84,7 @@
     @endif
 @endcan
 
-{{-- ═══ BM APPROVE / REJECT (sm_approved POs only) ══════ --}}
+{{-- BM APPROVE / REJECT (sm_approved POs only) --}}
 @can('approve', $invoice)
     @if ($invoice->isSmApproved() && (auth()->user()->isBusinessManager() || auth()->user()->isAdmin()))
         <button type="button" class="btn btn-sm btn-success" title="BM Final Approve" data-bs-toggle="modal"
@@ -156,7 +158,7 @@
                         <div class="modal-body">
                             <label class="form-label">Reason for Return <span class="text-danger">*</span></label>
                             <textarea name="rejection_reason" class="form-control" rows="4" required minlength="20"
-                                placeholder="Minimum 20 characters — explain what needs correction..."></textarea>
+                                placeholder="Minimum 20 characters..."></textarea>
                             <small class="text-muted">SM and SP will be notified with this reason.</small>
                         </div>
                         <div class="modal-footer">
