@@ -153,8 +153,8 @@
         @php
             $widgets = [
                 ['label' => 'Total PO Amount', 'value' => $totals['po_amount'], 'color' => 'warning', 'show' => true],
-                ['label' => 'Total Billed', 'value' => $totals['billing_amount'], 'color' => 'info', 'show' => true],
-                ['label' => 'Pending PO', 'value' => $totals['pending_po'], 'color' => 'secondary', 'show' => true],
+                ['label' => 'Total Billed', 'value' => $totals['billing_amount'], 'color' => 'info', 'show' => !$isMarketing,],
+                ['label' => 'Pending PO', 'value' => $totals['pending_po'], 'color' => 'secondary', 'show' => !$isMarketing,],
                 [
                     'label' => 'Total Collected',
                     'value' => $totals['collected'],
@@ -216,14 +216,16 @@
                         <th>State</th>
                         <th>Lead From</th>
                         <th class="text-end text-warning">PO Amt</th>
+                        @unless ($isMarketing)
                         <th class="text-end text-info">Billed</th>
                         <th class="text-end text-secondary">Pending PO</th>
-                        @unless ($isMarketing)
-                            <th class="text-end text-success">Total Collected</th>
-                            <th class="text-end text-danger">Outstanding</th>
+                        <th class="text-end text-success">Total Collected</th>
+                        <th class="text-end text-danger">Outstanding</th>
                         @endunless
                         <th>Status</th>
+                        @unless ($isMarketing)
                         <th>Delivery Date</th>
+                        @endunless
                     </tr>
                 </thead>
                 <tbody>
@@ -252,9 +254,9 @@
                             <td>{{ $row->customer->state }}</td>
                             <td>{{ $row->customer->leadSource?->name ?? '—' }}</td>
                             <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
-                            <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
-                            <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
                             @unless ($isMarketing)
+                                <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
+                                <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
                                 <td class="text-end">₹{{ number_format($row->collected_amount, 2) }}</td>
                                 <td
                                     class="text-end {{ $row->outstanding_amount > 0 ? 'text-danger fw-bold' : 'text-success' }}">
@@ -273,7 +275,9 @@
                                 @endphp
                                 <span class="badge bg-{{ $c }}">{{ ucfirst($row->status) }}</span>
                             </td>
-                            <td>{{ $row->delivery_due_date ? $row->delivery_due_date->format('d M, Y') : '—' }}</td>
+                            @unless ($isMarketing)
+                                <td>{{ $row->delivery_due_date ? $row->delivery_due_date->format('d M, Y') : '—' }}</td>
+                            @endunless
                         </tr>
                     @empty
                         <tr>
@@ -299,9 +303,9 @@
                                 Total ({{ $rows->count() }} records)
                             </td>
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 2) }}</td>
+                            @unless ($isMarketing)
                             <td class="text-end">₹{{ number_format($totals['billing_amount'], 2) }}</td>
                             <td class="text-end">₹{{ number_format($totals['pending_po'], 2) }}</td>
-                            @unless ($isMarketing)
                                 <td class="text-end">₹{{ number_format($totals['collected'], 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totals['outstanding'], 2) }}</td>
                             @endunless

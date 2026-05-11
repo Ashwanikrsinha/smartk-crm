@@ -239,7 +239,7 @@
                                 @endif
 
                                 <td>{{ $item->product->category->name ?? '—' }}</td>
-                                <td>{{ $item->product->name }}</td>
+                                <td>{{ $item->product->name ?? '—' }}</td>
                                 <td class="text-end">
                                     <div class="text-muted small">Total: {{ (float) $item->quantity }}</div>
                                     <div class="text-danger fw-bold">Left: {{ (float) $item->remaining_qty }}</div>

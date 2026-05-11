@@ -88,8 +88,8 @@ class InvoiceController extends Controller
                         ? '—'
                         : '₹' . number_format($i->amount, 2);
                 })
-                ->editColumn('billing_amount', function ($i) use ($isWarehouse) {
-                    return $isWarehouse
+                ->editColumn('billing_amount', function ($i) use ($isWarehouse, $isMarketing) {
+                    return ($isWarehouse || $isMarketing)
                         ? '—'
                         : '₹' . number_format($i->billing_amount, 2);
                 })

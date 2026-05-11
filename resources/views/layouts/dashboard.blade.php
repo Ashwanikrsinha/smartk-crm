@@ -118,6 +118,24 @@
         Chart.defaults.font.family = 'Rubik';
 
     </script>
+    {{-- <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('input[type="date"]').forEach(function (el) {
+                // Skip if flatpickr already initialised on this element
+                if (el._flatpickr) return;
+
+                flatpickr(el, {
+                    dateFormat  : 'Y-m-d',   // value sent to server (Laravel expects this)
+                    altInput    : true,       // show a human-friendly input alongside
+                    altFormat   : 'd/m/Y',   // what the user sees: dd/mm/yyyy
+                    allowInput  : true,       // user can type directly
+                    locale      : {
+                        firstDayOfWeek: 1    // week starts Monday
+                    },
+                });
+            });
+        });
+    </script> --}}
     @stack('scripts')
 </body>
 </html>

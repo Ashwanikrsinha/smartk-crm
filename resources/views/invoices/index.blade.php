@@ -22,7 +22,7 @@
                 'School',
                 'Sales Person',
                 !$isWarehouse ? 'PO Amount' : null,
-                !$isWarehouse ? 'Billed' : null,
+                !$isWarehouse && !$isMarketing ? 'Billed' : null,
                 !$isWarehouse && !$isMarketing ? 'Collected' : null,
                 !$isWarehouse && !$isMarketing ? 'Outstanding' : null,
                 'Status',
@@ -63,21 +63,22 @@
                 },
             ];
 
-            // Warehouse: hide amount + billed
+            // Both Marketing and non-Warehouse see PO Amount + Billed
             if (!isWarehouse) {
                 columns.push({
                     data: 'amount',
                     name: 'amount',
                     searchable: false
                 });
+            }
+
+            // Only non-Warehouse AND non-Marketing see Collected + Outstanding
+            if (!isWarehouse && !isMarketing) {
                 columns.push({
                     data: 'billing_amount',
                     name: 'billing_amount',
                     searchable: false
                 });
-            }
-            // Warehouse + Marketing: hide collected + outstanding
-            if (!isWarehouse && !isMarketing) {
                 columns.push({
                     data: 'collected_amount',
                     name: 'collected_amount',
@@ -110,7 +111,6 @@
                 ajax: '{{ route('invoices.index') }}',
                 columns: columns,
             });
-
         });
     </script>
 @endpush
