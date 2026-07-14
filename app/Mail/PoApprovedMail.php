@@ -13,7 +13,7 @@ class PoApprovedMail extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * @param  string  $recipientType  'school' | 'sp' | 'accounts'
+     * @param  string  $recipientType  'school' | 'sp' | 'accounts' |'manager'
      */
     public function __construct(
         public Invoice $invoice,

@@ -20,9 +20,9 @@
         {{-- ══════════════════════════════════════════════════
              SALES — SP, SM, Admin
         ══════════════════════════════════════════════════ --}}
-        @if (auth()->user()->hasPermission('browse_customers') ||
+        @if ((auth()->user()->hasPermission('browse_customers') ||
                 auth()->user()->hasPermission('browse_visits') ||
-                auth()->user()->hasPermission('browse_invoices'))
+                auth()->user()->hasPermission('browse_invoices')) && !auth()->user()->isWarehouse())
             <a class="list-group-item list-group-item-action border-0 d-flex justify-content-between
            {{ request()->routeIs('customers.*', 'visits.*', 'invoices.*', 'targets.*') ? 'bg-light fw-bold' : '' }}"
                 data-bs-toggle="collapse" href="#sales-collapse" role="button">
@@ -108,11 +108,11 @@
 
                     {{-- Sales Bill — Accounts + Admin (SM read-only via show page) --}}
                     @can('viewAny', App\Models\Bill::class)
-                        <a href="{{ route('bills.index') }}"
+                       {{-- <a href="{{ route('bills.index') }}"
                             class="list-group-item list-group-item-action border-0 ps-4
                    {{ request()->routeIs('bills.*') ? 'active' : '' }}">
                             <i class="feather icon-printer me-2"></i> Sales Bills
-                        </a>
+                        </a>--}}
                     @endcan
 
                 </div>
@@ -148,7 +148,7 @@
         {{-- ══════════════════════════════════════════════════
              HR — All roles (own data scoped in controller)
         ══════════════════════════════════════════════════ --}}
-        <a class="list-group-item list-group-item-action border-0 d-flex justify-content-between
+        {{--<a class="list-group-item list-group-item-action border-0 d-flex justify-content-between
            {{ request()->routeIs('tasks.*', 'leaves.*') ? 'bg-light fw-bold' : '' }}"
             data-bs-toggle="collapse" href="#hr-collapse" role="button">
             <span><i class="feather icon-users me-2"></i> HR</span>
@@ -171,7 +171,7 @@
                 </a>
 
             </div>
-        </div>
+        </div>--}}
 
 
         {{-- ══════════════════════════════════════════════════

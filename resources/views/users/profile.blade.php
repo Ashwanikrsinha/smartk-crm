@@ -38,7 +38,7 @@
   
     <div class="col-lg-6 mb-3">
       <label for="" class="form-label">Reportive To</label>
-      <div class="form-control">{{ isset($user->reportive_id) ? $user->reportiveTo->name : 'NOT GIVEN' }}</div>
+      <div class="form-control">{{ isset($user->reportive_id) ? $user->reportiveTo->username : 'NOT GIVEN' }}</div>
     </div>
 
 

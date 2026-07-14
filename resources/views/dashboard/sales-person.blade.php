@@ -17,10 +17,10 @@
     {{-- Month Filter --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
-            <div class="col-lg-3">
+           {{-- <div class="col-lg-3">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
-            </div>
+            </div> --}}
             <div class="col-lg-3">
                 <label class="form-label small mb-1">Date From</label>
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom ?? '' }}">

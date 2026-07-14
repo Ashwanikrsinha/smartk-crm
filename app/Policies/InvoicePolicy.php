@@ -152,8 +152,12 @@ class InvoicePolicy
      */
     public function approve(User $user, Invoice $invoice): bool
     {
+        $invoiceuser = User::select('reportive_id')->where('id',$invoice->user_id)->first();
+        if($invoiceuser->reportive_id == auth()->user()->id && $user->isBusinessManager()){
+            return true;
+        }
         // SM: can approve submitted POs from their team
-        if ($user->isSalesManager() && $user->hasPermission('approve_invoices')) {
+        if ($user->isSalesManager()&& $user->hasPermission('approve_invoices')) {
             return $invoice->isSubmitted()
                 && in_array($invoice->user_id, $user->teamMemberIds());
         }

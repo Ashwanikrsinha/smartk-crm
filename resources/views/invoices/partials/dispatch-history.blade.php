@@ -7,7 +7,7 @@
                 Dispatch History
                 <span class="badge bg-secondary ms-1">{{ $invoice->dispatches->count() }}</span>
             </h6>
-            @if($invoice->status === 'approved')
+            @if($invoice->status === 'approved' && auth()->user()->isWarehouse()) 
                 <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
                     class="btn btn-sm btn-outline-primary">
                     <i class="feather icon-plus me-1"></i> Record New Dispatch

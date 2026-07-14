@@ -42,11 +42,11 @@
             </select>
         </div>
 
-        <div class="col-lg-3 col-md-6">
+        {{-- <div class="col-lg-3 col-md-6">
             <label class="form-label small mb-1">Month / Year</label>
             <input type="month" name="month" class="form-control form-control-sm"
                    value="{{ $month ?? '' }}" placeholder="Filter by month">
-        </div>
+        </div> --}}
 
         <div class="col-lg-3 col-md-6">
             <label class="form-label small mb-1">Date From</label>

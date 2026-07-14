@@ -53,10 +53,10 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
+            {{-- <div class="col-lg-3 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
-            </div>
+            </div> --}}
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">From Date</label>
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom ?? '' }}">

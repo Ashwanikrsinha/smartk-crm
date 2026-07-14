@@ -35,10 +35,10 @@
                 </select>
             </div>
 
-            <div class="col-lg-2 col-md-6">
+            {{--<div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month') }}">
-            </div>
+            </div>--}}
 
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Date From</label>
@@ -129,9 +129,11 @@
                     <h6 class="fw-bold mb-0">
                         <i class="feather icon-users me-2 text-primary"></i> User Access
                     </h6>
+                     @can('create', auth()->user())
                     <a href="{{ route('users.create') }}" class="btn btn-sm btn-outline-primary">
                         Create Account
                     </a>
+                    @endcan
                 </div>
                 <table class="table table-sm table-hover">
                     <thead class="table-light">
@@ -149,17 +151,21 @@
                                 <td><span class="badge bg-primary">{{ $u->role->name }}</span></td>
                                 <td>{{ $u->reportiveTo?->username ?? '—' }}</td>
                                 <td>
+                                    @can('update', auth()->user())
                                     <a href="{{ route('users.edit', $u) }}" class="btn btn-sm btn-link p-0">
                                         <i class="feather icon-edit-2"></i>
                                     </a>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+                @can('view', auth()->user())
                 <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary w-100 mt-1">
                     View All Users
                 </a>
+                @endcan
             </div>
         </div>
 

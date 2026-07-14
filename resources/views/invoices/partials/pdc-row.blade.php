@@ -3,13 +3,13 @@
     <span class="badge bg-success">PDC {{ $idx + 1 }}</span>
 
     <div>
-        <label class="form-label mb-1 small">Date <span class="text-danger">*</span></label>
+        <label class="form-label mb-1 small">Date </label>
         <input type="date" name="pdc_dates[]" class="form-control form-control-sm" required style="width:140px"
             value="{{ isset($pdc) ? $pdc->cheque_date->format('Y-m-d') : '' }}">
     </div>
 
     <div>
-        <label class="form-label mb-1 small">Cheque Number <span class="text-danger">*</span></label>
+        <label class="form-label mb-1 small">Cheque Number</label>
         <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" required style="width:160px"
             placeholder="Cheque no." value="{{ isset($pdc) ? $pdc->cheque_number : '' }}">
     </div>
@@ -23,7 +23,7 @@
     <div>
         <label class="form-label mb-1 small">Amount (₹)</label>
         <input type="number" step="0.01" name="pdc_amounts[]" class="form-control form-control-sm"
-            style="width:120px" placeholder="0.00" value="{{ isset($pdc) ? $pdc->amount : '' }}">
+            style="width:120px" placeholder="0.00" value="{{ isset($pdc) ? $pdc->amount : 0 }}">
     </div>
 
     @if ($idx > 0)

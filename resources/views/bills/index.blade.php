@@ -3,7 +3,7 @@
 
 <header class="d-flex justify-content-between align-items-center mb-4">
   <h5>{{ ucwords($type) }} Bills</h5>
-  <a href="{{ route('bills.create', ['type' => $type ]) }}" class="btn btn-primary">{{ ucwords($type) }} Bill</a>
+  <!--<a href="{{ route('bills.create', ['type' => $type ]) }}" class="btn btn-primary">{{ ucwords($type) }} Bill</a>-->
 </header>
 
 @php

@@ -51,10 +51,10 @@
                     value="{{ $poNumber ?? '' }}">
             </div>
 
-            <div class="col-lg-2 col-md-6">
+            {{-- <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Month</label>
                 <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
-            </div>
+            </div> --}}
 
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Date From</label>

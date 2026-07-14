@@ -105,7 +105,7 @@ class BillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'invoice_id'   => 'required|exists:invoices,id',
+            // 'invoice_id'   => 'required|exists:invoices,id',
             'bill_date'    => 'required|date',
             'address'      => 'nullable|string|max:500',
             'phone_number' => 'nullable|string|max:15',
@@ -134,8 +134,8 @@ class BillController extends Controller
                 'bill_number'       => Bill::billNumber(),
                 'type'              => Bill::SALE,
                 'bill_date'         => $request->bill_date,
-                'customer_id'       => $invoice->customer_id,
-                'invoice_id'        => $invoice->id,
+                'customer_id'       => $invoice->customer_id ??  $request->customer_id,
+                'invoice_id'        => $invoice->id ?? null,
                 'phone_number'      => $request->phone_number ?? $invoice->phone_number,
                 'gst_number'        => $request->gst_number   ?? $invoice->customer->gstin,
                 'address'           => $request->address       ?? $invoice->address,

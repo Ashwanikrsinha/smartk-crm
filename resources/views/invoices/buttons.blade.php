@@ -18,7 +18,7 @@
 
 {{-- SM APPROVE / REJECT (submitted POs only) --}}
 @can('approve', $invoice)
-    @if ($invoice->isSubmitted() && (auth()->user()->isSalesManager() || auth()->user()->isAdmin()))
+    @if ($invoice->isSubmitted() && (auth()->user()->isSalesManager() || auth()->user()->isBusinessManager() || auth()->user()->isAdmin()))
         <button type="button" class="btn btn-sm text-success" title="SM Approve" data-bs-toggle="modal"
             data-bs-target="#sm-approve-modal-{{ $invoice->id }}">
             <i class="feather icon-check-circle"></i>

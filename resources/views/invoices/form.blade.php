@@ -493,12 +493,12 @@
         <div class="pdc-row border rounded p-3 mb-2 d-flex align-items-center gap-3 flex-wrap">
             <span class="badge bg-success">PDC ${idx + 1}</span>
             <div>
-                <label class="form-label mb-1 small">Date <span class="text-danger">*</span></label>
-                <input type="date" name="pdc_dates[]" class="form-control form-control-sm" required style="width:140px">
+                <label class="form-label mb-1 small">Date </label>
+                <input type="date" name="pdc_dates[]" class="form-control form-control-sm"  style="width:140px">
             </div>
             <div>
-                <label class="form-label mb-1 small">Cheque Number <span class="text-danger">*</span></label>
-                <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm" required placeholder="Cheque no." style="width:160px">
+                <label class="form-label mb-1 small">Cheque Number </label>
+                <input type="text" name="pdc_cheque_numbers[]" class="form-control form-control-sm"  placeholder="Cheque no." style="width:160px">
             </div>
             <div>
                 <label class="form-label mb-1 small">Bank Name</label>
@@ -506,7 +506,7 @@
             </div>
             <div>
                 <label class="form-label mb-1 small">Amount (₹)</label>
-                <input type="number" step="0.01" name="pdc_amounts[]" class="form-control form-control-sm" placeholder="0.00" style="width:120px">
+                <input type="number" step="0.01" name="pdc_amounts[]" value="0" class="form-control form-control-sm" placeholder="0.00" style="width:120px">
             </div>
             <button type="button" class="btn btn-sm btn-outline-danger remove-pdc-row ms-auto mt-3">
                 <i class="feather icon-trash-2"></i>

@@ -164,7 +164,7 @@ Route::middleware('auth')->group(function () {
     Route::get('dispatches/po-summary/{invoice}',
         [Controllers\DispatchController::class, 'poSummary'])->name('dispatches.po-summary');
 
-    Route::resource('dispatches', Controllers\DispatchController::class)->only(['index','create','store','show']);
+    Route::resource('dispatches', Controllers\DispatchController::class)->only(['index','create','store','show','update']);
 
     // ═════════════════════════════════════════════════════════════════════════
     // QUOTATIONS

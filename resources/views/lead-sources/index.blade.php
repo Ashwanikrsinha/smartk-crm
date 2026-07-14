@@ -10,7 +10,7 @@
     </header>
 
     <div class="bg-white rounded shadow-sm p-3">
-        <x-datatable id="lead-sources" :columns="['#', 'Name', 'Schools Linked', 'Actions']" />
+        <x-datatable id="lead-sources" :columns="['#', 'Name',  'Actions']" />
     </div>
 @endsection
 
@@ -32,12 +32,7 @@
                     {
                         data: 'name',
                         name: 'name'
-                    },
-                    {
-                        data: 'customers_count',
-                        name: 'customers_count',
-                        searchable: false
-                    },
+                    }, 
                     {
                         data: 'action',
                         orderable: false,

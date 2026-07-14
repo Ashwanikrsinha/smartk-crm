@@ -39,7 +39,7 @@ class PdcController extends Controller
                     'cheque_date',
                     'amount',
                     'status'
-                );
+                )->orderBy('id','desc');
 
             return DataTables::of($pdcs)
                 ->editColumn('cheque_date', fn($p) => $p->cheque_date->format('d M, Y'))

@@ -271,12 +271,27 @@ class Invoice extends Model
         return self::doesntExist() ? 1001 : self::max('invoice_number') + 1;
     }
 
+    // public static function generatePoNumber(): string
+    // {
+    //     $year = date('Y');
+    //     $last = self::whereYear('created_at', $year)->max('id') ?? 0;
+    //     $seq  = str_pad($last + 1, 4, '0', STR_PAD_LEFT);
+    //     return "PO-{$year}-{$seq}";
+    // }
     public static function generatePoNumber(): string
     {
-        $year = date('Y');
-        $last = self::whereYear('created_at', $year)->max('id') ?? 0;
-        $seq  = str_pad($last + 1, 4, '0', STR_PAD_LEFT);
-        return "PO-{$year}-{$seq}";
+        if (date('n') >= 4) {
+            $startYear = date('Y');
+        } else {
+            $startYear = date('Y') - 1;
+        }
+    
+        $endYearShort = substr($startYear + 1, -2);
+    
+        $last = self::whereYear('created_at', date('Y'))->max('id') ?? 0;
+        $seq = str_pad($last + 1, 5, '0', STR_PAD_LEFT);
+    
+        return "PO-{$startYear}-{$endYearShort}-{$seq}";
     }
 
     public static function followTypes(): array

@@ -204,7 +204,7 @@
                                 {{ $po->po_number }}
                             </a>
                             <small class="text-muted d-block">
-                                {{ $po->invoice_date->format('d M, Y') }} &bull; {{ $po->user->username }}
+                                {{ $po->invoice_date->format('d M, Y') }} &bull; {{ $po->user?->username ?? "-" }}
                             </small>
                         </div>
                         <div class="text-end">

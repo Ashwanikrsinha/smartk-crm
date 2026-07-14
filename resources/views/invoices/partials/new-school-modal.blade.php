@@ -50,8 +50,8 @@
 
                     {{-- Email --}}
                     <div class="col-lg-4 mb-3">
-                        <label class="form-label">Email ID</label>
-                        <input type="email" id="modal-email" class="form-control" placeholder="school@example.com">
+                        <label class="form-label">Email ID <span class="text-danger">*</span></label>
+                        <input type="email" id="modal-email" class="form-control" placeholder="school@example.com" required>
                     </div>
 
                     {{-- Address --}}
