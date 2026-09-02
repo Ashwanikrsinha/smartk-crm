@@ -285,12 +285,12 @@ class Invoice extends Model
         } else {
             $startYear = date('Y') - 1;
         }
-    
+
         $endYearShort = substr($startYear + 1, -2);
-    
+
         $last = self::whereYear('created_at', date('Y'))->max('id') ?? 0;
         $seq = str_pad($last + 1, 5, '0', STR_PAD_LEFT);
-    
+
         return "PO-{$startYear}-{$endYearShort}-{$seq}";
     }
 
@@ -329,10 +329,10 @@ class Invoice extends Model
             if (empty($date)) continue;
             $this->pdcs()->create([
                 'pdc_label'     => 'PDC ' . ($i + 1),
-                'cheque_date'   => $date,
-                'cheque_number' => $request->pdc_cheque_numbers[$i],
+                'cheque_date'   => $date ?? null,
+                'cheque_number' => $request->pdc_cheque_numbers[$i] ?? null,
                 'bank_name'     => $request->pdc_bank_names[$i] ?? null,
-                'amount'        => $request->pdc_amounts[$i],
+                'amount'        => $request->pdc_amounts[$i] ?? 0,
                 'status'        => 'pending',
             ]);
         }

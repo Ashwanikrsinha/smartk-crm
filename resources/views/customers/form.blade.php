@@ -94,9 +94,9 @@
     </div>
 
     <div class="col-lg-2 mb-3">
-        <label class="form-label">Pin Code</label>
+        <label class="form-label">Pin Code <span class="text-danger">*</span></label>
         <input type="text" name="pin_code" class="form-control" value="{{ $customer->pin_code ?? old('pin_code') }}"
-            placeholder="6-digit" maxlength="6">
+            placeholder="6-digit" maxlength="6" required>
     </div>
 
     <div class="col-12 mb-3">
@@ -210,8 +210,8 @@
             <div class="form-text">PDF or image, max 5MB</div>
         </div>
         <div class="col-lg-4 mb-3">
-            <label class="form-label">PAN Card</label>
-            <input type="file" name="pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            <label class="form-label">PAN Card <span class="text-danger">*</span></label>
+            <input type="file" name="pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
         </div>
         <div class="col-lg-4 mb-3">
             <label class="form-label">GST Certificate</label>
