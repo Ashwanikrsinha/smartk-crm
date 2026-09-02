@@ -26,6 +26,7 @@ use App\Jobs\SendPoMailToSchool;
 use App\Jobs\SendPoMailToSp;
 use App\Jobs\SendPoMailToSm;
 use App\Jobs\SendPoMailToAccounts;
+use App\Jobs\SendPoMailToAdmin;
 use App\Http\Requests\InvoiceStoreRequest;
 use App\Http\Requests\InvoiceUpdateRequest;
 use App\Models\PoLog;
@@ -43,7 +44,7 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
-        $threeDaysAgo = Carbon::now()->subDays(3); 
+        $threeDaysAgo = Carbon::now()->subDays(3);
         Invoice::where('status', 'submitted')
             ->where('submited_at', '<=', $threeDaysAgo)
             ->update(['status' => 'expired']);
@@ -466,11 +467,11 @@ class InvoiceController extends Controller
                     'bm_approved_at'   => now(),
                     'rejection_reason' => null,
                 ]);
-        
+
                 PoLog::record($invoice, PoLog::ACTION_APPROVED, [
                     'remarks' => 'Final approval by BM: ' . auth()->user()->username,
                 ]);
-        
+
                 // Generate document and send mails — only on FULL approval
                 try {
                     app(PoDocumentService::class)->generate($invoice);
@@ -480,11 +481,11 @@ class InvoiceController extends Controller
                         'error' => $e->getMessage()
                     ]);
                 }
-        
+
                 try {
                     // Notify SP
                     $invoice->user->notify(new PoFullyApproved($invoice));
-        
+
                     dispatch(new SendPoMailToSchool($invoice))->onQueue('mails');
                     dispatch(new SendPoMailToSp($invoice))->onQueue('mails');
                     dispatch(new SendPoMailToAccounts($invoice))->onQueue('mails');
@@ -493,7 +494,7 @@ class InvoiceController extends Controller
                 } catch (\Exception $e) {
                     Log::error('Error notifying SP of PO fully approval:', ['error' => $e]);
                 }
-        
+
                 return back()->with(
                     'success',
                     "PO {$invoice->po_number} fully approved. Mail sent to school, SP, and Accounts."
@@ -544,7 +545,7 @@ class InvoiceController extends Controller
     public function bmApprove(Request $request, Invoice $invoice)
     {
         $this->authorize('approve', $invoice);
-        
+
             $invoiceuser = User::select('reportive_id')->where('id',$invoice->user_id)->first();
             if(!$invoiceuser->reportive_id == auth()->user()->id){
                 if (!$invoice->isSmApproved() && !(auth()->user()->isAdmin() && $invoice->isSubmitted())) {
@@ -715,7 +716,7 @@ class InvoiceController extends Controller
         ], [
             'rejection_reason.min' => 'Rejection reason must be at least 20 characters.',
         ]);
-        
+
         if (!$invoice->isSubmitted()) {
             return back()->with('error', 'Only submitted POs can be rejected by SM.');
         }
@@ -725,18 +726,18 @@ class InvoiceController extends Controller
                 'status'           => Invoice::STATUS_BM_REJECTED,
                 'rejection_reason' => $request->rejection_reason,
             ]);
-    
+
             PoLog::record($invoice, PoLog::ACTION_REJECTED, [
                 'remarks' => 'BM rejected: ' . $request->rejection_reason,
             ]);
-    
+
             // Notify SM and SP
             if ($invoice->approvedBy) {
-    
+
                 $invoice->approvedBy->notify(new PoBmRejected($invoice));
             }
             $invoice->user->notify(new PoBmRejected($invoice));
-    
+
             return back()->with(
                 'success',
                 "PO {$invoice->po_number} returned by BM for correction."
