@@ -52,7 +52,15 @@
 
     {{-- ═══ SUMMARY WIDGETS ════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-        @foreach ([['PO Amount', $totals['po_amount'], 'warning'], ['Total Billed', $totals['billing_amount'], 'info'], [' Pending PO', $totals['pending_po'], 'secondary'], [' Collected', $totals['collected'], 'success'], [' Outstanding', $totals['outstanding'], 'danger']] as [$label, $val, $color])
+        @foreach ([
+            ['PO Amount', $totals['po_amount'], 'warning'],
+            ['Total Billed', $totals['billing_amount'], 'info'],
+            ['GST Amount', $totals['gst_amount'], 'primary'],
+            ['Net Billed', $totals['net_billed'], 'dark'],
+            ['Pending PO', $totals['pending_po'], 'secondary'],
+            ['Collected', $totals['collected'], 'success'],
+            ['Outstanding', $totals['outstanding'], 'danger'],
+        ] as [$label, $val, $color])
             <div class="col-6 col-lg">
                 <div class="bg-white rounded shadow-sm p-3 text-center border-top border-{{ $color }} border-3">
                     <h5 class="fw-bold text-{{ $color }} mb-1">₹{{ number_format($val, 0) }}</h5>
@@ -80,6 +88,10 @@
                         <th class="text-end text-info">
                             Billed <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
                         </th>
+                        <th class="text-end" style="color:#6f42c1">
+                            GST <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                        </th>
+                        <th class="text-end text-dark fw-bold">Net Billed</th>
                         <th class="text-end text-secondary"> Pend. PO</th>
                         <th class="text-end text-success">
                              Collected <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
@@ -106,6 +118,10 @@
                             <td class="text-end fw-bold text-warning">₹{{ number_format($row->amount, 0) }}</td>
                             <td class="text-end" id="billed-cell-{{ $row->id }}">
                                 ₹{{ number_format($row->billing_amount, 0) }}</td>
+                            <td class="text-end" id="gst-cell-{{ $row->id }}" style="color:#6f42c1">
+                                ₹{{ number_format($row->gst_amount ?? 0, 0) }}</td>
+                            <td class="text-end fw-bold" id="netbilled-cell-{{ $row->id }}">
+                                ₹{{ number_format(max(0, (float)$row->billing_amount - (float)($row->gst_amount ?? 0)), 0) }}</td>
                             <td class="text-end" id="pending-po-cell-{{ $row->id }}">
                                 ₹{{ number_format($row->pending_po_amount, 0) }}</td>
                             <td class="text-end" id="collected-cell-{{ $row->id }}">
@@ -124,7 +140,7 @@
 
                         {{-- ── Per-row entry panel (hidden by default) ─ --}}
                         <tr class="entry-panel-row d-none" id="entry-panel-{{ $row->id }}">
-                            <td colspan="9" class="p-0">
+                            <td colspan="11" class="p-0">
                                 <div class="border-start border-4 border-primary bg-light p-3">
 
                                     <div class="row g-2 mb-2">
@@ -133,6 +149,12 @@
                                                 Entry for {{ $row->po_number }} — {{ $row->customer->name }}
                                                 <span class="text-info ms-2">
                                                     Current Billed: ₹{{ number_format($row->billing_amount, 2) }}
+                                                </span>
+                                                <span style="color:#6f42c1" class="ms-2">
+                                                    Current GST: ₹{{ number_format($row->gst_amount ?? 0, 2) }}
+                                                </span>
+                                                <span class="text-dark ms-2 fw-bold">
+                                                    Current Net Billed: ₹{{ number_format(max(0, (float)$row->billing_amount - (float)($row->gst_amount ?? 0)), 2) }}
                                                 </span>
                                                 <span class="text-success ms-2">
                                                     Current Collected: ₹{{ number_format($row->collected_amount, 2) }}
@@ -150,6 +172,19 @@
                                             <input type="number" step="0.01" min="0"
                                                 class="form-control form-control-sm billed-input"
                                                 data-id="{{ $row->id }}" placeholder="0.00">
+                                        </div>
+
+                                        {{-- GST amount input --}}
+                                        <div class="col-lg-2">
+                                            <label class="form-label small mb-1 fw-bold" style="color:#6f42c1">
+                                                GST Amount (Total, ₹)
+                                            </label>
+                                            <input type="number" step="0.01" min="0"
+                                                class="form-control form-control-sm gst-input"
+                                                data-id="{{ $row->id }}"
+                                                value="{{ number_format((float)($row->gst_amount ?? 0), 2, '.', '') }}"
+                                                placeholder="0.00">
+                                            <small class="text-muted d-block">Set total GST for this PO</small>
                                         </div>
 
                                         {{--  Collection amount input --}}
@@ -245,13 +280,15 @@
                                                         <th class="text-end">Amount</th>
                                                         <th class="text-end">PO Amt</th>
                                                         <th class="text-end text-info">Billed</th>
+                                                        <th class="text-end" style="color:#6f42c1">GST</th>
+                                                        <th class="text-end text-dark fw-bold">Net Billed</th>
                                                         <th class="text-end text-success">Collected</th>
                                                         <th class="text-end text-danger">Outstanding</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="logs-body-{{ $row->id }}">
                                                     <tr>
-                                                        <td colspan="7" class="text-center py-2 text-muted">Loading logs...</td>
+                                                        <td colspan="9" class="text-center py-2 text-muted">Loading logs...</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -263,7 +300,7 @@
 
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">No approved orders found.</td>
+                            <td colspan="11" class="text-center text-muted py-4">No approved orders found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -275,6 +312,8 @@
                             <td colspan="3" class="text-end">Total</td>
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 0) }}</td>
                             <td class="text-end">₹{{ number_format($totals['billing_amount'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['gst_amount'], 0) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['net_billed'], 0) }}</td>
                             <td class="text-end">₹{{ number_format($totals['pending_po'], 0) }}</td>
                             <td class="text-end">₹{{ number_format($totals['collected'], 0) }}</td>
                             <td class="text-end">₹{{ number_format($totals['outstanding'], 0) }}</td>
@@ -307,11 +346,11 @@
 
             function fetchLogs(id) {
                 var $body = $('#logs-body-' + id);
-                $body.html('<tr><td colspan="7" class="text-center py-2 text-muted">Loading logs...</td></tr>');
+                $body.html('<tr><td colspan="9" class="text-center py-2 text-muted">Loading logs...</td></tr>');
 
                 $.get('/collections/invoice/' + id, function(res) {
                     if (!res.logs || res.logs.length === 0) {
-                        $body.html('<tr><td colspan="7" class="text-center py-2 text-muted">No logs found.</td></tr>');
+                        $body.html('<tr><td colspan="9" class="text-center py-2 text-muted">No logs found.</td></tr>');
                         return;
                     }
 
@@ -322,6 +361,8 @@
                         });
                         var actionLabel = log.action.charAt(0).toUpperCase() + log.action.slice(1);
                         var amount = log.amount > 0 ? '₹' + formatNum(log.amount) : '—';
+                        var gstAmt = (log.snapshot_gst_amount !== undefined && log.snapshot_gst_amount !== null) ? log.snapshot_gst_amount : 0;
+                        var netBilled = Math.max(0, (parseFloat(log.snapshot_billed_amount) || 0) - parseFloat(gstAmt));
 
                         html += '<tr>' +
                             '<td>' + date + '</td>' +
@@ -329,6 +370,8 @@
                             '<td class="text-end fw-bold">' + amount + '</td>' +
                             '<td class="text-end">₹' + formatNum(log.snapshot_po_amount) + '</td>' +
                             '<td class="text-end text-info">₹' + formatNum(log.snapshot_billed_amount) + '</td>' +
+                            '<td class="text-end" style="color:#6f42c1">₹' + formatNum(gstAmt) + '</td>' +
+                            '<td class="text-end text-dark fw-bold">₹' + formatNum(netBilled) + '</td>' +
                             '<td class="text-end text-success">₹' + formatNum(log.snapshot_collected) + '</td>' +
                             '<td class="text-end text-danger fw-bold">₹' + formatNum(log.snapshot_outstanding) + '</td>' +
                         '</tr>';
@@ -353,18 +396,27 @@
                 var $err = $('.entry-error-' + id);
 
                 var billedAmt = parseFloat($('.billed-input[data-id="' + id + '"]').val()) || 0;
+                var gstAmt = parseFloat($('.gst-input[data-id="' + id + '"]').val());
+                if (isNaN(gstAmt) || gstAmt < 0) gstAmt = null;
                 var collectedAmt = parseFloat($('.collected-input[data-id="' + id + '"]').val()) || 0;
                 var entryDate = $('.entry-date[data-id="' + id + '"]').val();
 
-                if (billedAmt <= 0 && collectedAmt <= 0) {
-                    $err.text('Enter at least one amount (B or D).').removeClass('d-none');
+                var hasBilled = billedAmt > 0;
+                var hasGst = gstAmt !== null;
+                var hasCollected = collectedAmt > 0;
+
+                if (!hasBilled && !hasGst && !hasCollected) {
+                    $err.text('Enter at least one value (Billing, GST, or Collection).').removeClass('d-none');
                     $ok.addClass('d-none');
                     return;
                 }
-                if (!entryDate) {
-                    $err.text('Date is required.').removeClass('d-none');
+                if ((hasBilled || hasCollected) && !entryDate) {
+                    $err.text('Date is required for Billing or Collection entry.').removeClass('d-none');
                     return;
                 }
+                // If only GST is being set, date isn't strictly needed but entry_date is required
+                // by validation for billed/collected; we'll handle it gracefully below.
+                if (!entryDate) entryDate = new Date().toISOString().split('T')[0];
 
                 $btn.prop('disabled', true).html(
                     '<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
@@ -377,8 +429,9 @@
                     data: {
                         _token: '{{ csrf_token() }}',
                         invoice_id: id,
-                        billed_amount: billedAmt,
-                        collected_amount: collectedAmt,
+                        billed_amount: hasBilled ? billedAmt : 0,
+                        gst_amount: gstAmt,
+                        collected_amount: hasCollected ? collectedAmt : 0,
                         payment_mode: $('.payment-mode[data-id="' + id + '"]').val(),
                         billing_source: $('.billing-source[data-id="' + id + '"]').val(),
                         billing_reference: $('.billing-reference[data-id="' + id + '"]').val(),
@@ -389,6 +442,8 @@
                     success: function(res) {
                         // Update cells live
                         $('#billed-cell-' + id).text('₹' + formatNum(res.billing_amount));
+                        $('#gst-cell-' + id).text('₹' + formatNum(res.gst_amount));
+                        $('#netbilled-cell-' + id).text('₹' + formatNum(res.net_billed));
                         $('#pending-po-cell-' + id).text('₹' + formatNum(res.pending_po));
                         $('#collected-cell-' + id).text('₹' + formatNum(res.collected_amount));
                         $('#outstanding-cell-' + id)
@@ -418,6 +473,7 @@
                 $('.collection-reference[data-id="' + id + '"]').val('');
                 $('.entry-remarks[data-id="' + id + '"]').val('');
                 $('.entry-date[data-id="' + id + '"]').val('{{ date('Y-m-d') }}');
+                // gst-input keeps the current stored GST total (not reset on cancel)
             }
 
             function formatNum(n) {

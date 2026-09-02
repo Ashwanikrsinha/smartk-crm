@@ -125,6 +125,10 @@
                             <th>School Name</th>
                             <th class="text-end text-warning"> PO Amount</th>
                             <th class="text-end text-info" style="min-width:140px">Billing  </th>
+                            <th class="text-end" style="color:#6f42c1; min-width:120px">
+                                GST <i class="feather icon-edit-2 ms-1" style="font-size:0.7rem"></i>
+                            </th>
+                            <th class="text-end text-dark fw-bold">Net Billed</th>
                             <th class="text-end text-secondary">Pending PO</th>
                             <th class="text-end text-success" style="min-width:140px">Collection  </th>
                             <th class="text-end text-danger">Outstanding</th>
@@ -132,7 +136,10 @@
                     </thead>
                     <tbody>
                         @forelse($rows as $row)
-                            <tr id="row-{{ $row->id }}">
+                            <tr id="row-{{ $row->id }}"
+                                data-current-billed="{{ (float) $row->billing_amount }}"
+                                data-current-gst="{{ (float) ($row->gst_amount ?? 0) }}"
+                                data-current-collected="{{ (float) $row->collected_amount }}">
                                 <td>
                                     <a href="{{ route('invoices.show', $row->id) }}" class="text-primary fw-bold">
                                         {{ $row->po_number }}
@@ -163,6 +170,28 @@
                                     </small>
                                 </td>
 
+                                {{-- Editable GST Amount (total, not additive) --}}
+                                <td class="text-end">
+                                    <div class="d-flex align-items-center gap-1 justify-content-end">
+                                        <span class="text-muted small">₹</span>
+                                        <input type="number" step="0.01" min="0"
+                                            name="collections[{{ $row->id }}][gst_amount]"
+                                            class="form-control form-control-sm text-end gst-input"
+                                            style="width: 100px; color:#6f42c1"
+                                            value="{{ number_format((float) (0), 2, '.', '') }}"
+                                            data-invoice-id="{{ $row->id }}"
+                                            placeholder="0.00">
+                                    </div>
+                                    <small class="text-muted d-block text-end mt-1">
+                                        Current: ₹{{ number_format($row->gst_amount ?? 0, 0) }}
+                                    </small>
+                                </td>
+
+                                {{-- Net Billed (view only, auto-calculated) --}}
+                                <td class="text-end fw-bold text-dark" id="netbilled-{{ $row->id }}">
+                                    ₹{{ number_format(max(0, (float) $row->billing_amount - (float) ($row->gst_amount ?? 0)), 2) }}
+                                </td>
+
                                 <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 0) }}</td>
 
                                 {{-- Editable Collection   --}}
@@ -190,7 +219,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="10" class="text-center text-muted py-4">
                                     No approved orders found for selected filters.
                                 </td>
                             </tr>
@@ -203,6 +232,8 @@
                                 <td colspan="3" class="text-end">Total</td>
                                 <td class="text-end">₹{{ number_format($totalPo, 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totalBilling, 2) }}</td>
+                                <td class="text-end">₹{{ number_format($totalGst ?? $rows->sum(fn($r) => (float) ($r->gst_amount ?? 0)), 2) }}</td>
+                                <td class="text-end">₹{{ number_format($totalNetBilled ?? max(0, $totalBilling - ($totalGst ?? $rows->sum(fn($r) => (float) ($r->gst_amount ?? 0)))), 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totalPo - $totalBilling, 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totalCollected, 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totalOutstanding, 2) }}</td>
@@ -265,27 +296,39 @@
             $('select').selectize();
 
             // Show payment details when any amount is changed
-            $(document).on('input', '.collection-input, .billing-input', function() {
-                const invoiceId = $(this).data('invoice-id');
+            // NOTE: reads current values from data-* attributes on the <tr>, not scraped
+            // DOM text — nth-child text-scraping breaks silently the moment a column is
+            // added or reordered. Don't revert to that pattern.
+            $(document).on('input', '.collection-input, .billing-input, .gst-input', function() {
                 const row = $(this).closest('tr');
+                const invoiceId = row.attr('id').replace('row-', '');
 
-                // Base data from cells (numeric)
-                const currentBilled = parseFloat(row.find('td:nth-child(5) small').text().replace(/[^0-9.]/g, '')) || 0;
-                const currentCollected = parseFloat(row.find('td:nth-child(7) small').text().replace(/[^0-9.]/g, '')) || 0;
+                // Base (already-saved) values, injected server-side
+                const currentBilled = parseFloat(row.data('current-billed')) || 0;
+                const currentGst = parseFloat(row.data('current-gst')) || 0;
+                const currentCollected = parseFloat(row.data('current-collected')) || 0;
 
-                // New additions from inputs
+                // Billing/Collection are ADDITIVE entries; GST is a TOTAL override
+                // (matches the semantics already used on the collections index page).
                 const addBilled = parseFloat(row.find('.billing-input').val()) || 0;
                 const addCollected = parseFloat(row.find('.collection-input').val()) || 0;
+                const gstInputVal = row.find('.gst-input').val();
+                const newGst = gstInputVal === '' ? currentGst : (parseFloat(gstInputVal) || 0);
 
                 const newBilled = currentBilled + addBilled;
                 const newCollected = currentCollected + addCollected;
                 const newOutstanding = Math.max(newBilled - newCollected, 0);
+                const newNetBilled = Math.max(newBilled - newGst, 0);
 
                 // Update outstanding column in real-time
                 const outstandingCell = $('#outstanding-' + invoiceId);
                 outstandingCell.text('₹' + newOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0}));
                 outstandingCell.toggleClass('text-danger fw-bold', newOutstanding > 0);
                 outstandingCell.toggleClass('text-success', newOutstanding === 0);
+
+                // Update net billed column in real-time
+                $('#netbilled-' + invoiceId)
+                    .text('₹' + newNetBilled.toLocaleString('en-IN', {minimumFractionDigits: 2}));
 
                 // Show payment details section
                 $('#payment-details-section').removeClass('d-none');

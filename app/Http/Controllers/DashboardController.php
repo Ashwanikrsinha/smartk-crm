@@ -474,6 +474,7 @@ class DashboardController extends Controller
                 'user_id',
                 'customer_id',
                 'amount',
+                'gst_amount',
                 'billing_amount',
                 'collected_amount',
                 'outstanding_amount'

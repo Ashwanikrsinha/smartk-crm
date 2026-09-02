@@ -200,6 +200,23 @@ class Invoice extends Model
     }
 
     /**
+     * C1 — Net Billed Amount (B - GST)
+     * = Billed Amount minus GST Amount entered by Accounts/Admin
+     */
+    public function getNetBilledAmountAttribute(): float
+    {
+        return max(0, (float) $this->billing_amount - (float) ($this->attributes['gst_amount'] ?? 0));
+    }
+
+    /**
+     * Shortcut for net_billed_amount accessor (kebab/camel variants)
+     */
+    public function getNetBilledAttribute(): float
+    {
+        return $this->net_billed_amount;
+    }
+
+    /**
      * D — Total Collected
      * = Manual collection entries + Cleared PDC cheques
      */

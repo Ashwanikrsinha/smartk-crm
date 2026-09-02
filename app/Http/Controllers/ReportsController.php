@@ -56,6 +56,7 @@ class ReportsController extends Controller
                 'status',
                 'amount',
                 'billing_amount',
+                'gst_amount',
                 'collected_amount',
                 'outstanding_amount',
                 'pending_po_amount',
@@ -87,6 +88,8 @@ class ReportsController extends Controller
         $totals = [
             'po_amount'      => $rows->sum('amount'),
             'billing_amount' => $rows->sum('billing_amount'),
+            'gst_amount'     => $rows->sum('gst_amount'),
+            'net_billed'     => $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))),
             'pending_po'     => $rows->sum('pending_po_amount'),
             'collected'      => $rows->sum('collected_amount'),   // used only for non-Marketing
             'outstanding'    => $rows->sum('outstanding_amount'), // used only for non-Marketing
@@ -94,7 +97,7 @@ class ReportsController extends Controller
 
         // ── Filter dropdowns ───────────────────────────────
         $teamMembers = User::whereIn('id', $teamIds)
-            ->salesPersons()
+            ->SalesPersonOrManager()
             ->active()
             ->orderBy('username')
             ->get(['id', 'username', 'emp_code']);

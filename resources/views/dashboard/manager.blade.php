@@ -115,7 +115,7 @@
     {{-- D: Total Collection --}}
     <div class="col-6 col-lg-2">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
-            <div class="text-success mb-1"><i class="feather icon-dollar-sign fs-4"></i></div>
+            <div class="text-success mb-1"><span class="fs-4">₹</span></div>
             <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection, 0) }}</h5>
             <small class="text-muted">Total Collection</small>
         </div>

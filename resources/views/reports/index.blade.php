@@ -34,9 +34,9 @@
                 {{-- SP Filter (hidden for SP role) --}}
                 @if (!$isSp)
                     <div class="col-lg-3 col-md-6">
-                        <label class="form-label small mb-1">Sales Person</label>
+                        <label class="form-label small mb-1">Team Members</label>
                         <select name="sp_id" class="form-control form-control-sm">
-                            <option value="">All SPs</option>
+                            <option value="">All Team Members</option>
                             @foreach ($teamMembers as $sp)
                                 <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>
                                     {{ $sp->username }} ({{ $sp->emp_code }})
@@ -147,13 +147,15 @@
 
     {{-- ═══ SUMMARY WIDGETS ════════════════════════════════════
          Marketing: PO Amount, Billed, Pending PO only
-         Others:    all five
+         Others:    all five + GST + Net Billed
     ════════════════════════════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
         @php
             $widgets = [
                 ['label' => 'Total PO Amount', 'value' => $totals['po_amount'], 'color' => 'warning', 'show' => true],
                 ['label' => 'Total Billed', 'value' => $totals['billing_amount'], 'color' => 'info', 'show' => !$isMarketing,],
+                ['label' => 'GST Amount', 'value' => $totals['gst_amount'], 'color' => 'primary', 'show' => !$isMarketing,],
+                ['label' => 'Net Billed', 'value' => $totals['net_billed'], 'color' => 'dark', 'show' => !$isMarketing,],
                 ['label' => 'Pending PO', 'value' => $totals['pending_po'], 'color' => 'secondary', 'show' => !$isMarketing,],
                 [
                     'label' => 'Total Collected',
@@ -218,6 +220,8 @@
                         <th class="text-end text-warning">PO Amt</th>
                         @unless ($isMarketing)
                         <th class="text-end text-info">Billed</th>
+                        <th class="text-end" style="color:#6f42c1">GST</th>
+                        <th class="text-end text-dark fw-bold">Net Billed</th>
                         <th class="text-end text-secondary">Pending PO</th>
                         <th class="text-end text-success">Total Collected</th>
                         <th class="text-end text-danger">Outstanding</th>
@@ -256,6 +260,8 @@
                             <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
                             @unless ($isMarketing)
                                 <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
+                                <td class="text-end" style="color:#6f42c1">₹{{ number_format((float)($row->gst_amount ?? 0), 2) }}</td>
+                                <td class="text-end fw-bold">₹{{ number_format(max(0, (float)$row->billing_amount - (float)($row->gst_amount ?? 0)), 2) }}</td>
                                 <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
                                 <td class="text-end">₹{{ number_format($row->collected_amount, 2) }}</td>
                                 <td
@@ -281,7 +287,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" class="text-center text-muted py-4">
+                            <td colspan="16" class="text-center text-muted py-4">
                                 No records found for the selected filters.
                             </td>
                         </tr>
@@ -293,8 +299,9 @@
                         <tr>
                             {{--
                                 colspan shifts based on hidden columns:
-                                SP role hides SM+SP cols (2 less), Marketing hides collected+outstanding.
+                                SP role hides SM+SP cols (2 less), Marketing hides financials.
                                 Base non-financial cols before amounts: PO#, Date, [SM], [SP], School, State, Lead = 5 or 7
+                                Financial cols (non-marketing): Billed, GST, NetBilled, PendPO, Coll, Outst = 6
                             --}}
                             @php
                                 $baseColspan = $isSp ? 5 : 7; // PO#, Date, (SM, SP), School, State, Lead
@@ -305,6 +312,8 @@
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 2) }}</td>
                             @unless ($isMarketing)
                             <td class="text-end">₹{{ number_format($totals['billing_amount'], 2) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['gst_amount'], 2) }}</td>
+                            <td class="text-end">₹{{ number_format($totals['net_billed'], 2) }}</td>
                             <td class="text-end">₹{{ number_format($totals['pending_po'], 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totals['collected'], 2) }}</td>
                                 <td class="text-end">₹{{ number_format($totals['outstanding'], 2) }}</td>

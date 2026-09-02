@@ -177,6 +177,12 @@ class User extends Authenticatable
     {
         return $query->whereHas('role', fn($q) => $q->where('name', 'Manager'));
     }
+    public function scopeSalesPersonOrManager($query)
+    {
+        return $query->whereHas('role', function ($q) {
+            $q->whereIn('name', ['Operator', 'Manager']);
+        });
+    }
 
     // -------------------------------------------------------
     // STATIC HELPERS

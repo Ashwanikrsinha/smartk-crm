@@ -80,8 +80,8 @@
 
                     {{-- Pin Code --}}
                     <div class="col-lg-2 mb-3">
-                        <label class="form-label">Pin Code</label>
-                        <input type="text" id="modal-pin" class="form-control" placeholder="6-digit" maxlength="6">
+                        <label class="form-label">Pin Code<span class="text-danger">*</span></label>
+                        <input type="text" id="modal-pin" class="form-control" placeholder="6-digit" maxlength="6" required>
                     </div>
 
                     <hr class="my-2">
@@ -95,8 +95,8 @@
 
                     {{-- PAN Upload --}}
                     <div class="col-lg-4 mb-3">
-                        <label class="form-label">PAN Card Upload</label>
-                        <input type="file" id="modal-pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+                        <label class="form-label">PAN Card Upload <span class="text-danger">*</span></label>
+                        <input type="file" id="modal-pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
                     </div>
 
                     {{-- GST Certificate --}}

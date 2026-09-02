@@ -162,7 +162,7 @@
 //         return [];
 //     }
 // }
- 
+
 
 namespace App\Exports;
 
@@ -236,6 +236,7 @@ class PurchaseOrdersExport implements
             'invoiceItems.product:id,name,category_id',
             'invoiceItems.product.category:id,name',
             'invoiceItems.unit:id,name',
+            'dispatches.items:dispatch_id,invoice_item_id,quantity_dispatched',
         ])->whereIn('user_id', $teamIds);
 
         $f = $this->filters;
@@ -261,7 +262,7 @@ class PurchaseOrdersExport implements
 
         return $query->orderByDesc('invoice_date');
     }
- 
+
 
     public function headings(): array
     {
@@ -287,13 +288,16 @@ class PurchaseOrdersExport implements
 
         if (!$this->isMarketing) {
             $base[] = 'Billed Amount (₹)';
+            $base[] = 'GST Amount (₹)';
+            $base[] = 'Net Billed (₹)';
             $base[] = 'Pending PO (₹)';
             $base[] = 'Collection (₹)';
             $base[] = 'Outstanding (₹)';
             $base[] = 'Delivery Due Date';
             $base[] = 'Product Type';
             $base[] = 'Product Name';
-            $base[] = 'Qty';
+            $base[] = 'Ordered Qty';
+            $base[] = 'Dispatched Qty';
             $base[] = 'Unit';
             $base[] = 'Rate (₹)';
             $base[] = 'Discount (₹)';
@@ -342,6 +346,9 @@ class PurchaseOrdersExport implements
 
         if (!$this->isMarketing) {
             $invoiceCols[] = number_format($invoice->billing_amount, 2);
+            $gstAmt = (float) ($invoice->gst_amount ?? 0);
+            $invoiceCols[] = number_format($gstAmt, 2);
+            $invoiceCols[] = number_format(max(0, $invoice->billing_amount - $gstAmt), 2);
             $invoiceCols[] = number_format($invoice->amount - $invoice->billing_amount, 2);
             $invoiceCols[] = number_format($invoice->collected_amount, 2);
             $invoiceCols[] = number_format($invoice->outstanding_amount, 2);
@@ -350,30 +357,42 @@ class PurchaseOrdersExport implements
                 : '—';
             $items = $invoice->invoiceItems;
             $itemRowCount = max($items->count(), 1);
-    
+
+            // Build dispatch qty map keyed by invoice_item_id
+            $dispatchMap = [];
+            foreach ($invoice->dispatches as $disp) {
+                foreach ($disp->items as $di) {
+                    $iid = $di->invoice_item_id;
+                    if (!isset($dispatchMap[$iid])) $dispatchMap[$iid] = 0;
+                    $dispatchMap[$iid] += (float) $di->quantity_dispatched;
+                }
+            }
+
             // Track the row range this invoice will occupy so we can merge later.
             $startRow = $this->currentRow;
             $endRow   = $startRow + $itemRowCount - 1;
             $this->mergeRanges[] = [$startRow, $endRow];
             $this->currentRow = $endRow + 1;
-    
+
             // No items at all: one row, item columns blank.
             if ($items->isEmpty()) {
-                return array_merge($invoiceCols, ['—', '—', '—', '—', '—', '—']);
+                return array_merge($invoiceCols, ['—', '—', '—', '—', '—', '—', '—', '—']);
             }
-    
+
             $rows = [];
             foreach ($items as $i => $item) {
+                $dispatched = (float) ($dispatchMap[$item->id] ?? 0);
                 $itemCols = [
                     $item->product->category->name ?? '—',
                     $item->product->name ?? $item->description ?? '—',
                     $item->quantity,
+                    $dispatched,
                     $item->unit->name ?? '—',
                     number_format($item->rate, 2),
                     number_format($item->discount, 2),
                     number_format($item->amount, 2),
                 ];
-    
+
                 // Only the FIRST row carries the invoice-level values.
                 // The rest are left blank; AfterSheet merges the cells so
                 // Excel only needs (and only shows) the top-left value.
@@ -389,7 +408,7 @@ class PurchaseOrdersExport implements
 
     public function styles(Worksheet $sheet): array
     {
-        $lastCol = Coordinate::stringFromColumnIndex($this->invoiceColCount + 6);
+        $lastCol = Coordinate::stringFromColumnIndex($this->invoiceColCount);
 
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -424,7 +443,7 @@ class PurchaseOrdersExport implements
                     }
 
                     // Thin bottom border to separate one invoice's block from the next.
-                    $lastItemCol = Coordinate::stringFromColumnIndex($this->invoiceColCount + 6);
+                    $lastItemCol = Coordinate::stringFromColumnIndex($this->invoiceColCount);
                     $sheet->getStyle("A{$endRow}:{$lastItemCol}{$endRow}")
                         ->getBorders()->getBottom()
                         ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
