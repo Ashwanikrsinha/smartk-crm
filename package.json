@@ -12,6 +12,7 @@
         "sass:watch": "sass resources/scss:public/assets/css --style=compressed --no-source-map --watch"
     },
     "dependencies": {
-        "bootstrap": "^5.0.1"
+        "bootstrap": "^5.0.1",
+        "docx": "^9.7.1"
     }
 }

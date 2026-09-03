@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * SmartK PO Document Generator
- * Generates the exact PO format the client specified.
+ * Generates the exact PO format matching PO Format-S.docx.
  * Called by Laravel: node generate_po_docx.js <json_data_file> <output_path>
  *
  * Usage:
@@ -27,31 +27,6 @@ if (!dataFile || !outputFile) {
 }
 
 const data = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-
-/**
- * data shape:
- * {
- *   po_number:        "PO-2025-0001",
- *   po_date:          "15 April, 2025",
- *   school_name:      "ABC Public School",
- *   school_address:   "123 MG Road",
- *   school_city:      "Mumbai",
- *   school_state:     "Maharashtra",
- *   contact_name:     "Mrs. Sunita Sharma",
- *   contact_designation: "Principal",
- *   contact_phone:    "9876543210",
- *   contact_email:    "principal@abc.edu",
- *   items: [
- *     { name: "Level 1 Teacher Kit", rate: "5000", qty: 10, total: 50000 },
- *     { name: "Level 2 Teacher Kit", rate: "6000", qty:  5, total: 30000 }
- *   ],
- *   grand_total:      80000,
- *   pdcs: [
- *     { label: "PDC 1", cheque_number: "123456", amount: 40000, date: "20 April, 2025" }
- *   ],
- *   remarks: ""
- * }
- */
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -96,17 +71,17 @@ function cell(children, width, opts = {}) {
     });
 }
 
-// ── T&C lines (fixed) ─────────────────────────────────────
+// ── T&C lines (updated as per PO Format-S.docx) ────────────
 
 const TC_LINES = [
-    "S. Chand Edutech Pvt. Ltd ('the Company') would always retain the license to the product given and it is not to be copied, modified, translated, decompiled, or otherwise used in any other manner than for teaching childrens in the school.",
-    "The School/Organisation ('the Customer') can use the program only at itslocation set out in the order form.",
-    "In the event of the custmer failing to make the payment to the Company as mutually agreed on in the Purchase order (“PO”), The Company remedies include terminating this PO without notice and recalling the material already delivered under the PO.If the outstanding amount is not paid, even after the mutually agreed T & amp; C, interest of 2 % per month is to be paid in full by the customer.",
+    "S. Chand Edutech Pvt. Ltd ('the Company'). would always retain the license to the product given and it is not to be copied, modified, translated, decompiled, or otherwise used in any other manner than for teaching childrens in the school.",
+    "The School/Organisation ('the Customer') can use the program only at its location set out in the order form.",
+    "In the event of the custmer failing to make the payment to the Company as mutally agreed on in the Purchase order ('PO'), The Company remedies include terminating this PO without notice and recalling the material already delivered under the PO. If the outstanding amount is not paid, even after the mutually agreed T&C, interest of 2% per month is to be paid in full by the customer.",
     "The Company shall not be held responsible or liable for not performing any of its oligations or undertakings provided for in PO if such performance is prevented, delayed or hindered by an act of god, fire, flood, explosion, riots, inability to procure labour, equipements, facilities, supplies, failure of transportation, strikes, lock outs not within the reasonable control of the Company.",
     "All payments shall be non-refundable once made.",
     "Once order is received, number of kits ordered cannot be reduced or cancelled without the Company's prior written consent.",
     "All the outstanding payments must be cleared within 3 Months of order delivery.",
-    "In case of any dishonour of a PDC, The Company shall immediately bring the matter to the knowledge of the school.The Customer shall take immediate steps to ensure that the reason for dishonour is removed & amp; intimate the Company to represent the cheque again within 2 working days or remit the amount via RTGS / NEFT.",
+    "In case of any dishonour of a PDC, The Company shall immediately bring the matter to the knowledge of the school. The Customer shall take immediate steps to ensure that the reason for dishonour is removed & intimate the Company to represent the cheque again within 2 working days or remit the amount via RTGS/ NEFT.",
     "Cheque dishonouring charges shall be borned by the Customer Only.",
     "Any missing material needs to be notified by the school within 15 working days after receiving the material, after that if the school notify us than the school will pay the delivery charges as well the missing material charges.",
     "All disputes are subject to Delhi Jurisdiction only."
@@ -116,38 +91,33 @@ const TC_LINES = [
 
 const children = [];
 
-// ── [1] Header ────────────────────────────────────────────
-children.push(para(
-    [tnr("To Be Printed on School Letter Head", { bold: true, underline: true })],
-    { align: AlignmentType.CENTER }
-));
-children.push(emptyPara());
-
-// ── [2] Date & PO Number ──────────────────────────────────
+// ── [1] Date & PO Number ──────────────────────────────────
 children.push(para([tnr(`Date: ${data.po_date}`)]));
 children.push(para([tnr(`Purchase Order No: ${data.po_number}`)]));
 
-// ── [3] To block ──────────────────────────────────────────
+// ── [2] To block (Updated Address) ────────────────────────
 children.push(para([tnr("To,")], { spacing: { after: 0 } }));
 children.push(para([tnr("S. Chand Edutech Pvt. Ltd.")]));
-children.push(para([tnr("A-27, Block B, Mohan Cooperative Industrial Estate,")]));
-children.push(para([tnr("Badarpur, New Delhi, Delhi 110044")]));
+children.push(para([tnr("A-27, 2nd Floor, Mohan Cooperative Industrial Estate,")]));
+children.push(para([tnr("New Delhi – 110044")]));
 
-// ── [4] Subject ───────────────────────────────────────────
+// ── [3] Subject ───────────────────────────────────────────
 children.push(para([tnr("Sub:  Purchase Order for SmartK- An NCERT Based Preschool Curriculum")]));
 
-// ── [5] Salutation ────────────────────────────────────────
-children.push(para([tnr("Dear Ma\u2019am,")]));
+// ── [4] Salutation (Updated) ──────────────────────────────
+children.push(para([tnr("Dear Sir/Ma\u2019am,")]));
 
-// ── [6] Opening body ──────────────────────────────────────
+// ── [5] Opening body ──────────────────────────────────────
 children.push(para([
     tnr("We are pleased to inform you that the school management of "),
-    tnr(`${data.school_name} is`, { bold: true }),
-    tnr(" ready to deploy SmartK curriculum in the school."),
+    tnr(` ${data.school_name} is `, { bold: true }),
+    tnr("ready to deploy "),
+    tnr("SmartK"),
+    tnr(" curriculum in the school."),
 ]));
 children.push(emptyPara());
 
-// ── [7] Numbered section 1: Product deployment ────────────
+// ── [6] Numbered section 1: Product deployment ────────────
 children.push(para(
     [tnr("The product will be deployed in the following manner:", { bold: true })],
     {
@@ -156,7 +126,7 @@ children.push(para(
     }
 ));
 
-// ── [8] Products table ────────────────────────────────────
+// ── [7] Products table ────────────────────────────────────
 // Column widths (DXA): 3609 | 993 | 2101 | 1958 = 8661 total
 const COL = [3609, 993, 2101, 1958];
 
@@ -196,7 +166,7 @@ children.push(new Table({
 
 children.push(emptyPara());
 
-// ── [9] Numbered section 2: Payment & Delivery Terms ──────
+// ── [8] Numbered section 2: Payment & Delivery Terms ──────
 children.push(para(
     [tnr("Payment & Delivery Terms:", { bold: true })],
     { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
@@ -218,44 +188,56 @@ children.push(para(
 ));
 
 // PDC entries (dynamic)
-data.pdcs.forEach(pdc => {
+if (data.pdcs && data.pdcs.length > 0) {
+    data.pdcs.forEach(pdc => {
+        children.push(para(
+            [tnr(`Amount Received before delivery of kits: ${pdc.label} - Cheque No. ${pdc.cheque_number} - ₹${pdc.amount}`, { highlight: true })],
+            { indent: { left: 360 }, align: AlignmentType.BOTH }
+        ));
+        children.push(para(
+            [tnr(`dated: ${pdc.date}`, { highlight: true })],
+            { indent: { left: 360 }, align: AlignmentType.BOTH }
+        ));
+    });
+} else {
     children.push(para(
-        [tnr(`Amount Received before delivery of kits: ${pdc.label} - Cheque No. ${pdc.cheque_number} - ₹${pdc.amount}`, { highlight: true })],
+        [tnr("Amount Received before delivery of kits: ", { highlight: true })],
         { indent: { left: 360 }, align: AlignmentType.BOTH }
     ));
     children.push(para(
-        [tnr(`dated: ${pdc.date}`, { highlight: true })],
+        [tnr("dated :__________", { highlight: true })],
         { indent: { left: 360 }, align: AlignmentType.BOTH }
     ));
-});
+}
 
 children.push(para(
-    [tnr("Delivery of the boxes is subjected to the clearance of the advance cheque")],
+    [tnr("Delivery of the material is subjected to the clearance of the advance payment.")],
     { indent: { left: 360 }, align: AlignmentType.BOTH }
 ));
 
-// ── [10] Numbered section 3: SPOC & Delivery details ──────
+// ── [9] Numbered section 3: SPOC & Delivery details ───────
 children.push(para(
     [tnr("SPOC & Details of the school where the delivery needs to be done:", { bold: true })],
     { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
 ));
 
 [
-    `School/Org. Name: ${data.school_name}`,
+    `School/Organisation Name: ${data.school_name}`,
     `Name: ${data.contact_name}`,
     `Designation: ${data.contact_designation}`,
     `Contact Number: ${data.contact_phone}`,
     `Email: ${data.contact_email}`,
     `Communication Address: ${data.school_address}`,
-    `City: ${data.school_city}                                                   State: ${data.school_state}`,
+    `City: ${data.school_city}`,
+    `State: ${data.school_state}`,
 ].forEach(line => {
     children.push(para([tnr(line)], { indent: { left: 360 }, align: AlignmentType.BOTH }));
 });
 
 // Spacing before T&C
-for (let i = 0; i < 3; i++) children.push(emptyPara());
+for (let i = 0; i < 2; i++) children.push(emptyPara());
 
-// ── [11] Numbered section 4: Terms & Conditions ───────────
+// ── [10] Numbered section 4: Terms & Conditions ───────────
 children.push(para(
     [tnr("Terms & Conditions", { bold: true })],
     { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
@@ -264,7 +246,7 @@ children.push(emptyPara());
 
 TC_LINES.forEach(line => {
     children.push(para(
-        [tnr(line, { bold: true })],
+        [tnr(line)],
         {
             numbering: { reference: "tc-list", level: 0 },
             spacing: { line: 240, lineRule: "auto" },
@@ -273,7 +255,7 @@ TC_LINES.forEach(line => {
     ));
 });
 
-// ── [12] Remarks ──────────────────────────────────────────
+// ── [11] Remarks ──────────────────────────────────────────
 children.push(emptyPara());
 children.push(para([
     tnr("Special requirement / Remarks -  ", { highlight: true }),
@@ -282,7 +264,7 @@ children.push(para([
         : "_______________________________________________________"),
 ], { spacing: { line: 240, lineRule: "auto" }, align: AlignmentType.BOTH }));
 
-// ── [13] School sign-off ──────────────────────────────────
+// ── [12] School sign-off ──────────────────────────────────
 children.push(emptyPara());
 children.push(para([tnr(`For and on behalf of : ${data.school_name}`)], { align: AlignmentType.BOTH }));
 children.push(para([tnr("Name:")], { align: AlignmentType.BOTH }));
@@ -314,7 +296,7 @@ const doc = new Document({
                     text: "%1.",
                     alignment: AlignmentType.LEFT,
                     style: {
-                        run: { font: TNR, size: 24, bold: true },
+                        run: { font: TNR, size: 24, bold: false },
                         paragraph: { indent: { left: 360, hanging: 360 }, spacing: { line: 240 } },
                     },
                 }],
