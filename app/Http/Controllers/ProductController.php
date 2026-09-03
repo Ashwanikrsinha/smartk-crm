@@ -65,14 +65,19 @@ class ProductController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|max:100',
             // 'name' => 'required|unique:products|max:100',
-            'code' => 'required',
+            'code' => 'nullable|string|max:180',
             // 'group_id' => 'required|integer',
             'category_id' => 'required|integer',
             'unit_id' => 'required|integer',
-            'price' => 'required|integer',
+            'price' => 'nullable|numeric|min:0',
             'description' => 'nullable|max:200',
-            'reorder_level' => 'required|numeric',
+            'reorder_level' => 'nullable|numeric|min:0',
         ]);
+
+        $validatedData['group_id'] = $validatedData['group_id'] ?? 0;
+        $validatedData['price'] = $validatedData['price'] ?? 0;
+        $validatedData['reorder_level'] = $validatedData['reorder_level'] ?? 0;
+        $validatedData['code'] = $validatedData['code'] ?? '';
 
         $product = Product::create($validatedData);
 
@@ -124,14 +129,18 @@ class ProductController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|max:100|',
             // 'name' => 'required|max:100|'.Rule::unique('products')->ignore($product),
-            'code' => 'required',
+            'code' => 'nullable|string|max:180',
             // 'group_id' => 'required|integer',
             'category_id' => 'required|integer',
             'unit_id' => 'required|integer',
-            'price' => 'required|integer',
+            'price' => 'nullable|numeric|min:0',
             'description' => 'nullable|max:200',
-            'reorder_level' => 'required|numeric',
+            'reorder_level' => 'nullable|numeric|min:0',
         ]);
+
+        $validatedData['price'] = $validatedData['price'] ?? 0;
+        $validatedData['reorder_level'] = $validatedData['reorder_level'] ?? 0;
+        $validatedData['code'] = $validatedData['code'] ?? '';
 
         $product->update($validatedData);
 

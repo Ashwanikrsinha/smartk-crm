@@ -396,6 +396,8 @@ class PurchaseOrdersExport implements
 
                 if ($mrp > 0) {
                     $baseRate = $mrp;
+                } elseif ($discountPercent > 0 && $savedRate > 0) {
+                    $baseRate = round($savedRate / (1 - ($discountPercent / 100)), 2);
                 } else {
                     $baseRate = $savedRate;
                 }

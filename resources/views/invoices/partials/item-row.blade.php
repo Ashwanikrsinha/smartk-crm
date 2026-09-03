@@ -21,8 +21,7 @@
         <select name="products[{{ $idx }}]" class="form-control form-control-sm product-select" required>
             <option value="">Select product...</option>
             @if (isset($item))
-                <option value="{{ $item->product_id }}" selected data-mrp="{{ $item->product->price }}"
-                    data-rate="{{ $item->price }}">
+                <option value="{{ $item->product_id }}" selected>
                     {{ $item->product->name }}
                 </option>
             @endif
@@ -31,9 +30,10 @@
 
     {{-- MRP --}}
     <td>
-        <input type="number" step="0.01" name="mrps[{{ $idx }}]"
-            class="form-control form-control-sm mrp-input" value="{{ isset($item) ? $item->product->price : '' }}"
-            placeholder="0.00" readonly>
+        <input type="number" step="0.01" min="0" name="mrps[{{ $idx }}]"
+            class="form-control form-control-sm mrp-input"
+            value="{{ isset($item) ? ($item->product && $item->product->price > 0 ? $item->product->price : ($item->discount > 0 && $item->rate > 0 ? round($item->rate / (1 - $item->discount / 100), 2) : $item->rate)) : '' }}"
+            placeholder="0.00" required>
     </td>
 
     {{-- Qty --}}

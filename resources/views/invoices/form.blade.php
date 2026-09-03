@@ -276,34 +276,35 @@
             <textarea name="terms" readonly class="form-control" rows="6"
                 placeholder="Payment terms, delivery conditions...">{{ isset($invoice)
                     ? $invoice->terms
-                    : '             1. S. Chand Edutech Pvt. Ltd. would retain the License to the product given and it is
-                not to be copied, modified, translated, decompiled, or otherwise used in any other
-                manner than for teaching children in the school.
-                2. The Educational Institute can use the program only at its location set out in the
-                Order Form.
-                3. In the event of education institute failing to make the payment to Edutech mutually
-                agreed on in the Purchase order, Edutech remedies include terminating this PO
-                without notice and recalling the material already delivered under the PO. If the
-
-                outstanding amount is not paid, even after the mutually agreed T&amp;C, interest of 2%
-                per month is paid in full.
-                4. Edutech shall not be held responsible or liable for not performing any of its
-                obligations or undertakings provided for in this form if such performance is
-                prevented, delayed or hindered by an act of god, fire, flood, explosion, riots, inability
-                to procure labour, equipments, facilities, supplies, failure of transportation, strikes,
-                lock outs not within the reasonable control of Edutech.
-                5. All payments shall be non-refundable once made.
-                6. Once order is received, number of kits ordered cannot be reduced.
-                7. All the outstanding payments must be cleared within 3 Months of order delivery.
-                8. In case of any dishonour of a PDC, S. Chand Edutech shall immediately bring the
-                matter to the knowledge of the school.
-                9. The school shall take immediate steps to ensure that the reason for dishonour is
-                removed &amp; intimate S. Chand Edutech to represent the cheque again within 2
-                working days or remit the amount via RTGS/NEFT.
-                10. Cheque dishonouring charges shall be borne by the school.
-                11. Any missing material needs to be notified by the school within 15 working days after
-                receiving the material, after that if the school notify us then the school will pay the
-                delivery charges as well the missing material charges.' }}</textarea>
+                    : 'i. S. Chand Edutech Pvt. Ltd (“the Company”). would always retain the license to
+the product given and it is not to be copied, modified, translated, decompiled, or
+otherwise used in any other manner than for teaching childrens in the school.
+ii. The School/Organisation (“the Customer”) can use the program only at its
+location set out in the order form.
+iii. In the event of the custmer failing to make the payment to the Company as
+mutally agreed on in the Purchase order (“PO”), The Company remedies include
+terminating this PO without notice and recalling the material already delivered
+under the PO. If the outstanding amount is not paid, even after the mutually
+agreed T&amp;C, interest of 2% per month is to be paid in full by the customer.
+iv. The Company shall not be held responsible or liable for not performing any of its
+oligations or undertakings provided for in PO if such performance is prevented,
+delayed or hindered by an act of god, fire, flood, explosion, riots, inability to
+procure labour, equipements, facilities, supplies, failure of transportation, strikes,
+lock outs not within the reasonable control of the Company.
+v. All payments shall be non-refundable once made.
+vi. Once order is received, number of kits ordered cannot be reduced or cancelled
+without the Company&#39;s prior written consent.
+vii. All the outstanding payments must be cleared within 3 Months of order delivery.
+viii. In case of any dishonour of a PDC, The Company shall immediately bring the
+matter to the knowledge of the school. The Customer shall take immediate steps to
+ensure that the reason for dishonour is removed &amp; intimate the Company to
+represent the cheque again within 2 working days or remit the amount via RTGS/
+NEFT.
+ix. Cheque dishonouring charges shall be borned by the Customer Only.
+x. Any missing material needs to be notified by the school within 15 working days
+after receiving the material, after that if the school notify us than the school will
+pay the delivery charges as well the missing material charges.
+xi. All disputes are subject to Delhi Jurisdiction only.' }}</textarea>
         </div>
     </div>
 </div>
@@ -427,37 +428,42 @@
                     let options = '<option value="">Select product...</option>';
                     products.forEach(p => {
                         options +=
-                            `<option value="${p.id}" data-mrp="${p.price}" data-rate="${p.price}">${p.name}</option>`;
+                            `<option value="${p.id}">${p.name}</option>`;
                     });
                     productSelect.html(options);
                 });
             });
 
-            // On product change → fill MRP and Net Sale Price
+            // On product change → do not prefill MRP (remains editable and mandatory)
             $(document).on('change', '.product-select', function() {
                 const row = $(this).closest('tr');
-                const selected = $(this).find(':selected');
-                const mrp = parseFloat(selected.data('mrp')) || 0;
-                const rate = parseFloat(selected.data('rate')) || 0;
-
-                row.find('.mrp-input').val(mrp.toFixed(2));
-                row.find('.rate-input').val(rate.toFixed(2));
                 calculateRowTotal(row);
             });
 
-            // On qty / discount / rate change → recalculate row
-            $(document).on('input', '.qty-input, .discount-input, .rate-input', function() {
-                calculateRowTotal($(this).closest('tr'));
+            // On MRP / qty / discount / rate change → recalculate row dynamically
+            $(document).on('input', '.mrp-input, .qty-input, .discount-input, .rate-input', function() {
+                const row = $(this).closest('tr');
+                const isRateDirectInput = $(this).hasClass('rate-input');
+                calculateRowTotal(row, isRateDirectInput);
             });
 
-            function calculateRowTotal(row) {
+            function calculateRowTotal(row, isRateDirectInput = false) {
                 const qty = parseFloat(row.find('.qty-input').val()) || 0;
                 const discount = parseFloat(row.find('.discount-input').val()) || 0;
                 const mrp = parseFloat(row.find('.mrp-input').val()) || 0;
 
-                // Net Sale Price = MRP - (MRP * discount / 100)
-                const netPrice = mrp - (mrp * discount / 100);
-                row.find('.rate-input').val(netPrice.toFixed(2));
+                let netPrice = 0;
+                if (isRateDirectInput) {
+                    netPrice = parseFloat(row.find('.rate-input').val()) || 0;
+                } else {
+                    // Net Sale Price = MRP - (MRP * discount / 100)
+                    if (mrp > 0) {
+                        netPrice = mrp - (mrp * discount / 100);
+                        row.find('.rate-input').val(netPrice.toFixed(2));
+                    } else {
+                        netPrice = parseFloat(row.find('.rate-input').val()) || 0;
+                    }
+                }
 
                 const total = qty * netPrice;
                 row.find('.amount-input').val(total.toFixed(2));

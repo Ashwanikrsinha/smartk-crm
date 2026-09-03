@@ -2,20 +2,18 @@
 
 <div class="row">
 
-
     <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Name</label>
-        <input type="text" class="form-control" name="name" value="{{ $product->name ?? old('name') }}">
+        <label for="" class="form-label">Name <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" name="name" value="{{ $product->name ?? old('name') }}" required>
     </div>
 
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">HSN Code</label>
-        <input type="tel" class="form-control" name="code" value="{{ $product->code ?? old('code') }}">
+        <input type="text" class="form-control" name="code" value="{{ $product->code ?? old('code') }}" placeholder="HSN Code (optional)">
     </div>
 
-
     <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Unit</label>
+        <label for="" class="form-label">Unit <span class="text-danger">*</span></label>
         <select name="unit_id" id="" class="form-control" required>
             <option selected value="">Choose...</option>
             @if(isset($product))
@@ -30,24 +28,8 @@
         </select>
     </div>
 
-    {{-- <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Group</label>
-        <select name="group_id" id="" class="form-control" required>
-            <option selected value="">Choose...</option>
-            @if(isset($product))
-                @foreach($groups as $id => $group)
-                <option value="{{ $id }}" {{ $product->group_id == $id ? 'selected': '' }}>{{ $group }}</option>
-                @endforeach
-            @else
-                @foreach($groups as $id => $group)
-                <option value="{{ $id }}">{{ $group }}</option>
-                @endforeach
-            @endif
-        </select>
-    </div> --}}
-
     <div class="col-lg-6 mb-3">
-        <label for="" class="form-label">Product Type</label>
+        <label for="" class="form-label">Product Type <span class="text-danger">*</span></label>
         <select name="category_id" id="" class="form-control" required>
             <option selected value="">Choose...</option>
             @if(isset($product))
@@ -62,15 +44,14 @@
         </select>
     </div>
 
-
     <div class="col-lg-3 mb-3">
-        <label for="" class="form-label">Price</label>
-        <input type="number" class="form-control" name="price" value="{{ $product->price ?? old('price') }}" required>
+        <label for="" class="form-label">Price / MRP</label>
+        <input type="number" step="0.01" min="0" class="form-control" name="price" value="{{ isset($product) ? $product->price : old('price', 0) }}" placeholder="0">
     </div>
 
     <div class="col-lg-3 mb-3">
         <label for="" class="form-label">Re Order Level</label>
-        <input type="number" class="form-control" name="reorder_level" value="{{ $product->reorder_level ?? old('reorder_level') }}" required>
+        <input type="number" step="0.01" min="0" class="form-control" name="reorder_level" value="{{ isset($product) ? $product->reorder_level : old('reorder_level', 0) }}" placeholder="0">
     </div>
 
 </div>

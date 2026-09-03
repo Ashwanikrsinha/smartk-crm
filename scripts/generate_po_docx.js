@@ -99,17 +99,17 @@ function cell(children, width, opts = {}) {
 // ── T&C lines (fixed) ─────────────────────────────────────
 
 const TC_LINES = [
-    "S. Chand Edutech Pvt. Ltd. would retain the License to the product given and it is not to be copied, modified, translated, decompiled, or otherwise used in any other manner than for teaching children in the school.",
-    "The Educational Institute can use the program only at its location set out in the Order Form.",
-    "In the event of education institute failing to make the payment to Edutech mutually agreed on in the Purchase order, Edutech remedies include terminating this PO without notice and recalling the material already delivered under the PO. If the outstanding amount is not paid, even after the mutually agreed T&C, interest of 2% per month is paid in full.",
-    "Edutech shall not be held responsible or liable for not performing any of its obligations or undertakings provided for in this form if such performance is prevented, delayed or hindered by an act of god, fire, flood, explosion, riots, inability to procure labour, equipments, facilities, supplies, failure of transportation, strikes, lock outs not within the reasonable control of Edutech.",
+    "S. Chand Edutech Pvt. Ltd ('the Company') would always retain the license to the product given and it is not to be copied, modified, translated, decompiled, or otherwise used in any other manner than for teaching childrens in the school.",
+    "The School/Organisation ('the Customer') can use the program only at itslocation set out in the order form.",
+    "In the event of the custmer failing to make the payment to the Company as mutually agreed on in the Purchase order (“PO”), The Company remedies include terminating this PO without notice and recalling the material already delivered under the PO.If the outstanding amount is not paid, even after the mutually agreed T & amp; C, interest of 2 % per month is to be paid in full by the customer.",
+    "The Company shall not be held responsible or liable for not performing any of its oligations or undertakings provided for in PO if such performance is prevented, delayed or hindered by an act of god, fire, flood, explosion, riots, inability to procure labour, equipements, facilities, supplies, failure of transportation, strikes, lock outs not within the reasonable control of the Company.",
     "All payments shall be non-refundable once made.",
-    "Once order is received, number of kits ordered cannot be reduced.",
+    "Once order is received, number of kits ordered cannot be reduced or cancelled without the Company's prior written consent.",
     "All the outstanding payments must be cleared within 3 Months of order delivery.",
-    "In case of any dishonour of a PDC, S. Chand Edutech shall immediately bring the matter to the knowledge of the school.",
-    "The school shall take immediate steps to ensure that the reason for dishonour is removed & intimate S. Chand Edutech to represent the cheque again within 2 working days or remit the amount via RTGS/NEFT.",
-    "Cheque dishonouring charges shall be borne by the school.",
-    "Any missing material needs to be notified by the school within 15 working days after receiving the material, after that if the school notify us then the school will pay the delivery charges as well the missing material charges.",
+    "In case of any dishonour of a PDC, The Company shall immediately bring the matter to the knowledge of the school.The Customer shall take immediate steps to ensure that the reason for dishonour is removed & amp; intimate the Company to represent the cheque again within 2 working days or remit the amount via RTGS / NEFT.",
+    "Cheque dishonouring charges shall be borned by the Customer Only.",
+    "Any missing material needs to be notified by the school within 15 working days after receiving the material, after that if the school notify us than the school will pay the delivery charges as well the missing material charges.",
+    "All disputes are subject to Delhi Jurisdiction only."
 ];
 
 // ── Build document sections ───────────────────────────────
@@ -208,7 +208,7 @@ children.push(para(
 ));
 
 children.push(para(
-    [tnr("Delivery Time: Within 20 days from receiving the order.")],
+    [tnr("Delivery Time: Within 20 working days from receiving the order.")],
     { indent: { left: 360 }, align: AlignmentType.BOTH }
 ));
 
