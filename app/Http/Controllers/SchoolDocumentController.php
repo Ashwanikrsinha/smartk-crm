@@ -31,14 +31,25 @@ class SchoolDocumentController extends Controller
 
         $customer = Customer::findOrFail($request->customer_id);
 
-        // Delete existing doc of same type (one per type per school)
+        // Check if a document of same type already exists
         $existing = SchoolDocument::where('customer_id', $customer->id)
             ->where('type', $request->type)
             ->first();
 
         if ($existing) {
+            // Only Administrator can replace existing documents
+            if (!auth()->user()->isAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only administrators can replace existing documents.',
+                ], 403);
+            }
+
             Storage::disk('public')->delete($existing->filename);
             $existing->delete();
+        } else {
+            // New upload: verify user has permission to update school
+            $this->authorize('update', $customer);
         }
 
         // Store file: school-docs/{school_code}/{type}.{ext}
@@ -82,10 +93,23 @@ class SchoolDocumentController extends Controller
         ]);
 
         $customer = Customer::findOrFail($request->customer_id);
+        $this->authorize('update', $customer);
+
         $uploaded = [];
 
         foreach (SchoolDocument::types() as $type) {
             if ($request->hasFile($type)) {
+                $existing = SchoolDocument::where('customer_id', $customer->id)
+                    ->where('type', $type)
+                    ->first();
+
+                if ($existing) {
+                    if (!auth()->user()->isAdmin()) {
+                        continue; // Skip if non-admin attempts to replace existing doc
+                    }
+                    Storage::disk('public')->delete($existing->filename);
+                    $existing->delete();
+                }
 
                 $ext  = $request->file($type)->getClientOriginalExtension();
                 $path = $request->file($type)->storeAs(
@@ -112,12 +136,17 @@ class SchoolDocumentController extends Controller
     }
 
     /**
-     * Delete a document.
+     * Delete a document (Admin only).
      * DELETE /school-documents/{doc}
      */
     public function destroy(SchoolDocument $doc)
     {
-        $this->authorize('update', $doc->customer); // only allowed editors can delete
+        if (!auth()->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only administrators can delete documents.',
+            ], 403);
+        }
 
         Storage::disk('public')->delete($doc->filename);
         $doc->delete();
@@ -129,7 +158,24 @@ class SchoolDocumentController extends Controller
     }
 
     /**
-     * View/download a document (returns redirect to storage URL).
+     * View a document inline in browser.
+     * GET /school-documents/{doc}/view
+     */
+    public function show(SchoolDocument $doc)
+    {
+        $this->authorize('view', $doc->customer);
+
+        if (!Storage::disk('public')->exists($doc->filename)) {
+            abort(404, 'Document not found.');
+        }
+
+        return response()->file(
+            Storage::disk('public')->path($doc->filename)
+        );
+    }
+
+    /**
+     * Download a document.
      * GET /school-documents/{doc}/download
      */
     public function download(SchoolDocument $doc)

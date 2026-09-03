@@ -147,16 +147,22 @@
                                 <p class="mb-2 small fw-bold">{{ $docLabels[$type]['label'] }}</p>
 
                                 @if ($doc)
-                                    <a href="{{ route('school-documents.download', $doc) }}"
-                                        class="btn btn-sm btn-outline-success w-100 mb-1">
-                                        <i class="feather icon-download me-1"></i> Download
-                                    </a>
-                                    @can('update', $customer)
+                                    <div class="d-flex gap-1 mb-1">
+                                        <a href="{{ route('school-documents.view', $doc) }}" target="_blank"
+                                            class="btn btn-sm btn-outline-primary flex-fill" title="View Document">
+                                            <i class="feather icon-eye me-1"></i> View
+                                        </a>
+                                        <a href="{{ route('school-documents.download', $doc) }}"
+                                            class="btn btn-sm btn-outline-success flex-fill" title="Download Document">
+                                            <i class="feather icon-download me-1"></i> Download
+                                        </a>
+                                    </div>
+                                    @if (auth()->user()->isAdmin())
                                         <button type="button" class="btn btn-sm btn-outline-danger w-100 upload-doc-btn"
                                             data-type="{{ $type }}" data-customer="{{ $customer->id }}">
                                             <i class="feather icon-refresh-cw me-1"></i> Replace
                                         </button>
-                                    @endcan
+                                    @endif
                                 @else
                                     @can('update', $customer)
                                         <button type="button" class="btn btn-sm btn-outline-primary w-100 upload-doc-btn"
@@ -173,12 +179,16 @@
                 </div>
 
                 {{-- Hidden file inputs per doc type --}}
-                @can('update', $customer)
-                    @foreach ($documentTypes as $type)
+                @foreach ($documentTypes as $type)
+                    @php $doc = $docMap[$type] ?? null; @endphp
+                    @if (!$doc && auth()->user()->can('update', $customer))
                         <input type="file" id="file-{{ $type }}" class="d-none doc-file-input"
                             accept=".pdf,.jpg,.jpeg,.png" data-type="{{ $type }}" data-customer="{{ $customer->id }}">
-                    @endforeach
-                @endcan
+                    @elseif ($doc && auth()->user()->isAdmin())
+                        <input type="file" id="file-{{ $type }}" class="d-none doc-file-input"
+                            accept=".pdf,.jpg,.jpeg,.png" data-type="{{ $type }}" data-customer="{{ $customer->id }}">
+                    @endif
+                @endforeach
             </div>
 
             {{-- ═══ PO HISTORY ════════════════════════════════════ --}}
@@ -281,7 +291,10 @@
                     error: function(xhr) {
                         alert(xhr.responseJSON?.message ?? 'Upload failed. Please try again.');
                         btn.prop('disabled', false).html(
-                            '<i class="feather icon-upload me-1"></i> Upload');
+                            btn.hasClass('btn-outline-danger')
+                                ? '<i class="feather icon-refresh-cw me-1"></i> Replace'
+                                : '<i class="feather icon-upload me-1"></i> Upload'
+                        );
                     }
                 });
             });

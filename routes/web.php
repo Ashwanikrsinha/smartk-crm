@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', Controllers\CustomerController::class);
 
     // School Documents
+    Route::get('school-documents/{doc}/view',      [Controllers\SchoolDocumentController::class, 'show'])->name('school-documents.view');
     Route::post('school-documents',                [Controllers\SchoolDocumentController::class, 'store'])->name('school-documents.store');
     Route::post('school-documents/bulk',           [Controllers\SchoolDocumentController::class, 'bulkStore'])->name('school-documents.bulk-store');
     Route::delete('school-documents/{doc}',        [Controllers\SchoolDocumentController::class, 'destroy'])->name('school-documents.destroy');
