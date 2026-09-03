@@ -10,9 +10,11 @@
             <small class="text-muted">System-wide overview</small>
         </div>
         <div class="d-flex gap-2">
+            @if (!auth()->user()->isBusinessManager())
             <a href="{{ route('users.create') }}" class="btn btn-sm btn-primary">
                 <i class="feather icon-user-plus me-1"></i> Add User
             </a>
+            @endif
             <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-success">
                 <i class="feather icon-download me-1"></i> Export
             </a>

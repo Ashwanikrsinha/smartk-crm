@@ -196,9 +196,13 @@ class PurchaseOrdersExport implements
 
     /**
      * Number of "invoice-level" columns (everything before the item columns).
-     * Computed once in headings() so map()/events() stay in sync.
      */
     protected int $invoiceColCount = 0;
+
+    /**
+     * Total number of columns in the export.
+     */
+    protected int $totalColCount = 0;
 
     /**
      * Running row pointer used while map() streams rows out.
@@ -233,7 +237,7 @@ class PurchaseOrdersExport implements
             'user.reportiveTo:id,username,emp_code',
             'customer:id,name,school_code,state,city,lead_source_id,email,phone_number',
             'customer.leadSource:id,name',
-            'invoiceItems.product:id,name,category_id',
+            'invoiceItems.product:id,name,category_id,price',
             'invoiceItems.product.category:id,name',
             'invoiceItems.unit:id,name',
             'dispatches.items:dispatch_id,invoice_item_id,quantity_dispatched',
@@ -294,19 +298,23 @@ class PurchaseOrdersExport implements
             $base[] = 'Collection (₹)';
             $base[] = 'Outstanding (₹)';
             $base[] = 'Delivery Due Date';
+            $this->invoiceColCount = count($base); // 18 invoice-level columns
+
             $base[] = 'Product Type';
             $base[] = 'Product Name';
             $base[] = 'Ordered Qty';
             $base[] = 'Dispatched Qty';
             $base[] = 'Unit';
             $base[] = 'Rate (₹)';
-            $base[] = 'Discount (₹)';
+            $base[] = 'Discount (%)';
+            $base[] = 'Discount Amount (₹)';
+            $base[] = 'Net Rate (₹)';
             $base[] = 'Item Amount (₹)';
+        } else {
+            $this->invoiceColCount = count($base); // 13 invoice-level columns for marketing
         }
 
-        // Lock in how many columns are "invoice-level" so map()/events() agree.
-        $this->invoiceColCount = count($base);
-
+        $this->totalColCount = count($base);
 
         return $base;
     }
@@ -318,9 +326,8 @@ class PurchaseOrdersExport implements
      */
     public function map($invoice): array
     {
-        // Make sure invoiceColCount is set even if headings() hasn't run yet
-        // (Excel normally calls headings() first, but this is a safe guard).
-        if ($this->invoiceColCount === 0) {
+        // Make sure column counts are set
+        if ($this->totalColCount === 0) {
             $this->headings();
         }
 
@@ -374,22 +381,38 @@ class PurchaseOrdersExport implements
             $this->mergeRanges[] = [$startRow, $endRow];
             $this->currentRow = $endRow + 1;
 
-            // No items at all: one row, item columns blank.
+            // No items at all: one row, item columns blank (10 item cols).
             if ($items->isEmpty()) {
-                return array_merge($invoiceCols, ['—', '—', '—', '—', '—', '—', '—', '—']);
+                return array_merge($invoiceCols, array_fill(0, 10, '—'));
             }
 
             $rows = [];
             foreach ($items as $i => $item) {
                 $dispatched = (float) ($dispatchMap[$item->id] ?? 0);
+
+                $discountPercent = (float) ($item->discount ?? 0);
+                $mrp = (float) ($item->product?->price ?? 0);
+                $savedRate = (float) ($item->rate ?? 0);
+
+                if ($mrp > 0) {
+                    $baseRate = $mrp;
+                } else {
+                    $baseRate = $savedRate;
+                }
+
+                $discountAmount = $discountPercent > 0 ? round($baseRate * ($discountPercent / 100), 2) : 0.0;
+                $netRate = max(0, round($baseRate - $discountAmount, 2));
+
                 $itemCols = [
                     $item->product->category->name ?? '—',
                     $item->product->name ?? $item->description ?? '—',
                     $item->quantity,
                     $dispatched,
                     $item->unit->name ?? '—',
-                    number_format($item->rate, 2),
-                    number_format($item->discount, 2),
+                    number_format($baseRate, 2),
+                    number_format($discountPercent, 2),
+                    number_format($discountAmount, 2),
+                    number_format($netRate, 2),
                     number_format($item->amount, 2),
                 ];
 
@@ -402,13 +425,12 @@ class PurchaseOrdersExport implements
             }
         }
 
-
         return $rows;
     }
 
     public function styles(Worksheet $sheet): array
     {
-        $lastCol = Coordinate::stringFromColumnIndex($this->invoiceColCount);
+        $lastCol = Coordinate::stringFromColumnIndex($this->totalColCount ?: 28);
 
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -429,7 +451,6 @@ class PurchaseOrdersExport implements
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastInvoiceCol = Coordinate::stringFromColumnIndex($this->invoiceColCount);
 
                 foreach ($this->mergeRanges as [$startRow, $endRow]) {
                     if ($endRow > $startRow) {
@@ -443,8 +464,8 @@ class PurchaseOrdersExport implements
                     }
 
                     // Thin bottom border to separate one invoice's block from the next.
-                    $lastItemCol = Coordinate::stringFromColumnIndex($this->invoiceColCount);
-                    $sheet->getStyle("A{$endRow}:{$lastItemCol}{$endRow}")
+                    $lastCol = Coordinate::stringFromColumnIndex($this->totalColCount ?: 28);
+                    $sheet->getStyle("A{$endRow}:{$lastCol}{$endRow}")
                         ->getBorders()->getBottom()
                         ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
                 }

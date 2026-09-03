@@ -93,7 +93,7 @@
                         <a href="{{ route('collections.index') }}"
                             class="list-group-item list-group-item-action border-0 ps-4
                    {{ request()->routeIs('collections.*') ? 'active' : '' }}">
-                            <i class="feather icon-dollar-sign me-2"></i> Collections
+                            <i class="feather me-2" style="font-size: 1.2rem;">₹</i> Collections
                         </a>
                     @endif
 
