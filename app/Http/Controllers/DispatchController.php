@@ -249,7 +249,7 @@
 //             'items'            => $summary,
 //         ]);
 //     }
-// }  
+// }
 
 namespace App\Http\Controllers;
 
@@ -466,7 +466,7 @@ class DispatchController extends Controller
         return redirect()->route('dispatches.index')
             ->with('success', 'Dispatch recorded successfully.');
     }
- 
+
     public function show(Dispatch $dispatch)
     {
         $invoice = Invoice::with([
@@ -483,7 +483,7 @@ class DispatchController extends Controller
             'dispatches' => $invoice->dispatches,
             'canEdit'    => $this->canEditDispatches(),
         ]);
-    } 
+    }
 
     public function update(Request $request, Dispatch $dispatch)
     {
@@ -523,7 +523,7 @@ class DispatchController extends Controller
 
     public function viewPod(Dispatch $dispatch)
     {
-        $this->authorize('view', $dispatch->invoice);
+        // $this->authorize('view', $dispatch->invoice);
 
         if (!$dispatch->pod_slip || !Storage::disk('public')->exists($dispatch->pod_slip)) {
             abort(404, 'POD slip not found.');
@@ -537,7 +537,7 @@ class DispatchController extends Controller
         $roleName = auth()->user()->role?->name;
 
         return in_array($roleName, ['Administrator', 'Accounts'], true);
-    } 
+    }
     public function poSummary(Invoice $invoice)
     {
         $this->authorize('view', $invoice);

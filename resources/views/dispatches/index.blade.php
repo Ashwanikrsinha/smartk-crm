@@ -6,9 +6,17 @@
         <h5 class="mb-0">Warehouse Dashboard</h5>
         <small class="text-muted">Pending dispatches for approved purchase orders</small>
     </div>
-    <a href="{{ route('dispatches.index') }}" class="btn btn-primary btn-sm">
-        <i class="feather icon-truck me-1"></i> Refresh
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('warehouse.exports', ['scope' => 'pending']) }}" class="btn btn-warning text-dark btn-sm fw-semibold">
+            <i class="feather icon-download me-1"></i> Export Pending
+        </a>
+        <a href="{{ route('warehouse.exports', ['scope' => 'all']) }}" class="btn btn-success btn-sm">
+            <i class="feather icon-download me-1"></i> Export All
+        </a>
+        <a href="{{ route('dispatches.index') }}" class="btn btn-primary btn-sm">
+            <i class="feather icon-rotate-cw me-1"></i> Refresh
+        </a>
+    </div>
 </header>
 
 {{-- ═══ SUMMARY WIDGETS ════════════════════════════════════ --}}
@@ -69,6 +77,7 @@
                 <th class="text-end">Remaining</th>
                 <th>Delivery Due</th>
                 <th>Dispatches</th>
+                <th>POD Slip</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -139,20 +148,32 @@
                 </td>
                 <td rowspan="{{ $rowCount }}" class="text-center">
                     @if($po->dispatches->count() > 0)
-                    @php $lastDisp = $po->dispatches->last(); @endphp
                     <span class="badge bg-info">{{ $po->dispatches->count() }} dispatch(es)</span>
-                    <a href="{{ route('dispatches.show', $lastDisp->id) }}"
-                       class="btn btn-xs btn-link p-0 d-block mt-1 text-info">
-                        View details
-                    </a>
-                    @if($lastDisp->pod_slip)
-                    <a href="{{ route('dispatches.pod', $lastDisp) }}" target="_blank"
-                       class="btn btn-xs btn-outline-success p-1 d-inline-block mt-1" style="font-size:0.7rem">
-                        <i class="feather icon-file-text me-1"></i> View POD
-                    </a>
-                    @endif
+                    @foreach($po->dispatches as $disp)
+                        <a href="{{ route('dispatches.show', $disp->id) }}"
+                           class="btn btn-xs btn-link p-0 d-block mt-1 text-info text-decoration-none">
+                            {{ $disp->dispatch_number }}
+                        </a>
+                    @endforeach
                     @else
                     <span class="badge bg-warning text-dark">None yet</span>
+                    @endif
+                </td>
+                <td rowspan="{{ $rowCount }}" class="text-center">
+                    @php
+                        $dispatchesWithPod = $po->dispatches->whereNotNull('pod_slip');
+                    @endphp
+                    @if($dispatchesWithPod->count() > 0)
+                        @foreach($dispatchesWithPod as $disp)
+                            <a href="{{ route('dispatches.pod', $disp) }}" target="_blank"
+                               class="btn btn-xs btn-outline-success p-1 d-block mb-1 text-nowrap" style="font-size:0.75rem">
+                                <i class="feather icon-file-text me-1"></i> View POD
+                            </a>
+                        @endforeach
+                    @elseif($po->dispatches->count() > 0)
+                        <span class="badge bg-secondary">No Slip</span>
+                    @else
+                        <span class="text-muted">—</span>
                     @endif
                 </td>
                 <td rowspan="{{ $rowCount }}" class="text-center">
@@ -167,7 +188,7 @@
 
             @empty
             <tr>
-                <td colspan="12" class="text-center text-muted py-4">No approved orders pending dispatch.</td>
+                <td colspan="14" class="text-center text-muted py-4">No approved orders pending dispatch.</td>
             </tr>
             @endforelse
         </tbody>

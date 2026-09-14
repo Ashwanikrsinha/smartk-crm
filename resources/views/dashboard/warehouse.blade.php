@@ -258,6 +258,8 @@
                         <th class="col-product">Product</th>
                         <th class="col-qty text-end">Qty</th>
                         <th class="col-due">Delivery Due Date</th>
+                        <th>Dispatches</th>
+                        <th>POD Slip</th>
                         <th class="col-action text-center">Action</th>
                     </tr>
                 </thead>
@@ -308,6 +310,36 @@
                                         {{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}
                                     </td>
                                     <td rowspan="{{ $rowCount }}" class="text-center">
+                                        @if($invoice->dispatches->count() > 0)
+                                            <span class="badge bg-info">{{ $invoice->dispatches->count() }} dispatch(es)</span>
+                                            @foreach($invoice->dispatches as $disp)
+                                                <a href="{{ route('dispatches.show', $disp->id) }}"
+                                                   class="btn btn-xs btn-link p-0 d-block mt-1 text-info text-decoration-none">
+                                                    {{ $disp->dispatch_number }}
+                                                </a>
+                                            @endforeach
+                                        @else
+                                            <span class="badge bg-warning text-dark">None yet</span>
+                                        @endif
+                                    </td>
+                                    <td rowspan="{{ $rowCount }}" class="text-center">
+                                        @php
+                                            $dispatchesWithPod = $invoice->dispatches->whereNotNull('pod_slip');
+                                        @endphp
+                                        @if($dispatchesWithPod->count() > 0)
+                                            @foreach($dispatchesWithPod as $disp)
+                                                <a href="{{ route('dispatches.pod', $disp) }}" target="_blank"
+                                                   class="btn btn-xs btn-outline-success p-1 d-block mb-1 text-nowrap" style="font-size:0.75rem">
+                                                    <i class="feather icon-file-text me-1"></i> View POD
+                                                </a>
+                                            @endforeach
+                                        @elseif($invoice->dispatches->count() > 0)
+                                            <span class="badge bg-secondary">No Slip</span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td rowspan="{{ $rowCount }}" class="text-center">
                                         @if(!$invoice->is_fully_dispatched)
                                             <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
                                                 class="btn btn-xs btn-primary btn-sm">
@@ -339,6 +371,8 @@
                                 </td>
                                 <td colspan="3" class="text-center text-muted">No items</td>
                                 <td>{{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}</td>
+                                <td class="text-center"><span class="text-muted">—</span></td>
+                                <td class="text-center"><span class="text-muted">—</span></td>
                                 <td class="text-center">
                                     <span class="badge bg-success">Fully Dispatched</span>
                                 </td>
@@ -346,7 +380,7 @@
                         @endforelse
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4 text-muted">No orders found.</td>
+                            <td colspan="11" class="text-center py-4 text-muted">No orders found.</td>
                         </tr>
                     @endforelse
                 </tbody>

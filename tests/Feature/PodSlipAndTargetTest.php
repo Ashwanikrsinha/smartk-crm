@@ -174,4 +174,87 @@ class PodSlipAndTargetTest extends TestCase
         $this->assertArrayHasKey('total_achieved', $data);
         $this->assertStringContainsString('61,000.00', $data['total_achieved']);
     }
+
+    public function test_dispatches_index_page_and_export_contain_pod_slip()
+    {
+        $this->actingAs($this->admin);
+
+        $invoice = Invoice::create([
+            'po_number'       => 'PO-PAGE-' . rand(1000, 9999),
+            'invoice_number'  => rand(100000, 999999999),
+            'invoice_date'    => now(),
+            'user_id'         => $this->admin->id,
+            'customer_id'     => $this->customer->id,
+            'status'          => Invoice::STATUS_APPROVED,
+            'amount'          => 5000.00,
+            'billing_amount'  => 0,
+            'collected_amount'=> 0,
+        ]);
+
+        $unit = \App\Models\Unit::firstOrCreate(['name' => 'PCS']);
+        $product = \App\Models\Product::firstOrCreate(
+            ['name' => 'Test Product'],
+            ['price' => 500, 'unit_id' => $unit->id, 'category_id' => 1]
+        );
+
+        \Illuminate\Support\Facades\DB::table('items')->updateOrInsert(
+            ['id' => $product->id],
+            [
+                'company_name' => 'SmartK',
+                'name'         => 'Test Product',
+                'master_id'    => 1,
+                'group'        => 'Test',
+                'category'     => 'Test',
+                'hsn_code'     => '1234',
+                'tax_rate'     => 18,
+            ]
+        );
+
+        $item = \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $product->id,
+            'quantity'   => 10,
+            'unit_id'    => $unit->id,
+            'rate'       => 500,
+            'amount'     => 5000,
+        ]);
+
+        $file = UploadedFile::fake()->create('slip.pdf', 100, 'application/pdf');
+
+        $dispatch = Dispatch::create([
+            'invoice_id'      => $invoice->id,
+            'dispatch_number' => Dispatch::generateNumber(),
+            'dispatch_date'   => now(),
+            'no_of_boxes'     => 2,
+            'total_weight'    => 10.00,
+            'bilty_number'    => 'LR-PAGE-123',
+            'pod_slip'        => $file->store('dispatches/pod', 'public'),
+            'dispatched_by'   => $this->admin->id,
+        ]);
+
+        \App\Models\DispatchItem::create([
+            'dispatch_id'         => $dispatch->id,
+            'invoice_item_id'     => $item->id,
+            'product_id'          => $product->id,
+            'quantity_dispatched' => 2,
+        ]);
+
+        // Check dispatch index page has POD Slip table column and View POD button
+        $response = $this->get(route('dispatches.index'));
+        $response->assertStatus(200);
+        $response->assertSee('POD Slip');
+        $response->assertSee('View POD');
+        $response->assertSee(route('dispatches.pod', $dispatch));
+        $response->assertSee('Export Pending');
+        $response->assertSee('Export All');
+
+        // Check PO export includes Bilty Number and POD Slip
+        $poExport = new \App\Exports\PurchaseOrdersExport([], $this->admin);
+        $this->assertContains('Bilty Number', $poExport->headings());
+        $this->assertContains('POD Slip', $poExport->headings());
+
+        // Check Warehouse Dispatch export includes POD Slip
+        $whExport = new \App\Exports\WarehouseDispatchExport(['scope' => 'all']);
+        $this->assertContains('POD Slip', $whExport->headings());
+    }
 }

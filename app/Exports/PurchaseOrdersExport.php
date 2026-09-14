@@ -299,7 +299,9 @@ class PurchaseOrdersExport implements
             $base[] = 'Collection (₹)';
             $base[] = 'Outstanding (₹)';
             $base[] = 'Delivery Due Date';
-            $this->invoiceColCount = count($base); // 19 invoice-level columns
+            $base[] = 'Bilty Number';
+            $base[] = 'POD Slip';
+            $this->invoiceColCount = count($base); // 21 invoice-level columns
 
             $base[] = 'Product Type';
             $base[] = 'Product Name';
@@ -369,6 +371,8 @@ class PurchaseOrdersExport implements
             $invoiceCols[] = $invoice->delivery_due_date
                 ? $invoice->delivery_due_date->format('d/m/Y')
                 : '—';
+            $invoiceCols[] = $invoice->dispatches->pluck('bilty_number')->filter()->implode(', ') ?: '—';
+            $invoiceCols[] = $invoice->dispatches->whereNotNull('pod_slip')->isNotEmpty() ? 'Uploaded' : '—';
             $items = $invoice->invoiceItems;
             $itemRowCount = max($items->count(), 1);
 
