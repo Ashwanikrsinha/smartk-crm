@@ -257,4 +257,79 @@ class PodSlipAndTargetTest extends TestCase
         $whExport = new \App\Exports\WarehouseDispatchExport(['scope' => 'all']);
         $this->assertContains('POD Slip', $whExport->headings());
     }
+
+    public function test_sales_manager_dashboard_target_section_and_team_dropdown()
+    {
+        $smRole = Role::firstOrCreate(['name' => 'Manager']);
+        $spRole = Role::firstOrCreate(['name' => 'Operator']);
+
+        $perm = \App\Models\Permission::firstOrCreate(['name' => 'view_team_data']);
+        $smRole->permissions()->syncWithoutDetaching([$perm->id]);
+
+        $salesManager = User::create([
+            'username' => 'sales_mgr_' . uniqid(),
+            'emp_code' => 'SM_' . uniqid(),
+            'email'    => 'sm_' . uniqid() . '@example.com',
+            'password' => bcrypt('secret'),
+            'role_id'  => $smRole->id,
+        ]);
+
+        $salesPerson = User::create([
+            'username'     => 'sales_rep_' . uniqid(),
+            'emp_code'     => 'SP_' . uniqid(),
+            'email'        => 'sp_' . uniqid() . '@example.com',
+            'password'     => bcrypt('secret'),
+            'role_id'      => $spRole->id,
+            'reportive_id' => $salesManager->id,
+        ]);
+
+        $month = (int) date('m');
+        $year  = (int) date('Y');
+
+        Target::create([
+            'user_id'       => $salesPerson->id,
+            'target_amount' => 50000.00,
+            'month'         => $month,
+            'year'          => $year,
+        ]);
+
+        Target::create([
+            'user_id'       => $salesManager->id,
+            'target_amount' => 50000.00,
+            'month'         => $month,
+            'year'          => $year,
+        ]);
+
+        Invoice::create([
+            'po_number'       => 'PO-SM-' . rand(1000, 9999),
+            'invoice_number'  => rand(100000, 999999999),
+            'invoice_date'    => now(),
+            'user_id'         => $salesPerson->id,
+            'customer_id'     => $this->customer->id,
+            'status'          => Invoice::STATUS_APPROVED,
+            'amount'          => 30000.00,
+            'billing_amount'  => 30000.00,
+            'gst_amount'      => 0.00,
+            'collected_amount'=> 0,
+        ]);
+
+        $this->actingAs($salesManager);
+
+        $response = $this->get(route('dashboard'));
+        $response->assertStatus(200);
+
+        // Verify target section rendered
+        $response->assertSee('Target vs Achievement');
+        $response->assertSee('Target Amount');
+        $response->assertSee('Achieved (Net Billed)');
+        $response->assertSee('Achieved Percentage');
+        $response->assertSee('100,000.00'); // Total target (50k + 50k)
+        $response->assertSee('30,000.00');  // Achieved 30k
+        $response->assertSee('30%');        // 30%
+
+        // Verify Sales Manager is included in Team Member dropdown
+        $response->assertSee($salesManager->username . ' (Me)');
+        $response->assertSee($salesPerson->username);
+    }
 }
+

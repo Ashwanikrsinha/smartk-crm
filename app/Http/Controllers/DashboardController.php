@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Target;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -356,10 +357,32 @@ class DashboardController extends Controller
             ->get();
 
         $chartData   = $this->monthlyTrend($teamIds, $year);
-        $teamMembers = User::whereIn('id', $teamIds)->where('id', '!=', $user->id)
+        $teamMembers = User::whereIn('id', $teamIds)
             ->orderBy('username')->get(['id', 'username']);
         $schools     = Customer::whereHas('invoices', fn($q) => $q->whereIn('user_id', $teamIds))
             ->orderBy('name')->get(['id', 'name', 'school_code']);
+
+        // Target vs Achievement Calculation
+        $tMonth = $month ? (int) substr($month, 5, 2) : ($dateFrom ? (int) date('m', strtotime($dateFrom)) : (int) date('m'));
+        $tYear  = $month ? (int) substr($month, 0, 4) : ($dateFrom ? (int) date('Y', strtotime($dateFrom)) : (int) ($year ?: date('Y')));
+
+        $targetUsers = $spId ? [$spId] : $teamIds;
+
+        $targetAmount = (float) Target::whereIn('user_id', $targetUsers)
+            ->where('month', $tMonth)
+            ->where('year', $tYear)
+            ->sum('target_amount');
+
+        $targetAchieved = (float) (Invoice::whereIn('user_id', $targetUsers)
+            ->where('status', Invoice::STATUS_APPROVED)
+            ->whereMonth('invoice_date', $tMonth)
+            ->whereYear('invoice_date', $tYear)
+            ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+            ->value('total_achieved') ?? 0);
+
+        $targetPct = $targetAmount > 0 ? round(($targetAchieved / $targetAmount) * 100) : 0;
+        $targetPctColor = $targetPct >= 100 ? 'success' : ($targetPct >= 60 ? 'warning' : 'danger');
+        $targetMonthLabel = date('F Y', mktime(0, 0, 0, $tMonth, 1, $tYear));
 
         return view('dashboard.manager', compact(
             'totalPoAmount',
@@ -377,7 +400,12 @@ class DashboardController extends Controller
             'month',
             'dateFrom',
             'dateTo',
-            'year'
+            'year',
+            'targetAmount',
+            'targetAchieved',
+            'targetPct',
+            'targetPctColor',
+            'targetMonthLabel'
         ));
     }
 

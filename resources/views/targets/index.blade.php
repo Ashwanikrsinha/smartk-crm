@@ -72,6 +72,7 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         ordering: false,
+        pageLength: 12,
         ajax: {
             url: '{{ route('targets.index') }}',
             data: function (d) {

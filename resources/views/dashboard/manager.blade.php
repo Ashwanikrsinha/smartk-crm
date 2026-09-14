@@ -24,7 +24,7 @@
                 <option value="">All Members</option>
                 @foreach($teamMembers as $sp)
                 <option value="{{ $sp->id }}" {{ $spId == $sp->id ? 'selected' : '' }}>
-                    {{ $sp->username }}
+                    {{ $sp->username }}{{ $sp->id == auth()->id() ? ' (Me)' : '' }}
                 </option>
                 @endforeach
             </select>
@@ -133,6 +133,61 @@
         </div>
     </div>
 
+</div>
+
+
+{{-- ═══ TARGET OVERVIEW ═════════════════════════════════════ --}}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="bg-white rounded shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="feather icon-target text-primary me-2"></i>
+                    Target vs Achievement — {{ $targetMonthLabel }}
+                </h6>
+                <a href="{{ route('targets.index') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="feather icon-list me-1"></i> View Targets
+                </a>
+            </div>
+            <div class="row g-3 align-items-center">
+                {{-- Left 50%: Target Amount & Achieved Amount --}}
+                <div class="col-md-6">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border">
+                                <small class="text-muted d-block mb-1 fw-semibold">Target Amount</small>
+                                <h5 class="fw-bold mb-0 text-dark">₹{{ number_format($targetAmount, 2) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border">
+                                <small class="text-muted d-block mb-1 fw-semibold">Achieved (Net Billed)</small>
+                                <h5 class="fw-bold mb-0 text-success">₹{{ number_format($targetAchieved, 2) }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right 50%: Achieved Percentage & Progress Bar --}}
+                <div class="col-md-6 ps-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-semibold text-muted">Achieved Percentage</span>
+                        <span class="badge bg-{{ $targetPctColor }} fs-6">{{ $targetPct }}%</span>
+                    </div>
+                    <div class="progress" style="height: 24px; border-radius: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-{{ $targetPctColor }} fw-bold"
+                             role="progressbar"
+                             style="width: {{ min($targetPct, 100) }}%; font-size: 13px;"
+                             aria-valuenow="{{ $targetPct }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            {{ $targetPct }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
