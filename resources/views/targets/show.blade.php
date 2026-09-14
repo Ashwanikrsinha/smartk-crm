@@ -17,7 +17,7 @@
         </div>
         <div class="col-6 col-lg-3">
             <div class="bg-white rounded shadow-sm p-3 text-center">
-                <h6 class="text-muted small mb-1">Achieved</h6>
+                <h6 class="text-muted small mb-1">Achieved (Net Billed)</h6>
                 <h4 class="fw-bold text-success mb-0">₹{{ number_format($achieved, 2) }}</h4>
             </div>
         </div>

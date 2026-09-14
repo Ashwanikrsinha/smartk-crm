@@ -33,11 +33,11 @@ class Target extends Model
 
     public function achievedAmount(): float
     {
-        return (float) Invoice::where('user_id', $this->user_id)
-            ->where('status', Invoice::STATUS_APPROVED)
+        return (float) (Invoice::where('user_id', $this->user_id)
             ->whereMonth('invoice_date', $this->month)
             ->whereYear('invoice_date',  $this->year)
-            ->sum('amount');
+            ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+            ->value('total_achieved') ?? 0);
     }
 
     public function achievementPercent(): int

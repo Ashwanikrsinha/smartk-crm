@@ -104,6 +104,13 @@
                         @if ($dispatch->bilty_number)
                             <span class="me-3">Bilty: {{ $dispatch->bilty_number }}</span>
                         @endif
+                        @if ($dispatch->pod_slip)
+                            <span class="me-3">
+                                <a href="{{ route('dispatches.pod', $dispatch) }}" target="_blank" class="text-primary text-decoration-none fw-semibold">
+                                    <i class="feather icon-file-text me-1"></i>POD Slip
+                                </a>
+                            </span>
+                        @endif
                         @if ($dispatch->challan_number)
                             <span class="me-3">Challan: {{ $dispatch->challan_number }}</span>
                         @endif

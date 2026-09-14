@@ -14,7 +14,7 @@
     </a>
 </header>
 
-<form action="{{ route('dispatches.store') }}" method="POST" id="dispatch-form">
+<form action="{{ route('dispatches.store') }}" method="POST" id="dispatch-form" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
 
@@ -98,7 +98,7 @@
                         @if($item['remaining_qty'] > 0)
                         <input type="number"
                                name="items[{{ $idx }}][quantity_dispatched]"
-                               class="form-control form-control-sm text-end"
+                               class="form-control form-control-sm text-center"
                                min="0"
                                max="{{ $item['remaining_qty'] }}"
                                step="0.01"
@@ -106,7 +106,6 @@
                                placeholder="0">
                         @else
                         <span class="badge bg-success">Fully Dispatched</span>
-                        <input type="hidden" name="items[{{ $idx }}][quantity_dispatched]" value="0">
                         @endif
                     </td>
                 </tr>
@@ -145,6 +144,11 @@
                        placeholder="Lorry receipt number">
             </div>
             <div class="col-lg-3 mb-3">
+                <label class="form-label">POD Slip <small class="text-muted">(optional)</small></label>
+                <input type="file" name="pod_slip" class="form-control"
+                       accept=".pdf,.jpg,.jpeg,.png,.webp">
+            </div>
+            <div class="col-lg-3 mb-3">
                 <label class="form-label">Challan Number</label>
                 <input type="text" name="challan_number" class="form-control"
                        placeholder="Delivery challan number">
@@ -162,7 +166,7 @@
                 <label class="form-label">Driver Phone</label>
                 <input type="text" name="driver_phone" class="form-control" placeholder="10-digit mobile">
             </div>
-            <div class="col-lg-9 mb-3">
+            <div class="col-lg-6 mb-3">
                 <label class="form-label">Remarks</label>
                 <input type="text" name="remarks" class="form-control"
                        placeholder="Any notes about this dispatch...">

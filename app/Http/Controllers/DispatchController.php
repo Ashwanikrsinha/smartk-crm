@@ -259,6 +259,7 @@ use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\DataTables;
 
 class DispatchController extends Controller
@@ -292,12 +293,18 @@ class DispatchController extends Controller
                 }
             })
             ->select('id', 'invoice_id', 'dispatch_number', 'dispatch_date',
-                     'bilty_number', 'challan_number', 'vehicle_number', 'dispatched_by');
+                     'bilty_number', 'pod_slip', 'challan_number', 'vehicle_number', 'dispatched_by');
 
             return DataTables::of($dispatches)
                 ->editColumn('dispatch_date', fn($d) => $d->dispatch_date->format('d M, Y'))
                 ->addColumn('po_number',  fn($d) => $d->invoice->po_number)
                 ->addColumn('school',     fn($d) => $d->invoice->customer->name)
+                ->addColumn('pod_slip', function ($d) {
+                    if ($d->pod_slip) {
+                        return '<a href="' . route('dispatches.pod', $d) . '" target="_blank" class="btn btn-xs btn-outline-primary"><i class="feather icon-file-text me-1"></i> View POD</a>';
+                    }
+                    return '<span class="text-muted">—</span>';
+                })
                 ->addColumn('items_summary', function ($d) {
                     return $d->items->map(fn($i) =>
                         $i->product->category?->name . ' / ' . $i->product->name .
@@ -305,7 +312,7 @@ class DispatchController extends Controller
                     )->implode('<br>');
                 })
                 ->addColumn('action', fn($d) => view('dispatches.buttons', ['dispatch' => $d])->render())
-                ->rawColumns(['items_summary', 'action'])
+                ->rawColumns(['items_summary', 'pod_slip', 'action'])
                 ->make(true);
         }
 
@@ -394,6 +401,7 @@ class DispatchController extends Controller
             'no_of_boxes'       => 'required|integer|min:1',
             'total_weight'      => 'required|numeric|min:0.01',
             'bilty_number'      => 'nullable|string|max:100',
+            'pod_slip'          => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
             'challan_number'    => 'nullable|string|max:100',
             'vehicle_number'    => 'nullable|string|max:50',
             'driver_name'       => 'nullable|string|max:100',
@@ -420,7 +428,12 @@ class DispatchController extends Controller
             return back()->withInput()->with('error', 'Please enter quantity for at least one item to dispatch.');
         }
 
-        DB::transaction(function () use ($request, $invoice) {
+        $podPath = null;
+        if ($request->hasFile('pod_slip')) {
+            $podPath = $request->file('pod_slip')->store('dispatches/pod', 'public');
+        }
+
+        DB::transaction(function () use ($request, $invoice, $podPath) {
             $dispatch = Dispatch::create([
                 'invoice_id'      => $invoice->id,
                 'dispatch_number' => Dispatch::generateNumber(),
@@ -428,6 +441,7 @@ class DispatchController extends Controller
                 'no_of_boxes'     => $request->no_of_boxes,
                 'total_weight'    => $request->total_weight,
                 'bilty_number'    => $request->bilty_number,
+                'pod_slip'        => $podPath,
                 'challan_number'  => $request->challan_number,
                 'vehicle_number'  => $request->vehicle_number,
                 'driver_name'     => $request->driver_name,
@@ -484,6 +498,7 @@ class DispatchController extends Controller
             'no_of_boxes'    => 'required|integer|min:1',
             'total_weight'   => 'required|numeric|min:0.01',
             'bilty_number'   => 'nullable|string|max:100',
+            'pod_slip'       => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
             'challan_number' => 'nullable|string|max:100',
             'vehicle_number' => 'nullable|string|max:50',
             'driver_name'    => 'nullable|string|max:100',
@@ -491,12 +506,30 @@ class DispatchController extends Controller
             'remarks'        => 'nullable|string|max:500',
         ]);
 
+        if ($request->hasFile('pod_slip')) {
+            if ($dispatch->pod_slip && Storage::disk('public')->exists($dispatch->pod_slip)) {
+                Storage::disk('public')->delete($dispatch->pod_slip);
+            }
+            $validated['pod_slip'] = $request->file('pod_slip')->store('dispatches/pod', 'public');
+        }
+
         $dispatch->update(array_merge($validated, [
             'edited_by' => auth()->id(),
             'edited_at' => now(),
         ]));
 
         return back()->with('success', "Dispatch {$dispatch->dispatch_number} updated.");
+    }
+
+    public function viewPod(Dispatch $dispatch)
+    {
+        $this->authorize('view', $dispatch->invoice);
+
+        if (!$dispatch->pod_slip || !Storage::disk('public')->exists($dispatch->pod_slip)) {
+            abort(404, 'POD slip not found.');
+        }
+
+        return response()->file(Storage::disk('public')->path($dispatch->pod_slip));
     }
 
     private function canEditDispatches(): bool

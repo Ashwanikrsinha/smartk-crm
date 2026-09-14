@@ -18,33 +18,56 @@ class TargetController extends Controller
     }
     public function index(Request $request)
     {
-        if ($request->ajax()) {
+        $user    = auth()->user();
+        $teamIds = $user->teamMemberIds();
 
-            $user    = auth()->user();
-            $teamIds = $user->teamMemberIds();
+        if ($request->ajax() || $request->wantsJson()) {
+            $userId = $request->input('user_id');
 
-            $targets = Target::with('user:id,username,emp_code')
-                ->whereIn('user_id', $teamIds)
-                ->select('id', 'user_id', 'target_amount', 'month', 'year');
+            $targetsQuery = Target::with('user:id,username,emp_code')
+                ->whereIn('user_id', $teamIds);
 
-            return DataTables::of($targets)
+            if (!empty($userId) && in_array($userId, $teamIds)) {
+                $targetsQuery->where('user_id', $userId);
+            }
+
+            // Order by year desc, month desc
+            $targetsQuery->orderBy('year', 'desc')->orderBy('month', 'desc');
+
+            // Calculate totals for summary footer
+            $allMatchingTargets = (clone $targetsQuery)->get();
+            $totalTarget = (float) $allMatchingTargets->sum('target_amount');
+            $totalAchieved = 0.0;
+            foreach ($allMatchingTargets as $t) {
+                $totalAchieved += (float) (Invoice::where('user_id', $t->user_id)
+                    ->whereMonth('invoice_date', $t->month)
+                    ->whereYear('invoice_date',  $t->year)
+                    ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+                    ->value('total_achieved') ?? 0);
+            }
+            $totalPct = $totalTarget > 0 ? round(($totalAchieved / $totalTarget) * 100) : 0;
+            $totalPctColor = $totalPct >= 100 ? 'success' : ($totalPct >= 60 ? 'warning' : 'danger');
+            $totalPctHtml = "<div class=\"progress\" style=\"height:18px;min-width:70px\">
+                                <div class=\"progress-bar bg-{$totalPctColor}\" style=\"width:{$totalPct}%\">{$totalPct}%</div>
+                            </div>";
+
+            return DataTables::of($targetsQuery)
                 ->editColumn('target_amount', fn($t) => '₹' . number_format($t->target_amount, 2))
                 ->editColumn('month', fn($t) => date('F', mktime(0, 0, 0, $t->month, 1)) . ' ' . $t->year)
                 ->addColumn('achieved', function ($t) {
-                    // Sum approved PO amount for this SP in this month/year
-                    $achieved = Invoice::where('user_id', $t->user_id)
-                        ->where('status', Invoice::STATUS_APPROVED)
+                    $achieved = (float) (Invoice::where('user_id', $t->user_id)
                         ->whereMonth('invoice_date', $t->month)
                         ->whereYear('invoice_date',  $t->year)
-                        ->sum('amount');
+                        ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+                        ->value('total_achieved') ?? 0);
                     return '₹' . number_format($achieved, 2);
                 })
                 ->addColumn('achievement_pct', function ($t) {
-                    $achieved = Invoice::where('user_id', $t->user_id)
-                        ->where('status', Invoice::STATUS_APPROVED)
+                    $achieved = (float) (Invoice::where('user_id', $t->user_id)
                         ->whereMonth('invoice_date', $t->month)
                         ->whereYear('invoice_date',  $t->year)
-                        ->sum('amount');
+                        ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+                        ->value('total_achieved') ?? 0);
                     $pct = $t->target_amount > 0
                         ? round(($achieved / $t->target_amount) * 100)
                         : 0;
@@ -53,13 +76,21 @@ class TargetController extends Controller
                                 <div class=\"progress-bar bg-{$color}\" style=\"width:{$pct}%\">{$pct}%</div>
                             </div>";
                 })
-                ->editColumn('user_name_emp_code', fn($t) => optional($t->user)->username ? optional($t->user)->username . ' (' . (optional($t->user)->emp_code ?? '-') . ')': '-')
+                ->editColumn('user_name_emp_code', fn($t) => optional($t->user)->username ? optional($t->user)->username . ' (' . (optional($t->user)->emp_code ?? '-') . ')' : '-')
                 ->addColumn('action', fn($t) => view('targets.buttons', ['target' => $t])->render())
                 ->rawColumns(['achievement_pct', 'action'])
+                ->with([
+                    'total_target'     => '₹' . number_format($totalTarget, 2),
+                    'total_achieved'   => '₹' . number_format($totalAchieved, 2),
+                    'overall_pct'      => $totalPct . '%',
+                    'overall_pct_html' => $totalPctHtml,
+                ])
                 ->make(true);
         }
 
-        return view('targets.index');
+        $teamUsers = User::whereIn('id', $teamIds)->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
+
+        return view('targets.index', compact('teamUsers'));
     }
     public function create()
     {
@@ -97,12 +128,12 @@ class TargetController extends Controller
 
         $target->load('user:id,username');
 
-        // Achieved amount this month
-        $achieved = Invoice::where('user_id', $target->user_id)
-            ->where('status', Invoice::STATUS_APPROVED)
+        // Achieved amount this month based on Net Billed
+        $achieved = (float) (Invoice::where('user_id', $target->user_id)
             ->whereMonth('invoice_date', $target->month)
             ->whereYear('invoice_date',  $target->year)
-            ->sum('amount');
+            ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
+            ->value('total_achieved') ?? 0);
 
         $pct = $target->target_amount > 0
             ? round(($achieved / $target->target_amount) * 100)

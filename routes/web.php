@@ -165,6 +165,9 @@ Route::middleware('auth')->group(function () {
     Route::get('dispatches/po-summary/{invoice}',
         [Controllers\DispatchController::class, 'poSummary'])->name('dispatches.po-summary');
 
+    Route::get('dispatches/{dispatch}/pod',
+        [Controllers\DispatchController::class, 'viewPod'])->name('dispatches.pod');
+
     Route::resource('dispatches', Controllers\DispatchController::class)->only(['index','create','store','show','update']);
 
     // ═════════════════════════════════════════════════════════════════════════

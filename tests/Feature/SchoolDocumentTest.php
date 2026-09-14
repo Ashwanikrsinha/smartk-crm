@@ -49,7 +49,7 @@ class SchoolDocumentTest extends TestCase
         ]);
 
         $this->customer = Customer::create([
-            'school_code'  => 'SCH-TEST-' . rand(1000, 9999),
+            'school_code'  => 'SCH-TEST-' . uniqid(),
             'name'         => 'Test School',
             'phone_number' => '9876543210',
             'state'        => 'Maharashtra',

@@ -57,6 +57,16 @@
                     <td>{{ $dispatch->dispatchedBy->username ?? '—' }}</td></tr>
                 <tr><th class="text-muted">Bilty / LR No.</th>
                     <td>{{ $dispatch->bilty_number ?? '—' }}</td></tr>
+                <tr><th class="text-muted">POD Slip</th>
+                    <td>
+                        @if($dispatch->pod_slip)
+                            <a href="{{ route('dispatches.pod', $dispatch) }}" target="_blank" class="btn btn-xs btn-outline-primary">
+                                <i class="feather icon-file-text me-1"></i> View POD Slip
+                            </a>
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td></tr>
                 <tr><th class="text-muted">Challan No.</th>
                     <td>{{ $dispatch->challan_number ?? '—' }}</td></tr>
                 <tr><th class="text-muted">Vehicle No.</th>
@@ -122,7 +132,7 @@
 @if($canEdit && !$dispatch->isEdited())
 <div class="modal fade" id="editDispatchModal{{ $dispatch->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('dispatches.update', $dispatch) }}" method="POST">
+        <form action="{{ route('dispatches.update', $dispatch) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PATCH')
             <div class="modal-content">
@@ -158,6 +168,17 @@
                         <label class="form-label">Bilty / LR Number</label>
                         <input type="text" name="bilty_number" class="form-control"
                                value="{{ $dispatch->bilty_number }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">POD Slip <small class="text-muted">(upload to replace)</small></label>
+                        @if($dispatch->pod_slip)
+                            <div class="mb-2">
+                                <a href="{{ route('dispatches.pod', $dispatch) }}" target="_blank" class="btn btn-xs btn-outline-info">
+                                    <i class="feather icon-file-text me-1"></i> Current POD Slip
+                                </a>
+                            </div>
+                        @endif
+                        <input type="file" name="pod_slip" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Challan Number</label>

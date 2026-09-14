@@ -57,6 +57,7 @@ class WarehouseDispatchExport implements
             'No. of Boxes',
             'Total Weight (kg)',
             'Bilty Number',
+            'POD Slip',
             'Challan Number',
             'Vehicle Number',
             'Driver Name',
@@ -178,6 +179,7 @@ class WarehouseDispatchExport implements
                     'no_of_boxes'     => $lastDispatch?->no_of_boxes ?? '—',
                     'total_weight'    => $lastDispatch?->total_weight ? $lastDispatch->total_weight : '—',
                     'bilty_number'    => $lastDispatch->bilty_number ?? '—',
+                    'pod_slip'        => $lastDispatch?->pod_slip ? 'Uploaded' : '—',
                     'challan_number'  => $lastDispatch->challan_number ?? '—',
                     'vehicle_number'  => $lastDispatch->vehicle_number ?? '—',
                     'driver_name'     => $lastDispatch->driver_name ?? '—',
@@ -199,7 +201,7 @@ class WarehouseDispatchExport implements
     public function styles(Worksheet $sheet): array
     {
         // Header row styling
-        $sheet->getStyle('A1:W1')->applyFromArray([
+        $sheet->getStyle('A1:X1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => [
                 'fillType'   => Fill::FILL_SOLID,

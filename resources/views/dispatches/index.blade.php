@@ -103,7 +103,11 @@
                 {{-- Per-item columns --}}
                 <td>{{ $item->product->category?->name ?? '—' }}</td>
                 <td>{{ $item->product->name }}</td>
-                <td>{{ $item->co_branding ? 'Yes' : 'No' }}</td>
+                <td>
+                    <span class="badge bg-{{ $po->co_branding ? 'info text-dark' : 'secondary' }}">
+                        {{ $po->co_branding ? 'Yes' : 'No' }}
+                    </span>
+                </td>
                 <td class="text-end">{{ $item->quantity }}</td>
 
                 @php
@@ -135,11 +139,18 @@
                 </td>
                 <td rowspan="{{ $rowCount }}" class="text-center">
                     @if($po->dispatches->count() > 0)
+                    @php $lastDisp = $po->dispatches->last(); @endphp
                     <span class="badge bg-info">{{ $po->dispatches->count() }} dispatch(es)</span>
-                    <a href="{{ route('dispatches.show', $po->dispatches->last()->id) }}"
+                    <a href="{{ route('dispatches.show', $lastDisp->id) }}"
                        class="btn btn-xs btn-link p-0 d-block mt-1 text-info">
-                        View last dispatch
+                        View details
                     </a>
+                    @if($lastDisp->pod_slip)
+                    <a href="{{ route('dispatches.pod', $lastDisp) }}" target="_blank"
+                       class="btn btn-xs btn-outline-success p-1 d-inline-block mt-1" style="font-size:0.7rem">
+                        <i class="feather icon-file-text me-1"></i> View POD
+                    </a>
+                    @endif
                     @else
                     <span class="badge bg-warning text-dark">None yet</span>
                     @endif

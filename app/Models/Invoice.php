@@ -214,6 +214,9 @@ class Invoice extends Model
      */
     public function getNetBilledAttribute(): float
     {
+        if (isset($this->attributes['net_billed'])) {
+            return (float) $this->attributes['net_billed'];
+        }
         return $this->net_billed_amount;
     }
 
