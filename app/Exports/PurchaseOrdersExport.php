@@ -273,6 +273,7 @@ class PurchaseOrdersExport implements
         $base = [
             'PO Number',
             'PO Date',
+            'Co-branding',
             'Sales Person',
             'Sales Manager',
             'School Name',
@@ -298,7 +299,7 @@ class PurchaseOrdersExport implements
             $base[] = 'Collection (₹)';
             $base[] = 'Outstanding (₹)';
             $base[] = 'Delivery Due Date';
-            $this->invoiceColCount = count($base); // 18 invoice-level columns
+            $this->invoiceColCount = count($base); // 19 invoice-level columns
 
             $base[] = 'Product Type';
             $base[] = 'Product Name';
@@ -311,7 +312,7 @@ class PurchaseOrdersExport implements
             $base[] = 'Net Rate (₹)';
             $base[] = 'Item Amount (₹)';
         } else {
-            $this->invoiceColCount = count($base); // 13 invoice-level columns for marketing
+            $this->invoiceColCount = count($base); // 14 invoice-level columns for marketing
         }
 
         $this->totalColCount = count($base);
@@ -334,6 +335,7 @@ class PurchaseOrdersExport implements
         $invoiceCols = [
             $invoice->po_number,
             $invoice->invoice_date?->format('d/m/Y'),
+            $invoice->co_branding ? 'Yes' : 'No',
             $invoice->user->username . ' (' . $invoice->user->emp_code . ')',
             $invoice->user->reportiveTo?->username ?? '—',
             $invoice->customer->name,
@@ -350,6 +352,11 @@ class PurchaseOrdersExport implements
         $invoiceCols[] = $invoice->customer->leadSource?->name ?? 'N/A';
         $invoiceCols[] = ucfirst($invoice->status);
         $invoiceCols[] = number_format($invoice->amount, 2);
+
+        if ($this->isMarketing) {
+            $this->currentRow++;
+            return [$invoiceCols];
+        }
 
         if (!$this->isMarketing) {
             $invoiceCols[] = number_format($invoice->billing_amount, 2);

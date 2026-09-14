@@ -49,6 +49,10 @@
             <table class="table table-sm table-borderless mb-0">
                 <tr><th class="text-muted" style="width:40%">Dispatch Date</th>
                     <td>{{ $dispatch->dispatch_date->format('d M, Y') }}</td></tr>
+                <tr><th class="text-muted">No. of Boxes</th>
+                    <td><span class="badge bg-primary">{{ $dispatch->no_of_boxes }}</span></td></tr>
+                <tr><th class="text-muted">Total Weight</th>
+                    <td><strong>{{ $dispatch->total_weight }} kg</strong></td></tr>
                 <tr><th class="text-muted">Dispatched By</th>
                     <td>{{ $dispatch->dispatchedBy->username ?? '—' }}</td></tr>
                 <tr><th class="text-muted">Bilty / LR No.</th>
@@ -137,6 +141,18 @@
                         <label class="form-label">Dispatch Date <span class="text-danger">*</span></label>
                         <input type="date" name="dispatch_date" class="form-control"
                                value="{{ $dispatch->dispatch_date->format('Y-m-d') }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. of Boxes <span class="text-danger">*</span></label>
+                            <input type="number" name="no_of_boxes" class="form-control"
+                                   min="1" step="1" value="{{ $dispatch->no_of_boxes }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Total Weight (kg) <span class="text-danger">*</span></label>
+                            <input type="number" name="total_weight" class="form-control"
+                                   min="0.01" step="0.01" value="{{ $dispatch->total_weight }}" required>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Bilty / LR Number</label>

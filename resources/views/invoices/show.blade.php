@@ -251,6 +251,14 @@
                         <td>{{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}</td>
                     </tr>
                     <tr>
+                        <th class="text-muted">Co-branding</th>
+                        <td>
+                            <span class="badge bg-{{ $invoice->co_branding ? 'primary' : 'secondary' }}">
+                                {{ $invoice->co_branding ? 'Yes' : 'No' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
                         <th class="text-muted">Status</th>
                         <td>
                             @php $c = ['approved'=>'success','submitted'=>'warning','draft'=>'secondary','rejected'=>'danger'][$invoice->status]??'secondary'; @endphp

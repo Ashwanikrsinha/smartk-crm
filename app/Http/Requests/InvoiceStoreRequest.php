@@ -23,6 +23,7 @@ class InvoiceStoreRequest extends FormRequest
             'address'           => 'nullable|string|max:500',
             'remarks'           => 'nullable|string|max:1000',
             'terms'             => 'nullable|string',
+            'co_branding'       => 'required|in:0,1',
             'total_po_amount'   => 'required|numeric|min:0.01',
             'action'            => 'required|in:draft,submit',
 

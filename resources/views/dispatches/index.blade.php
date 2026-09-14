@@ -63,6 +63,7 @@
                 <th>School Code</th>
                 <th>Category (Product Type)</th>
                 <th>Products</th>
+                <th>Co-branding</th>
                 <th class="text-end">Ordered Qty</th>
                 <th class="text-end">Dispatched</th>
                 <th class="text-end">Remaining</th>
@@ -102,6 +103,7 @@
                 {{-- Per-item columns --}}
                 <td>{{ $item->product->category?->name ?? '—' }}</td>
                 <td>{{ $item->product->name }}</td>
+                <td>{{ $item->co_branding ? 'Yes' : 'No' }}</td>
                 <td class="text-end">{{ $item->quantity }}</td>
 
                 @php

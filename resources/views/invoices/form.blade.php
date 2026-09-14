@@ -97,7 +97,7 @@
         </div>
 
         {{-- Address --}}
-        <div class="col-lg-6 mb-3">
+        <div class="col-lg-9 mb-3">
             <label class="form-label">School Address</label>
             <input type="text" name="address" class="form-control" id="school-address"
                 value="{{ isset($invoice) ? $invoice->address : old('address') }}" placeholder="Full address">
@@ -264,6 +264,34 @@
     <h6 class="fw-bold border-bottom pb-2 mb-3">
         <i class="feather icon-file-text me-2 text-primary"></i>Additional Details
     </h6>
+    <div class="row">{{-- Co-branding --}}
+        <div class="col-lg-6 mb-3">
+            <label class="form-label d-block">Co-branding <span class="text-danger">*</span></label>
+            <div class="d-flex align-items-center gap-4 mt-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="co_branding" id="co_branding_no"
+                        value="0"
+                        {{ old('co_branding', isset($invoice) ? ($invoice->co_branding ? 1 : 0) : 0) == 0 ? 'checked' : '' }}
+                        required>
+                    <label class="form-check-label fw-semibold" for="co_branding_no">
+                        No
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="co_branding" id="co_branding_yes"
+                        value="1"
+                        {{ old('co_branding', isset($invoice) ? ($invoice->co_branding ? 1 : 0) : 0) == 1 ? 'checked' : '' }}
+                        required>
+                    <label class="form-check-label fw-semibold" for="co_branding_yes">
+                        Yes
+                    </label>
+                </div>
+            </div>
+            @error('co_branding')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
     <div class="row">
         <div class="col-lg-12 mb-3">
             <label class="form-label">Remarks</label>
@@ -277,34 +305,34 @@
                 placeholder="Payment terms, delivery conditions...">{{ isset($invoice)
                     ? $invoice->terms
                     : 'i. S. Chand Edutech Pvt. Ltd (“the Company”). would always retain the license to
-the product given and it is not to be copied, modified, translated, decompiled, or
-otherwise used in any other manner than for teaching childrens in the school.
-ii. The School/Organisation (“the Customer”) can use the program only at its
-location set out in the order form.
-iii. In the event of the custmer failing to make the payment to the Company as
-mutally agreed on in the Purchase order (“PO”), The Company remedies include
-terminating this PO without notice and recalling the material already delivered
-under the PO. If the outstanding amount is not paid, even after the mutually
-agreed T&amp;C, interest of 2% per month is to be paid in full by the customer.
-iv. The Company shall not be held responsible or liable for not performing any of its
-oligations or undertakings provided for in PO if such performance is prevented,
-delayed or hindered by an act of god, fire, flood, explosion, riots, inability to
-procure labour, equipements, facilities, supplies, failure of transportation, strikes,
-lock outs not within the reasonable control of the Company.
-v. All payments shall be non-refundable once made.
-vi. Once order is received, number of kits ordered cannot be reduced or cancelled
-without the Company&#39;s prior written consent.
-vii. All the outstanding payments must be cleared within 3 Months of order delivery.
-viii. In case of any dishonour of a PDC, The Company shall immediately bring the
-matter to the knowledge of the school. The Customer shall take immediate steps to
-ensure that the reason for dishonour is removed &amp; intimate the Company to
-represent the cheque again within 2 working days or remit the amount via RTGS/
-NEFT.
-ix. Cheque dishonouring charges shall be borned by the Customer Only.
-x. Any missing material needs to be notified by the school within 15 working days
-after receiving the material, after that if the school notify us than the school will
-pay the delivery charges as well the missing material charges.
-xi. All disputes are subject to Delhi Jurisdiction only.' }}</textarea>
+                the product given and it is not to be copied, modified, translated, decompiled, or
+                otherwise used in any other manner than for teaching childrens in the school.
+                ii. The School/Organisation (“the Customer”) can use the program only at its
+                location set out in the order form.
+                iii. In the event of the custmer failing to make the payment to the Company as
+                mutally agreed on in the Purchase order (“PO”), The Company remedies include
+                terminating this PO without notice and recalling the material already delivered
+                under the PO. If the outstanding amount is not paid, even after the mutually
+                agreed T&amp;C, interest of 2% per month is to be paid in full by the customer.
+                iv. The Company shall not be held responsible or liable for not performing any of its
+                oligations or undertakings provided for in PO if such performance is prevented,
+                delayed or hindered by an act of god, fire, flood, explosion, riots, inability to
+                procure labour, equipements, facilities, supplies, failure of transportation, strikes,
+                lock outs not within the reasonable control of the Company.
+                v. All payments shall be non-refundable once made.
+                vi. Once order is received, number of kits ordered cannot be reduced or cancelled
+                without the Company&#39;s prior written consent.
+                vii. All the outstanding payments must be cleared within 3 Months of order delivery.
+                viii. In case of any dishonour of a PDC, The Company shall immediately bring the
+                matter to the knowledge of the school. The Customer shall take immediate steps to
+                ensure that the reason for dishonour is removed &amp; intimate the Company to
+                represent the cheque again within 2 working days or remit the amount via RTGS/
+                NEFT.
+                ix. Cheque dishonouring charges shall be borned by the Customer Only.
+                x. Any missing material needs to be notified by the school within 15 working days
+                after receiving the material, after that if the school notify us than the school will
+                pay the delivery charges as well the missing material charges.
+                xi. All disputes are subject to Delhi Jurisdiction only.' }}</textarea>
         </div>
     </div>
 </div>

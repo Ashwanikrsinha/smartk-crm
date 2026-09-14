@@ -32,11 +32,19 @@
                 <label class="form-label small text-muted">School Code</label>
                 <div class="form-control bg-light">{{ $invoice->customer->school_code }}</div>
             </div>
-            <div class="col-lg-3 mb-3">
+            <div class="col-lg-2 mb-3">
                 <label class="form-label small text-muted">PO Number</label>
                 <div class="form-control bg-light">{{ $invoice->po_number }}</div>
             </div>
-            <div class="col-lg-3 mb-3">
+            <div class="col-lg-2 mb-3">
+                <label class="form-label small text-muted">Co-branding</label>
+                <div class="form-control bg-light">
+                    <span class="badge bg-{{ $invoice->co_branding ? 'info' : 'secondary' }}">
+                        {{ $invoice->co_branding ? 'Yes' : 'No' }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-lg-2 mb-3">
                 <label class="form-label small text-muted">Delivery Due Date</label>
                 <div class="form-control bg-light {{ $invoice->delivery_due_date?->isPast() ? 'text-danger' : '' }}">
                     {{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}
@@ -108,18 +116,28 @@
         </div>
     </div>
 
-    {{-- ═══ TRANSPORT DETAILS (ALL OPTIONAL) ═══════════ --}}
+    {{-- ═══ TRANSPORT DETAILS ═══════════════════════════ --}}
     <div class="bg-white rounded shadow-sm p-4 mb-4">
         <h6 class="fw-bold border-bottom pb-2 mb-3">
             <i class="feather icon-truck me-2 text-primary"></i>
             Transport Details
-            <small class="text-muted fw-normal ms-1">— All fields are optional</small>
+            <small class="text-muted fw-normal ms-1">— Boxes & Weight are mandatory</small>
         </h6>
         <div class="row">
-            <div class="col-lg-3 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="form-label">Dispatch Date <span class="text-danger">*</span></label>
                 <input type="date" name="dispatch_date" class="form-control"
                        value="{{ date('Y-m-d') }}" required>
+            </div>
+            <div class="col-lg-4 mb-3">
+                <label class="form-label">No. of Boxes <span class="text-danger">*</span></label>
+                <input type="number" name="no_of_boxes" class="form-control"
+                       min="1" step="1" placeholder="e.g. 5" required>
+            </div>
+            <div class="col-lg-4 mb-3">
+                <label class="form-label">Total Weight (kg) <span class="text-danger">*</span></label>
+                <input type="number" name="total_weight" class="form-control"
+                       min="0.01" step="0.01" placeholder="e.g. 25.50" required>
             </div>
             <div class="col-lg-3 mb-3">
                 <label class="form-label">Bilty / LR Number</label>
@@ -144,7 +162,7 @@
                 <label class="form-label">Driver Phone</label>
                 <input type="text" name="driver_phone" class="form-control" placeholder="10-digit mobile">
             </div>
-            <div class="col-lg-6 mb-3">
+            <div class="col-lg-9 mb-3">
                 <label class="form-label">Remarks</label>
                 <input type="text" name="remarks" class="form-control"
                        placeholder="Any notes about this dispatch...">

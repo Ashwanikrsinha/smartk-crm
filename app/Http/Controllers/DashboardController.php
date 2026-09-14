@@ -55,8 +55,9 @@ class DashboardController extends Controller
         $dateTo      = $request->input('date_to');
         $duedateFrom = $request->input('due_date_from');
         $duedateTo   = $request->input('due_date_to');
-        $productType = $request->input('product_type', 'all');
-        $productId   = $request->input('product_id', 'all');
+        $productType    = $request->input('product_type', 'all');
+        $productId      = $request->input('product_id', 'all');
+        $dispatchStatus = $request->input('dispatch_status', 'pending');
 
         $totalOrderedQty = 0;
         $totalDoneQty    = 0;
@@ -128,7 +129,13 @@ class DashboardController extends Controller
 
         $totalPendingQty = max($totalOrderedQty - $totalDoneQty, 0);
 
-        $filteredRows = $allRows->reject(fn($i) => $i->is_fully_dispatched);
+        if ($dispatchStatus === 'all') {
+            $filteredRows = $allRows;
+        } elseif ($dispatchStatus === 'completed') {
+            $filteredRows = $allRows->filter(fn($i) => $i->is_fully_dispatched);
+        } else {
+            $filteredRows = $allRows->reject(fn($i) => $i->is_fully_dispatched);
+        }
 
         $perPage = 15;
         $page    = $request->input('page', 1);
@@ -179,7 +186,8 @@ class DashboardController extends Controller
             'products',
             'productTypes',
             'duedateFrom',
-            'duedateTo'
+            'duedateTo',
+            'dispatchStatus'
         ));
     }
 

@@ -9,17 +9,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            // BM approval tracking (SM approval already uses approved_by/approved_at)
-            $table->foreignId('bm_approved_by')
-                  ->nullable()
-                  ->after('approved_by')
-                  ->constrained('users')
-                  ->nullOnDelete();
+            if (!Schema::hasColumn('invoices', 'bm_approved_by')) {
+                $table->foreignId('bm_approved_by')
+                      ->nullable()
+                      ->after('approved_by')
+                      ->constrained('users')
+                      ->nullOnDelete();
+            }
 
-            $table->timestamp('bm_approved_at')->nullable()->after('bm_approved_by');
+            if (!Schema::hasColumn('invoices', 'bm_approved_at')) {
+                $table->timestamp('bm_approved_at')->nullable()->after('bm_approved_by');
+            }
 
-            // SM-level rejection reason (existing rejection_reason is for BM rejection)
-            $table->text('sm_rejection_reason')->nullable()->after('rejection_reason');
+            if (!Schema::hasColumn('invoices', 'sm_rejection_reason')) {
+                $table->text('sm_rejection_reason')->nullable()->after('rejection_reason');
+            }
         });
 
         // Status values for invoices.status:

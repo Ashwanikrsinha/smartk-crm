@@ -24,6 +24,7 @@ class Invoice extends Model
         'accounts_mail_sent_at' => 'datetime',
         'delivery_due_date' => 'date',
         'collected_at' => 'date',
+        'co_branding' => 'boolean',
     ];
 
 

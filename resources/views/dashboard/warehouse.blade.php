@@ -6,9 +6,9 @@
             <small class="text-muted">Dispatch Queue — Approved Purchase Orders</small>
         </div>
         <div class="d-flex gap-2">
-            {{-- Export button passes current filter state as query params --}}
+            {{-- Export Pending button --}}
             <a href="{{ route('warehouse.exports',
-                request()->only([
+                array_merge(request()->only([
                     'year',
                     'month',
                     'date_from',
@@ -17,10 +17,26 @@
                     'due_date_to',
                     'product_type',
                     'product_id',
-                ]),
+                ]), ['scope' => 'pending'])
+            ) }}"
+                class="btn btn-sm btn-warning text-dark fw-semibold">
+                <i class="feather icon-download me-1"></i> Export Pending
+            </a>
+            {{-- Export All button --}}
+            <a href="{{ route('warehouse.exports',
+                array_merge(request()->only([
+                    'year',
+                    'month',
+                    'date_from',
+                    'date_to',
+                    'due_date_from',
+                    'due_date_to',
+                    'product_type',
+                    'product_id',
+                ]), ['scope' => 'all'])
             ) }}"
                 class="btn btn-sm btn-success">
-                <i class="feather icon-download me-1"></i> Export
+                <i class="feather icon-download me-1"></i> Export All
             </a>
             <a href="{{ route('dispatches.index') }}" class="btn btn-sm btn-outline-primary">
                 <i class="feather icon-list me-1"></i> Dispatch History
@@ -31,6 +47,14 @@
     {{-- ═══ FILTERS ════════════════════════════════════════════ --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small mb-1">Status</label>
+                <select name="dispatch_status" class="form-control form-control-sm">
+                    <option value="pending" {{ ($dispatchStatus ?? 'pending') == 'pending' ? 'selected' : '' }}>Pending Only</option>
+                    <option value="all" {{ ($dispatchStatus ?? 'pending') == 'all' ? 'selected' : '' }}>All Orders</option>
+                    <option value="completed" {{ ($dispatchStatus ?? 'pending') == 'completed' ? 'selected' : '' }}>Fully Dispatched</option>
+                </select>
+            </div>
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small mb-1">Product Type</label>
                 <select name="product_type" id="product_type" class="form-control form-control-sm">
@@ -178,25 +202,48 @@
         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
             <h6 class="fw-bold mb-0">
                 <i class="feather icon-truck me-2 text-primary"></i>
-                Orders Pending Dispatch
+                @if(($dispatchStatus ?? 'pending') === 'all')
+                    All Purchase Orders
+                @elseif(($dispatchStatus ?? 'pending') === 'completed')
+                    Fully Dispatched Orders
+                @else
+                    Orders Pending Dispatch
+                @endif
             </h6>
-            {{-- Inline export link mirrors header button but scoped to table context --}}
-            <a href="{{ route(
-                'warehouse.exports',
-                request()->only([
-                    'year',
-                    'month',
-                    'date_from',
-                    'date_to',
-                    'due_date_from',
-                    'due_date_to',
-                    'product_type',
-                    'product_id',
-                ]),
-            ) }}"
-                class="btn btn-sm btn-outline-success">
-                <i class="feather icon-download me-1"></i> Export to Excel
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route(
+                    'warehouse.exports',
+                    array_merge(request()->only([
+                        'year',
+                        'month',
+                        'date_from',
+                        'date_to',
+                        'due_date_from',
+                        'due_date_to',
+                        'product_type',
+                        'product_id',
+                    ]), ['scope' => 'pending'])
+                ) }}"
+                    class="btn btn-sm btn-outline-warning text-dark fw-semibold">
+                    <i class="feather icon-download me-1"></i> Export Pending
+                </a>
+                <a href="{{ route(
+                    'warehouse.exports',
+                    array_merge(request()->only([
+                        'year',
+                        'month',
+                        'date_from',
+                        'date_to',
+                        'due_date_from',
+                        'due_date_to',
+                        'product_type',
+                        'product_id',
+                    ]), ['scope' => 'all'])
+                ) }}"
+                    class="btn btn-sm btn-outline-success">
+                    <i class="feather icon-download me-1"></i> Export All
+                </a>
+            </div>
         </div>
 
         <div class="table-responsive">
@@ -205,6 +252,7 @@
                     <tr>
                         <th class="col-po">PO Number</th>
                         <th class="col-date">PO Date</th>
+                        <th>Co-branding</th>
                         <th class="col-school">School</th>
                         <th class="col-type">Product Type</th>
                         <th class="col-product">Product</th>
@@ -216,11 +264,13 @@
                 <tbody>
                     @forelse($rows as $invoice)
                         @php
-                            $visibleItems = $invoice->invoiceItems->where('remaining_qty', '>', 0);
-                            $rowCount = $visibleItems->count();
+                            $visibleItems = ($dispatchStatus ?? 'pending') === 'pending'
+                                ? $invoice->invoiceItems->where('remaining_qty', '>', 0)
+                                : $invoice->invoiceItems;
+                            $rowCount = max($visibleItems->count(), 1);
                         @endphp
 
-                        @foreach ($visibleItems as $item)
+                        @forelse ($visibleItems as $item)
                             <tr>
                                 @if ($loop->first)
                                     <td rowspan="{{ $rowCount }}">
@@ -233,6 +283,11 @@
                                         {{ $invoice->invoice_date->format('d M, Y') }}
                                     </td>
                                     <td rowspan="{{ $rowCount }}">
+                                        <span class="badge bg-{{ $invoice->co_branding ? 'info text-dark' : 'secondary' }}">
+                                            {{ $invoice->co_branding ? 'Yes' : 'No' }}
+                                        </span>
+                                    </td>
+                                    <td rowspan="{{ $rowCount }}">
                                         <div class="fw-bold">{{ $invoice->customer->name }}</div>
                                         <small class="text-muted">{{ $invoice->customer->school_code }}</small>
                                     </td>
@@ -242,7 +297,9 @@
                                 <td>{{ $item->product->name ?? '—' }}</td>
                                 <td class="text-end">
                                     <div class="text-muted small">Total: {{ (float) $item->quantity }}</div>
-                                    <div class="text-danger fw-bold">Left: {{ (float) $item->remaining_qty }}</div>
+                                    <div class="text-{{ $item->remaining_qty > 0 ? 'danger' : 'success' }} fw-bold">
+                                        {{ $item->remaining_qty > 0 ? 'Left: ' . (float) $item->remaining_qty : 'Done' }}
+                                    </div>
                                 </td>
 
                                 @if ($loop->first)
@@ -251,17 +308,45 @@
                                         {{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}
                                     </td>
                                     <td rowspan="{{ $rowCount }}" class="text-center">
-                                        <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
-                                            class="btn btn-xs btn-primary btn-sm">
-                                            <i class="feather icon-send me-1"></i> Dispatch
-                                        </a>
+                                        @if(!$invoice->is_fully_dispatched)
+                                            <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
+                                                class="btn btn-xs btn-primary btn-sm">
+                                                <i class="feather icon-send me-1"></i> Dispatch
+                                            </a>
+                                        @else
+                                            <span class="badge bg-success">Fully Dispatched</span>
+                                        @endif
                                     </td>
                                 @endif
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td>
+                                    <a href="{{ route('dispatches.create', ['invoice_id' => $invoice->id]) }}"
+                                        class="fw-bold">
+                                        {{ $invoice->po_number }}
+                                    </a>
+                                </td>
+                                <td>{{ $invoice->invoice_date->format('d M, Y') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $invoice->co_branding ? 'info text-dark' : 'secondary' }}">
+                                        {{ $invoice->co_branding ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ $invoice->customer->name }}</div>
+                                    <small class="text-muted">{{ $invoice->customer->school_code }}</small>
+                                </td>
+                                <td colspan="3" class="text-center text-muted">No items</td>
+                                <td>{{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-success">Fully Dispatched</span>
+                                </td>
+                            </tr>
+                        @endforelse
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">No approved orders pending.</td>
+                            <td colspan="9" class="text-center py-4 text-muted">No orders found.</td>
                         </tr>
                     @endforelse
                 </tbody>

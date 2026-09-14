@@ -16,6 +16,8 @@ class Dispatch extends Model
     protected $casts = [
         'dispatch_date' => 'date',
         'edited_at'     => 'datetime',
+        'no_of_boxes'   => 'integer',
+        'total_weight'  => 'decimal:2',
     ];
 
     public static function generateNumber(): string

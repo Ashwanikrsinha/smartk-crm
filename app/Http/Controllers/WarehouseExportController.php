@@ -18,6 +18,7 @@ class WarehouseExportController extends Controller
         );
 
         $filters = $request->only([
+            'scope',
             'year',
             'month',
             'date_from',
@@ -28,7 +29,11 @@ class WarehouseExportController extends Controller
             'product_id',
         ]);
 
-        $filename = 'dispatch-queue-' . now()->format('Y-m-d-His') . '.xlsx';
+        $scope = $request->input('scope', 'pending');
+        $filters['scope'] = $scope;
+
+        $prefix = $scope === 'all' ? 'all-dispatches-' : 'pending-dispatch-queue-';
+        $filename = $prefix . now()->format('Y-m-d-His') . '.xlsx';
 
         return Excel::download(new WarehouseDispatchExport($filters), $filename);
     }

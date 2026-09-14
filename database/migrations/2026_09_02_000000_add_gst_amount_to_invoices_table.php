@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->decimal('gst_amount', 12, 2)->default(0)->after('billing_amount');
+            if (!Schema::hasColumn('invoices', 'gst_amount')) {
+                $table->decimal('gst_amount', 12, 2)->default(0)->after('billing_amount');
+            }
         });
     }
 

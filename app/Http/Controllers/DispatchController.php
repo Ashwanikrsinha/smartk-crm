@@ -391,6 +391,8 @@ class DispatchController extends Controller
         $request->validate([
             'invoice_id'        => 'required|exists:invoices,id',
             'dispatch_date'     => 'required|date',
+            'no_of_boxes'       => 'required|integer|min:1',
+            'total_weight'      => 'required|numeric|min:0.01',
             'bilty_number'      => 'nullable|string|max:100',
             'challan_number'    => 'nullable|string|max:100',
             'vehicle_number'    => 'nullable|string|max:50',
@@ -423,6 +425,8 @@ class DispatchController extends Controller
                 'invoice_id'      => $invoice->id,
                 'dispatch_number' => Dispatch::generateNumber(),
                 'dispatch_date'   => $request->dispatch_date,
+                'no_of_boxes'     => $request->no_of_boxes,
+                'total_weight'    => $request->total_weight,
                 'bilty_number'    => $request->bilty_number,
                 'challan_number'  => $request->challan_number,
                 'vehicle_number'  => $request->vehicle_number,
@@ -477,6 +481,8 @@ class DispatchController extends Controller
 
         $validated = $request->validate([
             'dispatch_date'  => 'required|date',
+            'no_of_boxes'    => 'required|integer|min:1',
+            'total_weight'   => 'required|numeric|min:0.01',
             'bilty_number'   => 'nullable|string|max:100',
             'challan_number' => 'nullable|string|max:100',
             'vehicle_number' => 'nullable|string|max:50',

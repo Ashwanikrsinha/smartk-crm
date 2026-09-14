@@ -210,6 +210,7 @@
                     <tr>
                         <th>PO Number</th>
                         <th>Date</th>
+                        <th>Co-branding</th>
                         @if (!$isSp)
                             <th>SM Name</th>
                             <th>SP Name</th>
@@ -246,6 +247,11 @@
                                 @endif
                             </td>
                             <td>{{ $row->invoice_date->format('d M, Y') }}</td>
+                            <td>
+                                <span class="badge bg-{{ $row->co_branding ? 'info text-dark' : 'secondary' }}">
+                                    {{ $row->co_branding ? 'Yes' : 'No' }}
+                                </span>
+                            </td>
                             @if (!$isSp)
                                 <td>{{ $row->user->reportiveTo?->username }} ({{ $row->user->reportiveTo?->emp_code }})
                                 </td>
@@ -287,7 +293,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="16" class="text-center text-muted py-4">
+                            <td colspan="17" class="text-center text-muted py-4">
                                 No records found for the selected filters.
                             </td>
                         </tr>
@@ -300,11 +306,11 @@
                             {{--
                                 colspan shifts based on hidden columns:
                                 SP role hides SM+SP cols (2 less), Marketing hides financials.
-                                Base non-financial cols before amounts: PO#, Date, [SM], [SP], School, State, Lead = 5 or 7
+                                Base non-financial cols before amounts: PO#, Date, Co-branding, [SM], [SP], School, State, Lead = 6 or 8
                                 Financial cols (non-marketing): Billed, GST, NetBilled, PendPO, Coll, Outst = 6
                             --}}
                             @php
-                                $baseColspan = $isSp ? 5 : 7; // PO#, Date, (SM, SP), School, State, Lead
+                                $baseColspan = $isSp ? 6 : 8; // PO#, Date, Co-branding, (SM, SP), School, State, Lead
                             @endphp
                             <td colspan="{{ $baseColspan }}">
                                 Total ({{ $rows->count() }} records)

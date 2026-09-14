@@ -94,26 +94,30 @@
                     </div>
 
                     {{-- Transport info if available --}}
-                    @if ($dispatch->bilty_number || $dispatch->vehicle_number || $dispatch->challan_number)
-                        <div class="mt-2 text-muted small">
-                            @if ($dispatch->bilty_number)
-                                <span class="me-3">Bilty: {{ $dispatch->bilty_number }}</span>
-                            @endif
-                            @if ($dispatch->challan_number)
-                                <span class="me-3">Challan: {{ $dispatch->challan_number }}</span>
-                            @endif
-                            @if ($dispatch->vehicle_number)
-                                <span class="me-3">Vehicle: {{ $dispatch->vehicle_number }}</span>
-                            @endif
-                            @if ($dispatch->driver_name)
-                                <span>Driver: {{ $dispatch->driver_name }}
-                                    @if ($dispatch->driver_phone)
-                                        ({{ $dispatch->driver_phone }})
-                                    @endif
-                                </span>
-                            @endif
-                        </div>
-                    @endif
+                    <div class="mt-2 text-muted small">
+                        @if ($dispatch->no_of_boxes)
+                            <span class="me-3"><strong>Boxes:</strong> {{ $dispatch->no_of_boxes }}</span>
+                        @endif
+                        @if ($dispatch->total_weight)
+                            <span class="me-3"><strong>Weight:</strong> {{ $dispatch->total_weight }} kg</span>
+                        @endif
+                        @if ($dispatch->bilty_number)
+                            <span class="me-3">Bilty: {{ $dispatch->bilty_number }}</span>
+                        @endif
+                        @if ($dispatch->challan_number)
+                            <span class="me-3">Challan: {{ $dispatch->challan_number }}</span>
+                        @endif
+                        @if ($dispatch->vehicle_number)
+                            <span class="me-3">Vehicle: {{ $dispatch->vehicle_number }}</span>
+                        @endif
+                        @if ($dispatch->driver_name)
+                            <span>Driver: {{ $dispatch->driver_name }}
+                                @if ($dispatch->driver_phone)
+                                    ({{ $dispatch->driver_phone }})
+                                @endif
+                            </span>
+                        @endif
+                    </div>
 
                     @if ($dispatch->remarks)
                         <div class="mt-1 text-muted small">Note: {{ $dispatch->remarks }}</div>
