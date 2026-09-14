@@ -39,7 +39,6 @@ function tnr(text, opts = {}) {
         size: opts.size ?? 24,           // 12pt default
         bold: opts.bold ?? false,
         underline: opts.underline ? { type: UnderlineType.SINGLE } : undefined,
-        shading: opts.highlight ? { type: ShadingType.CLEAR, color: "auto", fill: "FFFF00" } : undefined,
     });
 }
 
@@ -191,21 +190,21 @@ children.push(para(
 if (data.pdcs && data.pdcs.length > 0) {
     data.pdcs.forEach(pdc => {
         children.push(para(
-            [tnr(`Amount Received before delivery of kits: ${pdc.label} - Cheque No. ${pdc.cheque_number} - ₹${pdc.amount}`, { highlight: true })],
+            [tnr(`Amount Received before delivery of kits: ${pdc.label} - Cheque No. ${pdc.cheque_number} - ₹${pdc.amount}`)],
             { indent: { left: 360 }, align: AlignmentType.BOTH }
         ));
         children.push(para(
-            [tnr(`dated: ${pdc.date}`, { highlight: true })],
+            [tnr(`dated: ${pdc.date}`)],
             { indent: { left: 360 }, align: AlignmentType.BOTH }
         ));
     });
 } else {
     children.push(para(
-        [tnr("Amount Received before delivery of kits: ", { highlight: true })],
+        [tnr("Amount Received before delivery of kits: ")],
         { indent: { left: 360 }, align: AlignmentType.BOTH }
     ));
     children.push(para(
-        [tnr("dated :__________", { highlight: true })],
+        [tnr("dated :__________")],
         { indent: { left: 360 }, align: AlignmentType.BOTH }
     ));
 }
@@ -255,10 +254,21 @@ TC_LINES.forEach(line => {
     ));
 });
 
-// ── [11] Remarks ──────────────────────────────────────────
+// ── [11] Numbered section 5: Co-Branding ──────────────────
+children.push(emptyPara());
+const coBrandingVal = (data.co_branding == true || data.co_branding == 1 || data.co_branding == '1' || data.co_branding == 'Yes' || data.co_branding == 'yes') ? 'Yes' : 'No';
+children.push(para(
+    [
+        tnr("Co-Branding: ", { bold: true }),
+        tnr(coBrandingVal, { bold: true }),
+    ],
+    { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
+));
+
+// ── [12] Remarks ──────────────────────────────────────────
 children.push(emptyPara());
 children.push(para([
-    tnr("Special requirement / Remarks -  ", { highlight: true }),
+    tnr("Special requirement / Remarks -  "),
     tnr(data.remarks
         ? data.remarks
         : "_______________________________________________________"),

@@ -88,7 +88,11 @@ class TargetController extends Controller
                 ->make(true);
         }
 
-        $teamUsers = User::whereIn('id', $teamIds)->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
+        $teamUsers = User::whereIn('id', $teamIds)->active()
+            ->whereHas('role', function ($query) {
+                $query->whereIn('name', ['Manager', 'Operator']);
+            })
+            ->orderBy('username')->get(['id', 'username', 'emp_code']);
 
         return view('targets.index', compact('teamUsers'));
     }

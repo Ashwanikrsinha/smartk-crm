@@ -50,10 +50,12 @@ class PoDocumentServiceTest extends TestCase
 
         $invoice = Invoice::create([
             'po_number'       => 'PO-DOCX-' . rand(1000, 9999),
+            'invoice_number'  => rand(100000, 999999999),
             'invoice_date'    => now(),
             'user_id'         => $admin->id,
             'customer_id'     => $customer->id,
             'status'          => 'approved',
+            'co_branding'     => 1,
             'amount'          => 50000.00,
             'billing_amount'  => 0,
             'collected_amount'=> 0,
@@ -75,5 +77,34 @@ class PoDocumentServiceTest extends TestCase
         $this->assertNotEmpty($path);
         $this->assertTrue($service->exists($invoice));
         $this->assertFileExists($service->storagePath($invoice));
+
+        // Test with co_branding = 0
+        $invoice2 = Invoice::create([
+            'po_number'       => 'PO-DOCX2-' . rand(1000, 9999),
+            'invoice_number'  => rand(100000, 999999999),
+            'invoice_date'    => now(),
+            'user_id'         => $admin->id,
+            'customer_id'     => $customer->id,
+            'status'          => 'approved',
+            'co_branding'     => 0,
+            'amount'          => 50000.00,
+            'billing_amount'  => 0,
+            'collected_amount'=> 0,
+        ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice2->id,
+            'product_id' => $product->id,
+            'quantity'   => 5,
+            'unit_id'    => $unit->id,
+            'rate'       => 5000.00,
+            'discount'   => 0,
+            'amount'     => 25000.00,
+        ]);
+
+        $path2 = $service->generate($invoice2);
+        $this->assertNotEmpty($path2);
+        $this->assertTrue($service->exists($invoice2));
+        $this->assertFileExists($service->storagePath($invoice2));
     }
 }
