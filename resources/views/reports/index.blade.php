@@ -249,13 +249,13 @@
                             @if (!$isSp)
                                 <td>{{ $row->user->reportiveTo?->username }} ({{ $row->user->reportiveTo?->emp_code }})
                                 </td>
-                                <td>{{ $row->user->username }} ({{ $row->user->emp_code }})</td>
+                                <td>{{ $row->user->username ?? '-' }} ({{ $row->user->emp_code }})</td>
                             @endif
                             <td>
-                                {{ $row->customer->name }}
+                                {{ $row->customer->name ?? '-' }}
                                 <small class="text-muted d-block">{{ $row->customer->school_code }}</small>
                             </td>
-                            <td>{{ $row->customer->state }}</td>
+                            <td>{{ $row->customer->state ?? '-' }}</td>
                             <td>{{ $row->customer->leadSource?->name ?? '—' }}</td>
                             <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
                             @unless ($isMarketing)

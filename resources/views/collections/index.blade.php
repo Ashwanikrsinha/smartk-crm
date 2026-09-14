@@ -109,9 +109,9 @@
                                     {{ $row->po_number }}
                                 </a>
                             </td>
-                            <td class="small">{{ $row->user->username }}</td>
+                            <td class="small">{{ $row->user->username ?? '-' }}</td>
                             <td class="small">
-                                {{ $row->customer->name }}
+                                {{ $row->customer->name ?? '-' }}
                                 <span class="text-muted d-block"
                                     style="font-size:0.7rem">{{ $row->customer->school_code }}</span>
                             </td>

@@ -38,8 +38,8 @@
                         <button class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Approve this PO from <strong>{{ $invoice->user->username }}</strong>
-                            for <strong>{{ $invoice->customer->name }}</strong>?</p>
+                        <p>Approve this PO from <strong>{{ $invoice->user->username ?? '-' }}</strong>
+                            for <strong>{{ $invoice->customer->name ?? '-' }}</strong>?</p>
                         <div class="alert alert-info py-2 mb-0">
                             <i class="feather icon-info me-1"></i>
                             After SM approval, the PO moves to <strong>Pending BM</strong> status.
@@ -116,7 +116,7 @@
                             </tr>
                             <tr>
                                 <th class="text-muted">SP</th>
-                                <td>{{ $invoice->user->username }}</td>
+                                <td>{{ $invoice->user->username ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th class="text-muted">SM Approved By</th>

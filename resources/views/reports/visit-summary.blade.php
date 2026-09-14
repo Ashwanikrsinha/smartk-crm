@@ -8,8 +8,8 @@
           <th class="fw-normal">This Month</th>
           <th class="fw-normal pe-3">Last Month</th>
        </tr>
-    </thead> 
- 
+    </thead>
+
        @php
           $today_visits_total = 0;
           $yesterday_visits_total = 0;
@@ -17,9 +17,9 @@
           $current_month_visits_total = 0;
           $last_month_visits_total = 0;
        @endphp
- 
+
        @foreach ($users as $user)
-       
+
        @php
           $today_visits_total += $user->today_visits_count;
           $yesterday_visits_total += $user->yesterday_visits_count;
@@ -29,7 +29,7 @@
        @endphp
        <tbody>
           <tr>
-             <td class="ps-3 text-start">{{ $user->username }}</td>
+             <td class="ps-3 text-start">{{ $user->username ?? '-' }}</td>
              <td>{{ $user->today_visits_count }}</td>
              <td>{{ $user->yesterday_visits_count }}</td>
              <td>{{ $user->last_seven_day_visits_count }}</td>

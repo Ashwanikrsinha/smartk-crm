@@ -193,9 +193,9 @@
             @foreach($pendingApproval as $po)
             <tr>
                 <td><strong>{{ $po->po_number }}</strong></td>
-                <td>{{ $po->user->username }}</td>
-                <td>{{ $po->customer->name }}</td>
-                <td>{{ $po->invoice_date->format('d M, Y') }}</td>
+                <td>{{ $po->user->username ?? '-' }}</td>
+                <td>{{ $po->customer->name ?? '-' }}</td>
+                <td>{{ $po->invoice_date->format('d M, Y') ?? '-' }}</td>
                 <td class="text-end">₹{{ number_format($po->amount, 2) }}</td>
                 <td>
                     <a href="{{ route('invoices.show', $po) }}" class="btn btn-xs btn-outline-primary btn-sm">
@@ -247,10 +247,10 @@
                         {{ $row->po_number }}
                     </a>
                 </td>
-                <td>{{ $row->user->username }}</td>
+                <td>{{ $row->user->username ?? '-' }}</td>
                 <td>
                     <span title="{{ $row->customer->school_code }}">
-                        {{ $row->customer->name }}
+                        {{ $row->customer->name ?? '-' }}
                     </span>
                 </td>
                 <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>

@@ -31,7 +31,7 @@
                     <td>
                        <span class="badge alert-primary">{{ $leave->status }}</span>
                     </td>
-                    <td>{{ Str::limit($leave->user->username, 20) }}</td>
+                    <td>{{ Str::limit($leave->user->username ?? '-', 20) }}</td>
                  </tr>
              @endforeach
           </tbody>

@@ -16,7 +16,7 @@
       <tbody>
         <tr>
           <th class="ps-3">Username</th>
-          <td>{{ $user->username }}</td>
+          <td>{{ $user->username ?? '-' }}</td>
         </tr>
         <tr>
           <th class="ps-3">Email Address</th>
@@ -28,18 +28,18 @@
         </tr>
         <tr>
           <th class="ps-3">Department</th>
-          <td>{{ $user->department->name }}</td>
+          <td>{{ $user->department->name ?? '-' }}</td>
         </tr>
         <tr>
           <th class="ps-3">Reportive To</th>
-          <td>{{ isset($user->reportiveTo) ? $user->reportiveTo->username : '' }}</td>
+          <td>{{ isset($user->reportiveTo) ? $user->reportiveTo->username ?? '-' : '' }}</td>
         </tr>
         <tr>
           <th class="ps-3">Status</th>
           <td>
             @if ($user->is_disable)
               Disabled <i class="feather icon-x-circle text-danger ms-1"></i>
-              - 
+              -
               <span>Inactive Date : {{ $user->inactive_date->format('d M, Y') }}</span>
             @else
              Active <i class="feather icon-check-circle text-success ms-1"></i>
@@ -91,7 +91,7 @@
 
 <script>
     $(document).ready(() => {
-      
+
       $('#qualification table').each(function(){ $(this).addClass('table table-bordered w-100')});
 
     });

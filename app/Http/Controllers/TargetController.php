@@ -53,7 +53,7 @@ class TargetController extends Controller
                                 <div class=\"progress-bar bg-{$color}\" style=\"width:{$pct}%\">{$pct}%</div>
                             </div>";
                 })
-                ->editColumn('user_name_emp_code', fn($t) => $t->user->username . " ({$t->user->emp_code})")
+                ->editColumn('user_name_emp_code', fn($t) => optional($t->user)->username ? optional($t->user)->username . ' (' . (optional($t->user)->emp_code ?? '-') . ')': '-')
                 ->addColumn('action', fn($t) => view('targets.buttons', ['target' => $t])->render())
                 ->rawColumns(['achievement_pct', 'action'])
                 ->make(true);

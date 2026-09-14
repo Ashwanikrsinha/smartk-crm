@@ -46,9 +46,9 @@ class PdcController extends Controller
                 ->editColumn('amount',      fn($p) => '₹' . number_format($p->amount, 2))
                 ->editColumn('status',      fn($p) => $this->statusBadge($p->status))
                 ->addColumn('po_number',    fn($p) => $p->invoice->po_number)
-                ->editColumn('user_name_emp_code', fn($p) => $p->invoice->user->username . " ({$p->invoice->user->emp_code})")
-                ->addColumn('school',       fn($p) => $p->invoice->customer->name)
-                ->addColumn('sp',           fn($p) => $p->invoice->user->username)
+                ->editColumn('user_name_emp_code', fn($p) => optional($p->invoice->user)->username ? optional($p->invoice->user)->username . ' (' . (optional($p->invoice->user)->emp_code ?? '-') . ')': '-')
+                ->addColumn('school',       fn($p) => optional($p->invoice->customer)->name ?? '-')
+                ->addColumn('sp',           fn($p) => optional($p->invoice->user)->username ?? '-')
                 ->addColumn('action',       fn($p) => view('pdcs.buttons', ['pdc' => $p]))
                 ->rawColumns(['status', 'action'])
                 ->make(true);

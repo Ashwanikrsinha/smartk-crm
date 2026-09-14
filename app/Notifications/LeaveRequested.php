@@ -21,7 +21,7 @@ class LeaveRequested extends Notification
     public function toDatabase($notifiable): array
     {
         return [
-            'title'   => "Leave Request from {$this->leave->user->username}",
+            'title'   => "Leave Request from " . (optional($this->leave->user)->username ?? '-'),
             'message' => ucfirst($this->leave->leave_type) . " leave ({$this->leave->days} days): {$this->leave->reason}",
             'url'     => route('leaves.show', $this->leave->id),
             'type'    => 'leave_requested',

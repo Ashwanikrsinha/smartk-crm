@@ -120,8 +120,8 @@
                     @foreach ($visits as $visit)
                     <tr>
                         <td class="ps-3">{{ $visit->visit_date->format('d M, Y') }}</td>
-                        <td>{{ $visit->user->username }}</td>
-                        <td>{{ $visit->purpose->name }}</td>
+                        <td>{{ $visit->user->username ?? '-' }}</td>
+                        <td>{{ $visit->purpose->name ?? '-' }}</td>
                         <td>
                             <button type="button" class="btn btn-sm" data-bs-toggle="tooltip"
                              data-bs-placement="top"
@@ -143,7 +143,7 @@
 @endsection
 
 @push('scripts')
-    
+
 <script>
 
    $(document).ready(()=>{

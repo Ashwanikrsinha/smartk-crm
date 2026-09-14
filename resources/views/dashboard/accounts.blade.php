@@ -145,9 +145,9 @@
                                         {{ $row->po_number }}
                                     </a>
                                 </td>
-                                <td>{{ $row->user->username }}</td>
+                                <td>{{ $row->user->username ?? '-' }}</td>
                                 <td>
-                                    {{ $row->customer->name }}
+                                    {{ $row->customer->name ?? '-' }}
                                     <small class="text-muted d-block">{{ $row->customer->school_code }}</small>
                                 </td>
                                 <td class="text-end">₹{{ number_format($row->amount, 0) }}</td>

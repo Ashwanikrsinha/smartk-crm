@@ -3,7 +3,7 @@
     <div class="col-lg-6 mb-3">
         <label for="" class="form-label">Executive Name</label>
         <div class="form-control">
-            {{ $mode == 'edit' ? $leave->user->username : auth()->user()->username  }}
+            {{ $mode == 'edit' ? $leave->user->username ?? '-' : auth()->user()->username ?? '-'  }}
         </div>
     </div>
 

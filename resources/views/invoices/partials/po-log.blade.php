@@ -48,7 +48,7 @@
                     <span class="badge bg-light text-muted ms-1" style="font-size:0.7rem">CRM</span>
                     @endif
                 </td>
-                <td class="small">{{ $log->user->username }}</td>
+                <td class="small">{{ $log->user->username ?? '-' }}</td>
                 <td class="text-end fw-bold">
                     @if($log->amount > 0)
                     ₹{{ number_format($log->amount, 2) }}

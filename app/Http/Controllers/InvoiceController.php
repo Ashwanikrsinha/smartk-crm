@@ -80,7 +80,7 @@ class InvoiceController extends Controller
             return DataTables::of($invoices)
                 ->editColumn('po_number',    fn($i) => $i->po_number ?? "PO-{$i->invoice_number}")
                 ->editColumn('invoice_date', fn($i) => $i->invoice_date->format('d M, Y'))
-                ->editColumn('user_name_emp_code', fn($i) => $i->user->username . " ({$i->user->emp_code})")
+                ->editColumn('user_name_emp_code', fn($i) => optional($i->user)->username ? optional($i->user)->username . ' (' . (optional($i->user)->emp_code ?? '-') . ')': '-')
                 ->editColumn('status', fn($i) => $this->statusBadge($i->status))
 
                 // Warehouse sees nothing. Marketing sees amount + billing only.

@@ -49,10 +49,10 @@ class VisitController extends Controller
                         return $visit->visit_date->format('d M, Y');
                     })
                     ->editColumn('user_name_emp_code', function ($visit) {
-                        return $visit->user->username . " ({$visit->user->emp_code})";
+                        return optional($visit->user)->username ? optional($visit->user)->username . ' (' . (optional($visit->user)->emp_code ?? '-') . ')': '-';
                     })
                     ->editColumn('customer.name', function ($visit) {
-                        return Str::limit($visit->customer->name, 20);
+                        return Str::limit($visit->customer->name ?? '-', 20);
                     })
                     ->editColumn('level', function ($visit) {
                         return isset($visit->level) ? ucwords($visit->level) : '';

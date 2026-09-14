@@ -18,36 +18,36 @@
                 <tr>
                     <th class="ps-3">Title</th>
                     <td style="max-width: 20rem;">{{ $task->title }}</td>
-                </tr> 
+                </tr>
                 <tr>
                     <th class="ps-3">Deadline Time</th>
                     <td>{{$task->deadline_time->format('d M, Y - h:i:s A') }}</td>
-                </tr> 
+                </tr>
                 <tr>
                     <th class="ps-3">Assignee Name</th>
                     <td>
                         {{ $task->assignee->username }}
                     </td>
-                </tr> 
+                </tr>
                 <tr>
                     <th class="ps-3">Assignor Name</th>
                     <td>{{ $task->assignor->username }}</td>
-                </tr> 
+                </tr>
                 <tr>
                     <th class="ps-3">Complete Time</th>
                     <td>{{ isset($task->completed_at) ? $task->completed_at->format('d M, Y - h:i:s A') : 'Pending' }}</td>
-                </tr> 
+                </tr>
                 <tr>
                     <th class="ps-3">Assign Time</th>
                     <td>{{ $task->created_at->format('d M, Y - h:i:s A') }}</td>
-                </tr> 
+                </tr>
             </tbody>
         </table>
     </section>
   </div>
 </div>
 
- 
+
 <div class="card shadow-sm border-0 mb-4">
     <header class="card-header bg-white py-3">
         <i class="feather icon-book me-1 bg-primary text-white rounded p-1"></i> Description
@@ -63,10 +63,10 @@
       Comment
     </button>
 </header>
- 
+
 {{-- comment modal --}}
 <form action="{{ route('tasks.comments.store', ['task' => $task]) }}" method="POST">
-@csrf    
+@csrf
 <div class="modal fade" id="comment-modal">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -92,16 +92,16 @@
                 <header class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <span>
                         <i class="feather icon-user me-1 bg-primary text-white rounded p-1"></i>
-                        <span>{{ $comment->user->username }} &bull; {{ $comment->created_at->format('d M, Y - h:i:s A') }}</span>
+                        <span>{{ $comment->user->username ?? '-' }} &bull; {{ $comment->created_at->format('d M, Y - h:i:s A') }}</span>
                     </span>
                     <div>
                         @can('update', $comment)
                         <a href="{{ route('tasks.comments.edit', ['task' => $task, 'comment' => $comment]) }}" class="btn btn-sm text-primary pe-0"><i class="feather icon-settings"></i></a>
                         @endcan
-                        
+
                         @can('delete', $comment)
                         <form class="d-inline-block"
-                            action="{{ route('tasks.comments.destroy', ['task' => $task, 'comment' => $comment]) }}" 
+                            action="{{ route('tasks.comments.destroy', ['task' => $task, 'comment' => $comment]) }}"
                             method="POST"
                             onsubmit="return confirm('Are You Sure?')">
                             @csrf
@@ -120,7 +120,7 @@
     <div class="alert bg-white shadow-sm py-3">
         <i class="feather icon-message-circle bg-primary p-1 rounded me-1 text-white"></i>
         No comments
-    </div>    
+    </div>
 @endif
 
 

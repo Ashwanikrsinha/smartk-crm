@@ -143,7 +143,7 @@ const itemRows = data.items.map(item => new TableRow({
     children: [
         cell([para([tnr(item.name)])], COL[0]),
         cell([para([tnr(String(item.rate), { bold: true })])], COL[1]),
-        cell([para([tnr(String(item.qty), { bold: true })])], COL[2]),
+        cell([para([tnr(String(Math.trunc(Number(item.qty))), { bold: true })])], COL[2]),
         cell([para([tnr(String(item.total), { bold: true })])], COL[3]),
     ],
 }));

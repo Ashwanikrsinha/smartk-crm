@@ -36,27 +36,27 @@
                     </tr>
                     <tr>
                         <th class="ps-3">Username</th>
-                        <td>{{ $quotation->user->username }}</td>
+                        <td>{{ $quotation->user->username ?? '-' }}</td>
                     </tr>
-                    
+
                     <tr>
                         <th class="ps-3">Status</th>
                         <td>{{ ucfirst($quotation->status) }}</td>
-                    </tr> 
-                    
+                    </tr>
+
                     <tr>
                         <th class="ps-3">Follow Up Date</th>
                         <td>{{ isset($quotation->follow_date) ? $quotation->follow_date->format('d M, Y') : '' }}</td>
-                    </tr>  
+                    </tr>
                     <tr>
                         <th class="ps-3">Follow Up Type</th>
                         <td>{{ ucfirst($quotation->follow_type) }}</td>
-                    </tr> 
-                    
+                    </tr>
+
                     <tr>
                         <th class="ps-3">Reason</th>
                         <td style="max-width: 20rem;">{{ $quotation->reason }}</td>
-                    </tr> 
+                    </tr>
                 </tbody>
             </table>
         </section>

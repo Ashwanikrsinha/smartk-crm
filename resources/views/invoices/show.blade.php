@@ -259,7 +259,7 @@
                     </tr>
                     <tr>
                         <th class="text-muted">Sales Person</th>
-                        <td>{{ $invoice->user->username }}</td>
+                        <td>{{ $invoice->user->username ?? '-' }}</td>
                     </tr>
                     @if ($invoice->approvedBy)
                         <tr>

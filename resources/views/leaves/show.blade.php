@@ -3,7 +3,7 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">Leave Details</h5>
-            <small class="text-muted">{{ $leave->user->username }} — {{ ucfirst($leave->leave_type) }} Leave</small>
+            <small class="text-muted">{{ $leave->user->username ?? '-' }} — {{ ucfirst($leave->leave_type) }} Leave</small>
         </div>
         <a href="{{ route('leaves.index') }}" class="btn btn-sm btn-secondary">
             <i class="feather icon-arrow-left me-1"></i> Back
@@ -21,7 +21,7 @@
                 <table class="table table-sm table-borderless">
                     <tr>
                         <th class="text-muted" style="width:40%">Employee</th>
-                        <td><strong>{{ $leave->user->username }}</strong></td>
+                        <td><strong>{{ $leave->user->username ?? '-' }}</strong></td>
                     </tr>
                     <tr>
                         <th class="text-muted">Leave Type</th>
