@@ -95,8 +95,8 @@
 
                     {{-- PAN Upload --}}
                     <div class="col-lg-4 mb-3">
-                        <label class="form-label">PAN Card Upload <span class="text-danger">*</span></label>
-                        <input type="file" id="modal-pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <label class="form-label">PAN Card Upload </label>
+                        <input type="file" id="modal-pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" >
                     </div>
 
                     {{-- GST Certificate --}}

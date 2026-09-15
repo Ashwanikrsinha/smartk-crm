@@ -2,7 +2,7 @@
     <i class="feather icon-eye"></i>
 </a>
 
-@if (auth()->user()->isSalesManager() || auth()->user()->isAdmin())
+@if (auth()->user()->isAdmin())
     <a href="{{ route('targets.edit', $target) }}" class="btn btn-sm text-primary" title="Edit">
         <i class="feather icon-edit-2"></i>
     </a>
