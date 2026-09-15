@@ -3,7 +3,7 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">Accounts Dashboard</h5>
-            <small class="text-muted">Update collection details for approved orders</small>
+            <small class="text-muted">Update collection details for approved orders — Session {{ $session }}</small>
         </div>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-success">
             <i class="feather icon-download me-1"></i> Export Excel
@@ -21,7 +21,18 @@
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label small mb-1">Session</label>
+                <select name="session" class="form-control form-control-sm">
+                    @foreach ($sessions as $s)
+                        <option value="{{ $s }}" {{ $session == $s ? 'selected' : '' }}>
+                            {{ $s }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label small mb-1">Team Member (SP)</label>
                 <select name="sp_id" class="form-control form-control-sm">
                     <option value="">All Members</option>
@@ -33,7 +44,7 @@
                 </select>
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-4">
                 <label class="form-label small mb-1">School Name</label>
                 <select name="school_id" class="form-control form-control-sm">
                     <option value="">All Schools</option>
@@ -45,29 +56,24 @@
                 </select>
             </div>
 
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label small mb-1">PO / School ID</label>
                 <input type="text" name="po_number" class="form-control form-control-sm" placeholder="PO-2025-0001..."
                     value="{{ $poNumber ?? '' }}">
             </div>
 
-            {{-- <div class="col-lg-2 col-md-6">
-                <label class="form-label small mb-1">Month</label>
-                <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
-            </div> --}}
-
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-1 col-md-4">
                 <label class="form-label small mb-1">Date From</label>
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom ?? '' }}">
             </div>
 
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-1 col-md-4">
                 <label class="form-label small mb-1">Date To</label>
                 <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo ?? '' }}">
             </div>
 
-            <div class="col-lg-12 d-flex gap-2 justify-content-end mt-2">
-                <button class="btn btn-primary btn-sm">Filter</button>
+            <div class="col-lg-1 col-md-12 d-flex gap-2 justify-content-end">
+                <button class="btn btn-primary btn-sm w-100">Filter</button>
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
             </div>
 

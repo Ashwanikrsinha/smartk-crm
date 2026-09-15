@@ -3,12 +3,13 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">Warehouse Dashboard</h5>
-            <small class="text-muted">Dispatch Queue — Approved Purchase Orders</small>
+            <small class="text-muted">Dispatch Queue — Approved Purchase Orders (Session {{ $session }})</small>
         </div>
         <div class="d-flex gap-2">
             {{-- Export Pending button --}}
             <a href="{{ route('warehouse.exports',
                 array_merge(request()->only([
+                    'session',
                     'year',
                     'month',
                     'date_from',
@@ -25,6 +26,7 @@
             {{-- Export All button --}}
             <a href="{{ route('warehouse.exports',
                 array_merge(request()->only([
+                    'session',
                     'year',
                     'month',
                     'date_from',
@@ -100,13 +102,13 @@
                     value="{{ $duedateTo ?? '' }}">
             </div>
             <div class="col-lg-2 col-md-6">
-                <label class="form-label small mb-1">Year</label>
-                <select name="year" class="form-control form-control-sm">
-                    @for ($y = date('Y'); $y >= date('Y') - 4; $y--)
-                        <option value="{{ $y }}" {{ ($year ?? date('Y')) == $y ? 'selected' : '' }}>
-                            {{ $y }}
+                <label class="form-label small mb-1">Session</label>
+                <select name="session" class="form-control form-control-sm">
+                    @foreach ($sessions as $s)
+                        <option value="{{ $s }}" {{ $session == $s ? 'selected' : '' }}>
+                            {{ $s }}
                         </option>
-                    @endfor
+                    @endforeach
                 </select>
             </div>
             <div class="col-lg-3 d-flex gap-2">

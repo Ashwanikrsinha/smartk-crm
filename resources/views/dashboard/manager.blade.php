@@ -5,7 +5,7 @@
 <header class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h5 class="mb-0">Sales Manager Dashboard</h5>
-        <small class="text-muted">Hello, {{ auth()->user()->username }} — Overview for {{ $year }}</small>
+        <small class="text-muted">Hello, {{ auth()->user()->username }} — Overview for Session {{ $session }}</small>
     </div>
     @can('export_reports', App\Models\Invoice::class)
     <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-primary">
@@ -18,7 +18,18 @@
 <div class="bg-white rounded shadow-sm p-3 mb-4">
     <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
 
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-2 col-md-4">
+            <label class="form-label small mb-1">Session</label>
+            <select name="session" class="form-control form-control-sm">
+                @foreach($sessions as $sess)
+                    <option value="{{ $sess }}" {{ $session == $sess ? 'selected' : '' }}>
+                        {{ $sess }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-4">
             <label class="form-label small mb-1">Team Member</label>
             <select name="sp_id" class="form-control form-control-sm">
                 <option value="">All Members</option>
@@ -30,7 +41,7 @@
             </select>
         </div>
 
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-3 col-md-4">
             <label class="form-label small mb-1">School</label>
             <select name="school_id" class="form-control form-control-sm">
                 <option value="">All Schools</option>
@@ -42,30 +53,24 @@
             </select>
         </div>
 
-        {{-- <div class="col-lg-3 col-md-6">
-            <label class="form-label small mb-1">Month / Year</label>
-            <input type="month" name="month" class="form-control form-control-sm"
-                   value="{{ $month ?? '' }}" placeholder="Filter by month">
-        </div> --}}
-
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-2 col-md-6">
             <label class="form-label small mb-1">Date From</label>
             <input type="date" name="date_from" class="form-control form-control-sm"
                    value="{{ $dateFrom ?? '' }}">
         </div>
 
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-2 col-md-6">
             <label class="form-label small mb-1">Date To</label>
             <input type="date" name="date_to" class="form-control form-control-sm"
                    value="{{ $dateTo ?? '' }}">
         </div>
 
-        <div class="col-lg-3 col-md-6 d-flex gap-2">
-            <button class="btn btn-primary btn-sm w-100">
+        <div class="col-lg-12 d-flex gap-2 justify-content-end mt-2">
+            <button class="btn btn-primary btn-sm">
                 <i class="feather icon-filter me-1"></i> Filter
             </button>
             <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm">
-                <i class="feather icon-x"></i>
+                <i class="feather icon-x me-1"></i> Clear
             </a>
         </div>
 
@@ -195,7 +200,7 @@
 <div class="row mb-4">
     <div class="col-xl-8">
         <div class="bg-white rounded shadow-sm p-3">
-            <h6 class="fw-bold mb-3">PO Amount vs Collection — {{ $year }}</h6>
+            <h6 class="fw-bold mb-3">PO Amount vs Collection — Session {{ $session }}</h6>
             <canvas id="sm-chart" height="90"></canvas>
         </div>
     </div>

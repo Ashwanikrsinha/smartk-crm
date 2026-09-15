@@ -3,7 +3,7 @@
     <header class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="mb-0">My Dashboard</h5>
-            <small class="text-muted">Hello, {{ auth()->user()->username }}</small>
+            <small class="text-muted">Hello, {{ auth()->user()->username }} — Session {{ $session }}</small>
         </div>
         <div class="d-flex gap-2">
             @can('create', App\Models\Invoice::class)
@@ -14,22 +14,28 @@
         </div>
     </header>
 
-    {{-- Month Filter --}}
+    {{-- Session & Date Filter --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
-           {{-- <div class="col-lg-3">
-                <label class="form-label small mb-1">Month</label>
-                <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}">
-            </div> --}}
-            <div class="col-lg-3">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small mb-1">Session</label>
+                <select name="session" class="form-control form-control-sm">
+                    @foreach ($sessions as $s)
+                        <option value="{{ $s }}" {{ $session == $s ? 'selected' : '' }}>
+                            {{ $s }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
                 <label class="form-label small mb-1">Date From</label>
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom ?? '' }}">
             </div>
-            <div class="col-lg-3">
+            <div class="col-lg-3 col-md-6">
                 <label class="form-label small mb-1">Date To</label>
                 <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo ?? '' }}">
             </div>
-            <div class="col-lg-3 d-flex gap-2">
+            <div class="col-lg-3 col-md-6 d-flex gap-2">
                 <button class="btn btn-primary btn-sm w-100">Filter</button>
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
             </div>
@@ -97,7 +103,7 @@
     <div class="row mb-4">
         <div class="col-lg-8">
             <div class="bg-white rounded shadow-sm p-3">
-                <h6 class="fw-bold mb-3">My Monthly Performance — {{ $year }}</h6>
+                <h6 class="fw-bold mb-3">My Monthly Performance — Session {{ $session }}</h6>
                 <canvas id="sp-chart" height="100"></canvas>
             </div>
         </div>

@@ -318,8 +318,12 @@ class PodSlipAndTargetTest extends TestCase
         $response = $this->get(route('dashboard'));
         $response->assertStatus(200);
 
-        // Verify target section rendered
-        $response->assertSee('Target vs Achievement');
+        // Expected current session e.g. "2026-2027"
+        $expectedSession = ($month >= 7) ? "{$year}-" . ($year + 1) : ($year - 1) . "-{$year}";
+
+        // Verify target section and session rendered
+        $response->assertSee('Overview for Session ' . $expectedSession);
+        $response->assertSee('Target vs Achievement — Session ' . $expectedSession);
         $response->assertSee('Target Amount');
         $response->assertSee('Achieved (Net Billed)');
         $response->assertSee('Achieved Percentage');
@@ -330,6 +334,28 @@ class PodSlipAndTargetTest extends TestCase
         // Verify Sales Manager is included in Team Member dropdown
         $response->assertSee($salesManager->username . ' (Me)');
         $response->assertSee($salesPerson->username);
+
+        // Test with Session filter (e.g. explicit session selection)
+        $sessionFilterResponse = $this->get(route('dashboard', ['session' => $expectedSession]));
+        $sessionFilterResponse->assertStatus(200);
+        $sessionFilterResponse->assertSee('Session ' . $expectedSession);
+        $sessionFilterResponse->assertSee('100,000.00');
+        $sessionFilterResponse->assertSee('30,000.00');
+
+        // Test with SP filter
+        $spFilterResponse = $this->get(route('dashboard', ['sp_id' => $salesPerson->id]));
+        $spFilterResponse->assertStatus(200);
+        $spFilterResponse->assertSee('50,000.00'); // Only SP target
+        $spFilterResponse->assertSee('30,000.00'); // SP achieved
+        $spFilterResponse->assertSee('60%');        // 30k / 50k = 60%
+
+        // Test with Month filter
+        $monthStr = sprintf('%04d-%02d', $year, $month);
+        $monthFilterResponse = $this->get(route('dashboard', ['month' => $monthStr]));
+        $monthFilterResponse->assertStatus(200);
+        $monthFilterResponse->assertSee('Target vs Achievement — ' . date('F Y', mktime(0, 0, 0, $month, 1, $year)));
+        $monthFilterResponse->assertSee('100,000.00');
+        $monthFilterResponse->assertSee('30,000.00');
     }
 }
 

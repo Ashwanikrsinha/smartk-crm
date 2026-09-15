@@ -7,7 +7,7 @@
             @else
                 <h5 class="mb-0">Admin — Marketing Dashboard</h5>
             @endif
-            <small class="text-muted">System-wide overview</small>
+            <small class="text-muted">System-wide overview — Session {{ $session }}</small>
         </div>
         <div class="d-flex gap-2">
             @if (!auth()->user()->isBusinessManager())
@@ -25,7 +25,18 @@
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end">
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label small mb-1">Session</label>
+                <select name="session" class="form-control form-control-sm">
+                    @foreach ($sessions as $s)
+                        <option value="{{ $s }}" {{ $session == $s ? 'selected' : '' }}>
+                            {{ $s }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-lg-3 col-md-4">
                 <label class="form-label small mb-1">Lead From</label>
                 <select name="lead_source_id" class="form-control form-control-sm">
                     <option value="">All Sources</option>
@@ -37,12 +48,7 @@
                 </select>
             </div>
 
-            {{--<div class="col-lg-2 col-md-6">
-                <label class="form-label small mb-1">Month</label>
-                <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month') }}">
-            </div>--}}
-
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label small mb-1">Date From</label>
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
             </div>
@@ -115,7 +121,7 @@
         </div>
         <div class="col-lg-6">
             <div class="bg-white rounded shadow-sm p-3">
-                <h6 class="fw-bold mb-3">Revenue Trend — {{ date('Y') }}</h6>
+                <h6 class="fw-bold mb-3">Revenue Trend — Session {{ $session }}</h6>
                 <canvas id="revenue-chart" height="180"></canvas>
             </div>
         </div>

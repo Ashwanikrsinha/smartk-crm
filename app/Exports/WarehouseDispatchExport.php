@@ -71,6 +71,7 @@ class WarehouseDispatchExport implements
     {
         $filters     = $this->filters;
         $scope       = $filters['scope']       ?? 'pending'; // 'pending' or 'all'
+        $session     = $filters['session']     ?? null;
         $year        = $filters['year']        ?? date('Y');
         $month       = $filters['month']       ?? null;
         $dateFrom    = $filters['date_from']   ?? null;
@@ -94,6 +95,8 @@ class WarehouseDispatchExport implements
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        } elseif ($session && preg_match('/^(\d{4})-(\d{4})$/', $session, $m)) {
+            $query->whereBetween('invoice_date', ["{$m[1]}-07-01", "{$m[2]}-06-30"]);
         } else {
             $query->whereYear('invoice_date', $year);
         }
