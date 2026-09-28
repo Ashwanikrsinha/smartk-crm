@@ -106,6 +106,15 @@
                         </a>
                     @endif
 
+                    {{-- Opening Balances — Accounts + Admin --}}
+                    @if (auth()->user()->isAdmin() || auth()->user()->isAccounts())
+                        <a href="{{ route('opening-balances.index') }}"
+                            class="list-group-item list-group-item-action border-0 ps-4
+                   {{ request()->routeIs('opening-balances.*') ? 'active' : '' }}">
+                            <i class="feather icon-repeat me-2"></i> Opening Balances
+                        </a>
+                    @endif
+
                     {{-- Sales Bill — Accounts + Admin (SM read-only via show page) --}}
                     @can('viewAny', App\Models\Bill::class)
                        {{-- <a href="{{ route('bills.index') }}"

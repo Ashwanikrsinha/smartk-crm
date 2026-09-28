@@ -24,7 +24,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Auto carry-forward opening balances at start of each new academic session (July 1)
+        $schedule->command('crm:carry-forward-balances')
+                 ->yearlyOn(7, 1, '00:01');
     }
 
     /**

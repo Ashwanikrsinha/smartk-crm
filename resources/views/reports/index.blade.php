@@ -194,7 +194,7 @@
             <h6 class="fw-bold mb-0">
                 <i class="feather icon-list me-2 text-primary"></i>
                 Records
-                <span class="badge bg-secondary ms-1">{{ $rows->count() }}</span>
+                <span class="badge bg-secondary ms-1">{{ $rows->count() + ($openingBalanceRows->count() ?? 0) }}</span>
             </h6>
             {{-- Marketing: no export button here either --}}
             @unless ($isMarketing)
@@ -205,7 +205,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-sm table-hover" id="reports-table">
+            <table class="table table-bordered table-sm table-hover align-middle" id="reports-table">
                 <thead class="table-light">
                     <tr>
                         <th>PO Number</th>
@@ -234,6 +234,50 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- ── Opening Balance Carry-Forward Rows ──────── --}}
+                    @if (isset($openingBalanceRows))
+                        @foreach($openingBalanceRows as $ob)
+                            <tr class="table-warning">
+                                <td>
+                                    <span class="badge bg-warning text-dark fw-bold">
+                                        <i class="feather icon-repeat me-1"></i> Opening Balance
+                                    </span>
+                                </td>
+                                <td>{{ $ob->sessionLabel() }}</td>
+                                <td>—</td>
+                                @if (!$isSp)
+                                    <td>{{ $ob->salesPerson?->reportiveTo?->username ?? '—' }}</td>
+                                    <td>{{ $ob->salesPerson ? $ob->salesPerson->username . ' (' . ($ob->salesPerson->emp_code ?? '-') . ')' : '—' }}</td>
+                                @endif
+                                <td>
+                                    <a href="{{ route('customers.show', $ob->customer_id) }}" class="text-primary fw-bold">
+                                        {{ $ob->customer->name ?? '-' }}
+                                    </a>
+                                    <small class="text-muted d-block">{{ $ob->customer->school_code ?? '-' }}</small>
+                                </td>
+                                <td>{{ $ob->customer->state ?? '-' }}</td>
+                                <td>{{ $ob->customer->leadSource?->name ?? '—' }}</td>
+                                <td class="text-end fw-bold">₹{{ number_format($ob->opening_amount, 2) }}</td>
+                                @unless ($isMarketing)
+                                    <td class="text-end">₹{{ number_format($ob->opening_billed, 2) }}</td>
+                                    <td class="text-end" style="color:#6f42c1">₹0.00</td>
+                                    <td class="text-end fw-bold">₹{{ number_format($ob->opening_billed, 2) }}</td>
+                                    <td class="text-end">₹0.00</td>
+                                    <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
+                                    <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
+                                        ₹{{ number_format($ob->opening_outstanding, 2) }}
+                                    </td>
+                                @endunless
+                                <td>
+                                    <span class="badge bg-info text-dark">Carry-Forward</span>
+                                </td>
+                                @unless ($isMarketing)
+                                    <td>—</td>
+                                @endunless
+                            </tr>
+                        @endforeach
+                    @endif
+
                     @forelse($rows as $row)
                         <tr>
                             <td>

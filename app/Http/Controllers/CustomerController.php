@@ -243,16 +243,32 @@ class CustomerController extends Controller
             },
         ]);
 
+        $openingBalances = \App\Models\SchoolOpeningBalance::with([
+            'salesPerson:id,username,emp_code',
+            'enteredBy:id,username',
+            'collections.collectedBy:id,username',
+        ])
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('session_year')
+            ->get();
+
+        $openingOutstandingTotal = (float) $openingBalances->sum('opening_outstanding');
+        $openingCollectedTotal   = (float) $openingBalances->sum('opening_collected');
+        $openingAmountTotal      = (float) $openingBalances->sum('opening_amount');
+
         $financials = [
-            'total_po'          => $customer->invoices->sum('amount'),
-            'total_billed'      => $customer->invoices->sum('billing_amount'),
-            'total_collected'   => $customer->invoices->sum('collected_amount'),
-            'total_outstanding' => $customer->invoices->sum('outstanding_amount'),
+            'total_po'          => (float) $customer->invoices->sum('amount') + $openingAmountTotal,
+            'total_billed'      => (float) $customer->invoices->sum('billing_amount') + $openingAmountTotal,
+            'total_collected'   => (float) $customer->invoices->sum('collected_amount') + $openingCollectedTotal,
+            'total_outstanding' => (float) $customer->invoices->sum('outstanding_amount') + $openingOutstandingTotal,
+            'opening_amount'    => $openingAmountTotal,
+            'opening_collected' => $openingCollectedTotal,
+            'opening_outstanding' => $openingOutstandingTotal,
         ];
 
         $documentTypes = SchoolDocument::types();
 
-        return view('customers.show', compact('customer', 'financials', 'documentTypes'));
+        return view('customers.show', compact('customer', 'financials', 'documentTypes', 'openingBalances'));
     }
     public function edit(Customer $customer)
     {

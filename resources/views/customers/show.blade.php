@@ -191,6 +191,113 @@
                 @endforeach
             </div>
 
+            {{-- ═══ OPENING BALANCE (CARRY-FORWARD) ════════════════ --}}
+            @if ($openingBalances->count() > 0 || auth()->user()->isAdmin() || auth()->user()->isAccounts())
+                <div class="bg-white rounded shadow-sm p-4 mb-3 border-start border-warning border-4">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-0">
+                                <i class="feather icon-repeat me-2 text-warning"></i>
+                                Opening Balance (Carry-Forward)
+                            </h6>
+                            <small class="text-muted">Unsettled balance carried forward from previous session(s)</small>
+                        </div>
+                        @if (auth()->user()->isAdmin() || auth()->user()->isAccounts())
+                            <a href="{{ route('opening-balances.create') }}?customer_id={{ $customer->id }}"
+                                class="btn btn-sm btn-outline-warning">
+                                <i class="feather icon-plus me-1"></i> Add Balance
+                            </a>
+                        @endif
+                    </div>
+
+                    @forelse($openingBalances as $ob)
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="badge bg-dark me-1">Session {{ $ob->sessionLabel() }}</span>
+                                    <span class="badge bg-{{ $ob->source === 'auto' ? 'info text-dark' : 'secondary' }}">
+                                        {{ ucfirst($ob->source) }}
+                                    </span>
+                                    <span class="small text-muted ms-2">
+                                        SP: <strong>{{ $ob->salesPerson?->username ?? '—' }}</strong>
+                                        @if ($ob->salesPerson?->emp_code)
+                                            ({{ $ob->salesPerson->emp_code }})
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    @if ($ob->opening_outstanding > 0 && (auth()->user()->isAdmin() || auth()->user()->isAccounts()))
+                                        <button type="button" class="btn btn-xs btn-success collect-ob-btn"
+                                            data-bs-toggle="modal" data-bs-target="#collectObModal"
+                                            data-id="{{ $ob->id }}"
+                                            data-school="{{ $customer->name }} ({{ $customer->school_code }})"
+                                            data-session="{{ $ob->sessionLabel() }}"
+                                            data-outstanding="{{ $ob->opening_outstanding }}">
+                                            <i class="feather icon-credit-card me-1"></i> Record Payment
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="row g-2 text-center my-2">
+                                <div class="col-4">
+                                    <div class="bg-white p-2 rounded border">
+                                        <small class="text-muted d-block">Opening Amount</small>
+                                        <strong class="text-warning">₹{{ number_format($ob->opening_amount, 2) }}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-white p-2 rounded border">
+                                        <small class="text-muted d-block">Total Collected</small>
+                                        <strong class="text-success">₹{{ number_format($ob->opening_collected, 2) }}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-white p-2 rounded border">
+                                        <small class="text-muted d-block">Remaining Outstanding</small>
+                                        <strong class="{{ $ob->opening_outstanding > 0 ? 'text-danger' : 'text-success' }}">
+                                            ₹{{ number_format($ob->opening_outstanding, 2) }}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if ($ob->notes)
+                                <small class="text-muted d-block mt-2">
+                                    <i class="feather icon-info me-1"></i> {{ $ob->notes }}
+                                </small>
+                            @endif
+
+                            {{-- Payment collections list --}}
+                            @if ($ob->collections->count() > 0)
+                                <div class="mt-3 pt-2 border-top">
+                                    <small class="fw-bold text-muted d-block mb-1">
+                                        <i class="feather icon-check-circle text-success me-1"></i> Payments Recorded ({{ $ob->collections->count() }}):
+                                    </small>
+                                    <ul class="list-unstyled mb-0 small">
+                                        @foreach ($ob->collections as $col)
+                                            <li class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                                <span>
+                                                    <strong class="text-success">₹{{ number_format($col->collected_amount, 2) }}</strong>
+                                                    via {{ strtoupper($col->payment_mode) }}
+                                                    @if ($col->reference_number)
+                                                        (Ref: {{ $col->reference_number }})
+                                                    @endif
+                                                    &bull; <span class="text-muted">{{ $col->collected_at ? $col->collected_at->format('d M, Y') : '' }}</span>
+                                                </span>
+                                                <span class="text-muted">by {{ $col->collectedBy->username ?? '-' }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-muted text-center py-2 mb-0 small">No carry-forward opening balance recorded for this school.</p>
+                    @endforelse
+                </div>
+            @endif
+
             {{-- ═══ PO HISTORY ════════════════════════════════════ --}}
             <div class="bg-white rounded shadow-sm p-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
@@ -248,6 +355,76 @@
 
     </div>
 
+    {{-- ═══ RECORD PAYMENT MODAL (for Opening Balance) ═════════ --}}
+    @if (auth()->user()->isAdmin() || auth()->user()->isAccounts())
+        <div class="modal fade" id="collectObModal" tabindex="-1" aria-labelledby="collectObModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="collectObForm" method="POST" action="">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="collectObModalLabel">
+                                <i class="feather icon-credit-card me-1 text-success"></i> Record Payment Against Opening Balance
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-0">School & Session</label>
+                                <div class="fw-bold" id="obModalSchoolName">—</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted mb-0">Remaining Outstanding</label>
+                                <div class="fw-bold text-danger fs-6" id="obModalOutstanding">₹0.00</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0.01" name="collected_amount" id="obModalAmountInput"
+                                    class="form-control form-control-sm" required>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Payment Mode <span class="text-danger">*</span></label>
+                                    <select name="payment_mode" class="form-select form-select-sm" required>
+                                        <option value="cash">Cash</option>
+                                        <option value="cheque">Cheque</option>
+                                        <option value="neft">NEFT / RTGS</option>
+                                        <option value="upi">UPI</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Payment Date <span class="text-danger">*</span></label>
+                                    <input type="date" name="collected_at" class="form-control form-control-sm"
+                                        value="{{ date('Y-m-d') }}" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small">Reference / Cheque / UTR No.</label>
+                                <input type="text" name="reference_number" class="form-control form-control-sm"
+                                    placeholder="e.g. Cheque # / UTR #">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small">Remarks / Notes</label>
+                                <input type="text" name="remarks" class="form-control form-control-sm"
+                                    placeholder="Optional notes">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="feather icon-check me-1"></i> Save Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
 @endsection
 
 @push('scripts')
@@ -297,6 +474,19 @@
                         );
                     }
                 });
+            // ── Opening balance collect button ───────────────────
+            $(document).on('click', '.collect-ob-btn', function() {
+                const id = $(this).data('id');
+                const school = $(this).data('school');
+                const session = $(this).data('session');
+                const outstanding = parseFloat($(this).data('outstanding')) || 0;
+
+                $('#obModalSchoolName').text(school + ' (Session ' + session + ')');
+                $('#obModalOutstanding').text('₹' + outstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+                $('#obModalAmountInput').attr('max', outstanding).val(outstanding);
+
+                const url = '{{ route("opening-balances.collect", ":id") }}'.replace(':id', id);
+                $('#collectObForm').attr('action', url);
             });
 
         });

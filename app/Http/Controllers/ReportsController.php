@@ -84,15 +84,49 @@ class ReportsController extends Controller
 
         $rows = $query->orderByDesc('invoice_date')->get();
 
+        // ── Fetch opening balances for this session / year filter ───
+        $filterSessionYear = null;
+        if ($month) {
+            $mYear  = (int) substr($month, 0, 4);
+            $mMonth = (int) substr($month, 5, 2);
+            $filterSessionYear = $mMonth >= 7 ? $mYear : $mYear - 1;
+        } elseif ($dateFrom && $dateTo) {
+            $fromYear = (int) substr($dateFrom, 0, 4);
+            $fromMonth = (int) substr($dateFrom, 5, 2);
+            $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
+        } else {
+            $filterSessionYear = (int) ($request->input('session_year', $year));
+        }
+
+        $obQuery = \App\Models\SchoolOpeningBalance::with([
+            'salesPerson:id,username,emp_code',
+            'salesPerson.reportiveTo:id,username,emp_code',
+            'customer:id,name,school_code,state,city,lead_source_id',
+            'customer.leadSource:id,name',
+        ])
+        ->where('session_year', $filterSessionYear);
+
+        if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
+            $obQuery->where(function($q) use ($teamIds) {
+                $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
+            });
+        }
+        if ($spId)      $obQuery->where('user_id', $spId);
+        if ($schoolId)  $obQuery->where('customer_id', $schoolId);
+        if ($leadSrcId) $obQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $leadSrcId));
+        if ($state)     $obQuery->whereHas('customer', fn($q) => $q->where('state', $state));
+
+        $openingBalanceRows = $obQuery->get();
+
         // ── Summary totals ─────────────────────────────────
         $totals = [
-            'po_amount'      => $rows->sum('amount'),
-            'billing_amount' => $rows->sum('billing_amount'),
+            'po_amount'      => $rows->sum('amount') + $openingBalanceRows->sum('opening_amount'),
+            'billing_amount' => $rows->sum('billing_amount') + $openingBalanceRows->sum('opening_billed'),
             'gst_amount'     => $rows->sum('gst_amount'),
-            'net_billed'     => $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))),
+            'net_billed'     => $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))) + $openingBalanceRows->sum('opening_billed'),
             'pending_po'     => $rows->sum('pending_po_amount'),
-            'collected'      => $rows->sum('collected_amount'),   // used only for non-Marketing
-            'outstanding'    => $rows->sum('outstanding_amount'), // used only for non-Marketing
+            'collected'      => $rows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected'),
+            'outstanding'    => $rows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding'),
         ];
 
         // ── Filter dropdowns ───────────────────────────────
@@ -103,6 +137,7 @@ class ReportsController extends Controller
             ->get(['id', 'username', 'emp_code']);
 
         $schools = Customer::whereHas('invoices', fn($q) => $q->whereIn('user_id', $teamIds))
+            ->orWhereHas('openingBalances')
             ->orderBy('name')
             ->get(['id', 'name', 'school_code']);
 
@@ -115,6 +150,7 @@ class ReportsController extends Controller
 
         return view('reports.index', compact(
             'rows',
+            'openingBalanceRows',
             'totals',
             'teamMembers',
             'schools',

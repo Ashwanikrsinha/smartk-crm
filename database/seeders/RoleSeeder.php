@@ -107,6 +107,8 @@ class RoleSeeder extends Seeder
                 'edit_quotations',
                 'show_quotations',
                 'delete_quotations',
+                'browse_opening_balances',
+                'show_opening_balances',
             ],
 
             // --------------------------------------------------
@@ -129,6 +131,11 @@ class RoleSeeder extends Seeder
                 'show_pdcs',
                 'export_reports',
                 'view_all_orders',
+                'browse_opening_balances',
+                'create_opening_balances',
+                'edit_opening_balances',
+                'delete_opening_balances',
+                'show_opening_balances',
             ],
 
             // --------------------------------------------------
@@ -193,6 +200,8 @@ class RoleSeeder extends Seeder
                 'show_leaves',
                 'browse_tasks',
                 'show_tasks',
+                'browse_opening_balances',
+                'show_opening_balances',
             ],
         ];
 

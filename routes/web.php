@@ -199,6 +199,26 @@ Route::middleware('auth')->group(function () {
     Route::resource('news', Controllers\NewsController::class);
 
     // ═════════════════════════════════════════════════════════════════════════
+    // OPENING BALANCES (Carry-Forward)
+    // CRITICAL: custom routes BEFORE resource()
+    // ═════════════════════════════════════════════════════════════════════════
+
+    Route::get('opening-balances/sample',
+        [Controllers\OpeningBalanceController::class, 'downloadSample'])->name('opening-balances.sample');
+
+    Route::post('opening-balances/bulk-upload',
+        [Controllers\OpeningBalanceController::class, 'bulkUpload'])->name('opening-balances.bulk-upload');
+
+    Route::post('opening-balances/{openingBalance}/collect',
+        [Controllers\OpeningBalanceController::class, 'storeCollection'])->name('opening-balances.collect');
+
+    Route::delete('opening-balance-collections/{collection}',
+        [Controllers\OpeningBalanceController::class, 'destroyCollection'])->name('opening-balance-collections.destroy');
+
+    Route::resource('opening-balances', Controllers\OpeningBalanceController::class)
+         ->except(['show']);
+
+    // ═════════════════════════════════════════════════════════════════════════
     // REPORTS
     // ═════════════════════════════════════════════════════════════════════════
 

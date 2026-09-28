@@ -48,6 +48,8 @@ class PermissionSeeder extends Seeder
             'school_documents',
             'dispatch_queue',
             'inventory',
+            'dispatches',
+            'opening_balances',
         ];
 
         $permissions = [];

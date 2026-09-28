@@ -60,6 +60,11 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function openingBalances()
+    {
+        return $this->hasMany(SchoolOpeningBalance::class, 'customer_id');
+    }
+
     // public function contacts()
     // {
     //     return $this->hasMany(Contact::class, 'customer_id');
