@@ -92,10 +92,27 @@ class Customer extends Model
     public static function generateSchoolCode(): string
     {
         $year  = date('Y');
-        $last  = self::whereYear('created_at', $year)->max('id') ?? 0;
-        $seq   = str_pad($last + 1, 4, '0', STR_PAD_LEFT);
+        $lastSchool = self::where('school_code', 'LIKE', "SCH-{$year}-%")
+            ->orderBy('id', 'desc')
+            ->first();
 
-        return "SCH-{$year}-{$seq}";
+        $lastNumber = 0;
+        if ($lastSchool && preg_match('/SCH-\d{4}-(\d+)/', $lastSchool->school_code, $matches)) {
+            $lastNumber = (int) $matches[1];
+        } else {
+            $lastNumber = self::max('id') ?? 0;
+        }
+
+        $seq  = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        $code = "SCH-{$year}-{$seq}";
+
+        while (self::where('school_code', $code)->exists()) {
+            $lastNumber++;
+            $seq  = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            $code = "SCH-{$year}-{$seq}";
+        }
+
+        return $code;
     }
 
     // -------------------------------------------------------

@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
     // SCHOOLS (Customers)
     // ═════════════════════════════════════════════════════════════════════════
 
+    Route::get('customers/sample-export', [Controllers\CustomerController::class, 'downloadSample'])->name('customers.sample-export');
+    Route::post('customers/bulk-upload',   [Controllers\CustomerController::class, 'bulkUpload'])->name('customers.bulk-upload');
     Route::resource('customers', Controllers\CustomerController::class);
 
     // School Documents

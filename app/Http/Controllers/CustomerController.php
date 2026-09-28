@@ -9,6 +9,9 @@ use App\Models\LeadSource;
 use App\Models\Segment;
 use App\Models\State;
 use App\Models\SchoolDocument;
+use App\Exports\SchoolSampleExport;
+use App\Imports\SchoolsImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +22,64 @@ class CustomerController extends Controller
     public function __construct()
     {
         $this->authorizeResource(Customer::class, 'customer');
+    }
+
+    /**
+     * Download sample Excel template for bulk school upload.
+     */
+    public function downloadSample()
+    {
+        $this->authorize('create', Customer::class);
+
+        return Excel::download(new SchoolSampleExport, 'school_bulk_upload_sample.xlsx');
+    }
+
+    /**
+     * Handle bulk upload of schools from Excel/CSV file.
+     */
+    public function bulkUpload(Request $request)
+    {
+        $this->authorize('create', Customer::class);
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
+        ], [
+            'file.required' => 'Please select an Excel or CSV file to upload.',
+            'file.mimes'    => 'The file must be an .xlsx, .xls, or .csv file.',
+            'file.max'      => 'File size cannot exceed 10 MB.',
+        ]);
+
+        $import = new SchoolsImport();
+
+        try {
+            Excel::import($import, $request->file('file'));
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->with('error', 'Error reading uploaded file: ' . $e->getMessage());
+        }
+
+        $imported = $import->getImportedCount();
+        $skipped  = $import->getSkippedCount();
+        $errors   = $import->getErrors();
+
+        if ($imported === 0 && $skipped > 0) {
+            return redirect()->back()
+                ->with('error', 'No schools could be imported. Please review the errors below.')
+                ->with('import_errors', $errors);
+        }
+
+        $message = "Successfully imported {$imported} " . ($imported === 1 ? 'school' : 'schools') . '.';
+        if ($skipped > 0) {
+            $message .= " {$skipped} " . ($skipped === 1 ? 'row was' : 'rows were') . ' skipped due to validation errors.';
+        }
+
+        $redirect = redirect()->route('customers.index')->with('success', $message);
+
+        if (!empty($errors)) {
+            $redirect->with('import_errors', $errors);
+        }
+
+        return $redirect;
     }
 
     // -------------------------------------------------------
