@@ -326,21 +326,34 @@ class DashboardController extends Controller
             $baseQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
-        $totalPoAmount      = (clone $baseQuery)->sum('amount');
-        $totalBillingAmount = (clone $baseQuery)->sum('billing_amount');
-        $totalPendingPo     = $totalPoAmount - $totalBillingAmount;
-        $totalCollection    = (clone $baseQuery)->sum('collected_amount');
-        $totalOutstanding   = $totalBillingAmount - $totalCollection;
+        $currentPoAmount      = (clone $baseQuery)->sum('amount');
+        $currentBillingAmount = (clone $baseQuery)->sum('billing_amount');
+        $currentPendingPo     = $currentPoAmount - $currentBillingAmount;
+        $currentCollection    = (clone $baseQuery)->sum('collected_amount');
+        $currentOutstanding   = (clone $baseQuery)->sum('outstanding_amount');
 
-        // Add opening balance carry-forward for manager dashboard
-        $obQuery = \App\Models\SchoolOpeningBalance::whereIn('user_id', $teamIds)
+        // Opening balance carry-forward for manager dashboard (all SPs in manager's team)
+        $obQuery = \App\Models\SchoolOpeningBalance::with([
+            'salesPerson:id,username,emp_code',
+            'customer:id,name,school_code'
+        ])
+            ->whereIn('user_id', $teamIds)
             ->where('session_year', $year)
             ->when($spId, fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
-        $totalPoAmount      += (float) $obQuery->sum('opening_amount');
-        $totalBillingAmount += (float) $obQuery->sum('opening_billed');
-        $totalCollection    += (float) $obQuery->sum('opening_collected');
-        $totalOutstanding   += (float) $obQuery->sum('opening_outstanding');
+
+        $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
+        $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
+        $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
+        $totalOpeningOutstanding = (float) $obQuery->sum('opening_outstanding');
+        $openingBalanceRows      = $obQuery->get();
+
+        // Overall summary totals
+        $totalPoAmount      = $currentPoAmount;
+        $totalBillingAmount = $currentBillingAmount;
+        $totalPendingPo     = $currentPendingPo;
+        $totalCollection    = $currentCollection + $totalOpeningCollected;
+        $totalOutstanding   = $currentOutstanding + $totalOpeningOutstanding;
 
         $signedSchoolsQuery = Invoice::whereIn('user_id', $teamIds)
             ->where('status', Invoice::STATUS_APPROVED);
@@ -388,6 +401,7 @@ class DashboardController extends Controller
         $teamMembers = User::whereIn('id', $teamIds)
             ->orderBy('username')->get(['id', 'username']);
         $schools     = Customer::whereHas('invoices', fn($q) => $q->whereIn('user_id', $teamIds))
+            ->orWhereHas('openingBalances', fn($q) => $q->whereIn('user_id', $teamIds))
             ->orderBy('name')->get(['id', 'name', 'school_code']);
 
         // Target vs Achievement Calculation (aligned with session/dashboard filter)
@@ -454,10 +468,16 @@ class DashboardController extends Controller
 
         return view('dashboard.manager', compact(
             'totalPoAmount',
+            'currentPoAmount',
             'totalBillingAmount',
             'totalPendingPo',
             'totalCollection',
             'totalOutstanding',
+            'totalOpeningAmount',
+            'totalOpeningBilled',
+            'totalOpeningCollected',
+            'totalOpeningOutstanding',
+            'openingBalanceRows',
             'signedSchools',
             'tableRows',
             'chartData',
@@ -506,19 +526,33 @@ class DashboardController extends Controller
             $baseQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
-        $noOfSchools        = (clone $baseQuery)->distinct('customer_id')->count('customer_id');
-        $totalSaleAmount    = (clone $baseQuery)->sum('amount');
-        $totalCollection    = (clone $baseQuery)->sum('collected_amount');
-        $totalBillingAmount = (clone $baseQuery)->sum('billing_amount');
-        $totalPending       = (clone $baseQuery)->sum('outstanding_amount');
+        // Current session PO metrics
+        $currentPoAmount      = (clone $baseQuery)->sum('amount');
+        $currentBillingAmount = (clone $baseQuery)->sum('billing_amount');
+        $currentCollection    = (clone $baseQuery)->sum('collected_amount');
+        $currentOutstanding   = (clone $baseQuery)->sum('outstanding_amount');
 
-        // Add opening balance carry-forward for SP
-        $obQuery = \App\Models\SchoolOpeningBalance::where('user_id', $user->id)
+        // Opening balance for this SP in this session
+        $obQuery = \App\Models\SchoolOpeningBalance::with('customer:id,name,school_code')
+            ->where('user_id', $user->id)
             ->where('session_year', $year);
-        $totalSaleAmount    += (float) $obQuery->sum('opening_amount');
-        $totalBillingAmount += (float) $obQuery->sum('opening_billed');
-        $totalCollection    += (float) $obQuery->sum('opening_collected');
-        $totalPending       += (float) $obQuery->sum('opening_outstanding');
+
+        $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
+        $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
+        $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
+        $totalOpeningOutstanding = (float) $obQuery->sum('opening_outstanding');
+        $openingRows             = $obQuery->get();
+
+        // Distinct schools count (signed in session + schools with opening balance)
+        $poSchoolIds = (clone $baseQuery)->distinct()->pluck('customer_id')->toArray();
+        $obSchoolIds = $openingRows->pluck('customer_id')->toArray();
+        $noOfSchools = count(array_unique(array_merge($poSchoolIds, $obSchoolIds)));
+
+        // Overall summary totals
+        $totalSaleAmount    = $currentPoAmount;
+        $totalBillingAmount = $currentBillingAmount;
+        $totalCollection    = $currentCollection + $totalOpeningCollected;
+        $totalPending       = $currentOutstanding + $totalOpeningOutstanding;
 
         $schoolRows = Invoice::with('customer:id,name,school_code')
             ->where('user_id', $user->id)
@@ -546,9 +580,15 @@ class DashboardController extends Controller
         return view('dashboard.sales-person', compact(
             'noOfSchools',
             'totalSaleAmount',
+            'currentPoAmount',
             'totalCollection',
             'totalBillingAmount',
             'totalPending',
+            'totalOpeningAmount',
+            'totalOpeningBilled',
+            'totalOpeningCollected',
+            'totalOpeningOutstanding',
+            'openingRows',
             'schoolRows',
             'pendingPos',
             'chartData',
@@ -607,25 +647,38 @@ class DashboardController extends Controller
             ->orderByDesc('invoice_date')
             ->get();
 
-        $totalPo          = $rows->sum('amount');
-        $totalBilling     = $rows->sum('billing_amount');
-        $totalCollected   = $rows->sum('collected_amount');
-        $totalOutstanding = $rows->sum('outstanding_amount');
+        $currentPo          = $rows->sum('amount');
+        $currentBilling     = $rows->sum('billing_amount');
+        $currentCollected   = $rows->sum('collected_amount');
+        $currentOutstanding = $rows->sum('outstanding_amount');
 
         // Add opening balance carry-forward
-        $obQuery = \App\Models\SchoolOpeningBalance::where('session_year', $year)
+        $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
+            ->where('session_year', $year)
             ->when($spId, fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
-        $totalPo          += (float) $obQuery->sum('opening_amount');
-        $totalBilling     += (float) $obQuery->sum('opening_billed');
-        $totalCollected   += (float) $obQuery->sum('opening_collected');
-        $totalOutstanding += (float) $obQuery->sum('opening_outstanding');
+
+        $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
+        $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
+        $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
+        $totalOpeningOutstanding = (float) $obQuery->sum('opening_outstanding');
+        $openingBalanceRows      = $obQuery->get();
+
+        $totalPo          = $currentPo;
+        $totalBilling     = $currentBilling;
+        $totalCollected   = $currentCollected + $totalOpeningCollected;
+        $totalOutstanding = $currentOutstanding + $totalOpeningOutstanding;
 
         $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username']);
         $schools = Customer::orderBy('name')->get(['id', 'name', 'school_code']);
 
         return view('dashboard.accounts', compact(
             'rows',
+            'openingBalanceRows',
+            'totalOpeningAmount',
+            'totalOpeningBilled',
+            'totalOpeningCollected',
+            'totalOpeningOutstanding',
             'totalPo',
             'totalBilling',
             'totalCollected',
@@ -686,19 +739,27 @@ class DashboardController extends Controller
         if ($leadSourceId) $poQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $leadSourceId));
 
         $signedSchools    = (clone $poQuery)->distinct('customer_id')->count('customer_id');
-        $totalRevenue     = (clone $poQuery)->sum('amount');
-        $totalOutstanding = (clone $poQuery)->sum('outstanding_amount');
+        $currentRevenue   = (clone $poQuery)->sum('amount');
+        $currentOutstanding = (clone $poQuery)->sum('outstanding_amount');
+        $currentCollection  = (clone $poQuery)->sum('collected_amount');
         $totalPos         = (clone $poQuery)->count();
         $totalSps         = User::salesPersons()->active()->count();
 
         // Add opening balance carry-forward
-        $obQuery = \App\Models\SchoolOpeningBalance::where('session_year', $year)
+        $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
+            ->where('session_year', $year)
             ->when($state, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('state', $state)))
             ->when($leadSourceId, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('lead_source_id', $leadSourceId)));
-        $totalRevenue     += (float) $obQuery->sum('opening_amount');
-        $totalOutstanding += (float) $obQuery->sum('opening_outstanding');
-        $totalPos         = (clone $poQuery)->count();
-        $totalSps         = User::salesPersons()->active()->count();
+
+        $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
+        $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
+        $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
+        $totalOpeningOutstanding = (float) $obQuery->sum('opening_outstanding');
+        $openingBalanceRows      = $obQuery->get();
+
+        $totalRevenue     = $currentRevenue;
+        $totalCollection  = $currentCollection + $totalOpeningCollected;
+        $totalOutstanding = $currentOutstanding + $totalOpeningOutstanding;
 
         $leadBreakdown = Customer::with('leadSource')
             ->selectRaw('lead_source_id, COUNT(*) as count')
@@ -717,7 +778,13 @@ class DashboardController extends Controller
         return view('dashboard.admin', compact(
             'signedSchools',
             'totalRevenue',
+            'totalCollection',
             'totalOutstanding',
+            'totalOpeningAmount',
+            'totalOpeningBilled',
+            'totalOpeningCollected',
+            'totalOpeningOutstanding',
+            'openingBalanceRows',
             'totalSchools',
             'schoolsThisMonth',
             'totalPos',

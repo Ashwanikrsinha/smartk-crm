@@ -43,56 +43,58 @@
     </div>
 
 
-    {{-- ═══ 4 TOP WIDGETS ══════════════════════════════════════ --}}
+    {{-- ═══ TOP WIDGETS ══════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
                 <div class="text-primary mb-1"><i class="feather icon-home fs-4"></i></div>
                 <h4 class="fw-bold mb-0">{{ $noOfSchools }}</h4>
                 <small class="text-muted">No. of Schools</small>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
-                <div class="text-warning mb-1"><i class="feather icon-trending-up fs-4"></i></div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-warning mb-1"><i class="feather icon-file-text fs-4"></i></div>
                 <h5 class="fw-bold mb-0">₹{{ number_format($totalSaleAmount, 0) }}</h5>
-                <small class="text-muted">Total Po Amount</small>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
-                <div class="text-warning mb-1"><i class="feather icon-trending-up fs-4"></i></div>
-                <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection+$totalBillingAmount, 0) }}</h5>
-                <small class="text-muted">Total Sale Amount</small>
+                <small class="text-muted">Total PO Amount</small>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100 border border-warning">
+                <div class="text-warning mb-1"><i class="feather icon-repeat fs-4"></i></div>
+                <h5 class="fw-bold mb-0 text-warning">₹{{ number_format($totalOpeningOutstanding, 0) }}</h5>
+                <small class="text-muted">Opening Outstanding</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-info mb-1"><i class="feather icon-layers fs-4"></i></div>
+                <h5 class="fw-bold mb-0">₹{{ number_format($totalBillingAmount, 0) }}</h5>
+                <small class="text-muted">Total Billed</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
                 <div class="text-success mb-1"><span class="fs-4">₹</span></div>
                 <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection, 0) }}</h5>
                 <small class="text-muted">Total Collection</small>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
-                <div class="text-success mb-1"><span class="fs-4">₹</span></div>
-                <h5 class="fw-bold mb-0">₹{{ number_format($totalBillingAmount, 0) }}</h5>
-                <small class="text-muted">Total Billing Amount</small>
-            </div>
-        </div>
 
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-4 col-lg-2">
             <div
-                class="bg-white rounded shadow-sm p-3 text-center
+                class="bg-white rounded shadow-sm p-3 text-center h-100
             {{ $totalPending > 0 ? 'border border-danger' : '' }}">
                 <div class="text-danger mb-1"><i class="feather icon-alert-circle fs-4"></i></div>
                 <h5 class="fw-bold mb-0 {{ $totalPending > 0 ? 'text-danger' : '' }}">
                     ₹{{ number_format($totalPending, 0) }}
                 </h5>
-                <small class="text-muted">Total Pending Amount</small>
+                <small class="text-muted">Total Outstanding</small>
             </div>
         </div>
 
@@ -181,6 +183,32 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- 1. Opening Balance Rows from Past Sessions --}}
+                    @foreach($openingRows as $ob)
+                        <tr class="table-warning bg-opacity-25">
+                            <td>
+                                <a href="{{ route('customers.show', $ob->customer_id) }}" class="text-decoration-none fw-semibold">
+                                    {{ $ob->customer->name ?? '-' }}
+                                    <small class="text-muted d-block">{{ $ob->customer->school_code ?? '-' }}</small>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark">
+                                    <i class="feather icon-repeat me-1"></i>Opening Balance ({{ $ob->session_year }})
+                                </span>
+                            </td>
+                            <td class="text-end">₹{{ number_format($ob->opening_billed > 0 ? $ob->opening_billed : $ob->opening_amount, 2) }}</td>
+                            <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
+                            <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
+                                ₹{{ number_format($ob->opening_outstanding, 2) }}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark">Carry Forward</span>
+                            </td>
+                        </tr>
+                    @endforeach
+
+                    {{-- 2. Current Session PO Rows --}}
                     @forelse($schoolRows as $row)
                         <tr>
                             <td>
@@ -205,18 +233,20 @@
                             </td>
                         </tr>
                     @empty
+                        @if($openingRows->isEmpty())
                         <tr>
                             <td colspan="6" class="text-center text-muted py-3">No records found.</td>
                         </tr>
+                        @endif
                     @endforelse
                 </tbody>
-                @if ($schoolRows->count())
+                @if ($schoolRows->count() || $openingRows->count())
                     <tfoot class="table-success fw-bold">
                         <tr>
                             <td colspan="2" class="text-end">Total</td>
-                            <td class="text-end">₹{{ number_format($schoolRows->sum('amount'), 2) }}</td>
-                            <td class="text-end">₹{{ number_format($schoolRows->sum('collected_amount'), 2) }}</td>
-                            <td class="text-end">₹{{ number_format($schoolRows->sum('outstanding_amount'), 2) }}</td>
+                            <td class="text-end">₹{{ number_format($schoolRows->sum('amount') + $openingRows->sum(fn($ob) => $ob->opening_billed > 0 ? $ob->opening_billed : $ob->opening_amount), 2) }}</td>
+                            <td class="text-end">₹{{ number_format($schoolRows->sum('collected_amount') + $openingRows->sum('opening_collected'), 2) }}</td>
+                            <td class="text-end">₹{{ number_format($schoolRows->sum('outstanding_amount') + $openingRows->sum('opening_outstanding'), 2) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

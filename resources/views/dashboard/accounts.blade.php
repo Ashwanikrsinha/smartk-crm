@@ -5,9 +5,16 @@
             <h5 class="mb-0">Accounts Dashboard</h5>
             <small class="text-muted">Update collection details for approved orders — Session {{ $session }}</small>
         </div>
-        <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-success">
-            <i class="feather icon-download me-1"></i> Export Excel
-        </a>
+        <div class="d-flex gap-2">
+            @can('viewAny', App\Models\SchoolOpeningBalance::class)
+                <a href="{{ route('opening-balances.index') }}" class="btn btn-sm btn-outline-warning">
+                    <i class="feather icon-repeat me-1"></i> Opening Balances
+                </a>
+            @endcan
+            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-success">
+                <i class="feather icon-download me-1"></i> Export Excel
+            </a>
+        </div>
     </header>
 
     {{-- Info banner --}}
@@ -83,28 +90,37 @@
 
     {{-- ═══ TOTALS ROW ═════════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
                 <h6 class="text-muted small mb-1">Total PO Amount </h6>
                 <h5 class="fw-bold text-warning mb-0">₹{{ number_format($totalPo, 2) }}</h5>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100 border border-warning">
+                <div class="d-flex justify-content-center align-items-center gap-1">
+                    <h6 class="text-muted small mb-1">Opening Outstanding</h6>
+                </div>
+                <h5 class="fw-bold text-warning mb-0">₹{{ number_format($totalOpeningOutstanding, 2) }}</h5>
+                <small class="text-muted">(Collected: ₹{{ number_format($totalOpeningCollected, 2) }})</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
                 <h6 class="text-muted small mb-1">Total Billed </h6>
                 <h5 class="fw-bold text-info mb-0">₹{{ number_format($totalBilling, 2) }}</h5>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-3 text-center">
+        <div class="col-6 col-md-4 col-lg-3">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
                 <h6 class="text-muted small mb-1">Total Collected </h6>
                 <h5 class="fw-bold text-success mb-0">₹{{ number_format($totalCollected, 2) }}</h5>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-4 col-lg-3">
             <div
-                class="bg-white rounded shadow-sm p-3 text-center {{ $totalOutstanding > 0 ? 'border border-danger' : '' }}">
-                <h6 class="text-muted small mb-1">Outstanding </h6>
+                class="bg-white rounded shadow-sm p-3 text-center h-100 {{ $totalOutstanding > 0 ? 'border border-danger' : '' }}">
+                <h6 class="text-muted small mb-1">Total Outstanding </h6>
                 <h5 class="fw-bold text-danger mb-0">₹{{ number_format($totalOutstanding, 2) }}</h5>
             </div>
         </div>

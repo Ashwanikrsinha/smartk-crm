@@ -15,6 +15,11 @@
                 <i class="feather icon-user-plus me-1"></i> Add User
             </a>
             @endif
+            @can('viewAny', App\Models\SchoolOpeningBalance::class)
+            <a href="{{ route('opening-balances.index') }}" class="btn btn-sm btn-outline-warning">
+                <i class="feather icon-repeat me-1"></i> Opening Balances
+            </a>
+            @endcan
             <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-success">
                 <i class="feather icon-download me-1"></i> Export
             </a>
@@ -73,38 +78,56 @@
     </div>
 
 
-    {{-- ═══ 2 KEY WIDGETS ══════════════════════════════════════ --}}
+    {{-- ═══ 6 KEY WIDGETS ══════════════════════════════════════ --}}
     <div class="row g-3 mb-4">
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-4 text-center">
-                <div class="text-primary mb-2"><i class="feather icon-home fs-3"></i></div>
-                <h3 class="fw-bold mb-0">{{ $signedSchools }}</h3>
-                <p class="text-muted mb-0">Total Signed Schools</p>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-primary mb-1"><i class="feather icon-home fs-4"></i></div>
+                <h4 class="fw-bold mb-0">{{ $signedSchools }}</h4>
+                <small class="text-muted">Signed Schools</small>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-4 text-center">
-                <div class="text-success mb-2"><i class="feather icon-trending-up fs-3"></i></div>
-                <h3 class="fw-bold mb-0">₹{{ number_format($totalRevenue, 0) }}</h3>
-                <p class="text-muted mb-0">Total Revenue</p>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-success mb-1"><i class="feather icon-file-text fs-4"></i></div>
+                <h5 class="fw-bold mb-0">₹{{ number_format($totalRevenue, 0) }}</h5>
+                <small class="text-muted">Total PO Revenue</small>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-4 text-center">
-                <div class="text-warning mb-2"><i class="feather icon-users fs-3"></i></div>
-                <h3 class="fw-bold mb-0">{{ $totalSps }}</h3>
-                <p class="text-muted mb-0">Active Sales Persons</p>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100 border border-warning">
+                <div class="text-warning mb-1"><i class="feather icon-repeat fs-4"></i></div>
+                <h5 class="fw-bold mb-0 text-warning">₹{{ number_format($totalOpeningOutstanding, 0) }}</h5>
+                <small class="text-muted">Opening Outstanding</small>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="bg-white rounded shadow-sm p-4 text-center">
-                <div class="text-danger mb-2"><i class="feather icon-alert-circle fs-3"></i></div>
-                <h3 class="fw-bold mb-0">₹{{ number_format($totalOutstanding, 0) }}</h3>
-                <p class="text-muted mb-0">Total Outstanding </p>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-success mb-1"><span class="fs-4">₹</span></div>
+                <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection, 0) }}</h5>
+                <small class="text-muted">Total Collection</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100 {{ $totalOutstanding > 0 ? 'border border-danger' : '' }}">
+                <div class="text-danger mb-1"><i class="feather icon-alert-circle fs-4"></i></div>
+                <h5 class="fw-bold mb-0 {{ $totalOutstanding > 0 ? 'text-danger' : '' }}">
+                    ₹{{ number_format($totalOutstanding, 0) }}
+                </h5>
+                <small class="text-muted">Total Outstanding</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="bg-white rounded shadow-sm p-3 text-center h-100">
+                <div class="text-warning mb-1"><i class="feather icon-users fs-4"></i></div>
+                <h4 class="fw-bold mb-0">{{ $totalSps }}</h4>
+                <small class="text-muted">Active Sales Persons</small>
             </div>
         </div>
 

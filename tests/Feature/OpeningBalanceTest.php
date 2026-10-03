@@ -345,4 +345,72 @@ class OpeningBalanceTest extends TestCase
             str_contains($res->headers->get('content-disposition') ?? '', 'SmartK_Report_')
         );
     }
+
+    /** Test 12: Sales Person dashboard shows Opening Outstanding card and opening balance rows */
+    public function test_sales_person_dashboard_reflects_opening_balances(): void
+    {
+        $sessionYear = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
+        $sessionStr  = $sessionYear . '-' . ($sessionYear + 1);
+
+        SchoolOpeningBalance::create([
+            'customer_id'         => $this->school->id,
+            'session_year'        => $sessionYear,
+            'user_id'             => $this->salesPerson->id,
+            'opening_amount'      => 400000,
+            'opening_billed'      => 400000,
+            'opening_collected'   => 100000,
+            'opening_outstanding' => 300000,
+            'source'              => 'manual',
+            'entered_by'          => $this->admin->id,
+        ]);
+
+        $res = $this->actingAs($this->salesPerson)->get(route('dashboard', ['session' => $sessionStr]));
+        $res->assertStatus(200);
+        $res->assertSee('Opening Outstanding');
+        $res->assertSee('300,000');
+        $res->assertSee('Carry Forward');
+        $res->assertSee($this->school->name);
+    }
+
+    /** Test 13: Sales Manager & Admin dashboards reflect team opening balances */
+    public function test_manager_and_admin_dashboards_reflect_opening_balances(): void
+    {
+        $sessionYear = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
+        $sessionStr  = $sessionYear . '-' . ($sessionYear + 1);
+
+        $managerRole = Role::firstOrCreate(['name' => 'Manager']);
+        $manager = User::create([
+            'username' => 'test_sm_' . uniqid(),
+            'emp_code' => 'EMP-SM-' . uniqid(),
+            'email'    => 'sm_' . uniqid() . '@example.com',
+            'password' => bcrypt('password'),
+            'role_id'  => $managerRole->id,
+        ]);
+        $this->salesPerson->update(['reportive_id' => $manager->id]);
+
+        SchoolOpeningBalance::create([
+            'customer_id'         => $this->school->id,
+            'session_year'        => $sessionYear,
+            'user_id'             => $this->salesPerson->id,
+            'opening_amount'      => 600000,
+            'opening_billed'      => 600000,
+            'opening_collected'   => 200000,
+            'opening_outstanding' => 400000,
+            'source'              => 'manual',
+            'entered_by'          => $this->admin->id,
+        ]);
+
+        // Manager Dashboard
+        $resSm = $this->actingAs($manager)->get(route('dashboard', ['session' => $sessionStr]));
+        $resSm->assertStatus(200);
+        $resSm->assertSee('Opening Outstanding');
+        $resSm->assertSee('400,000');
+        $resSm->assertSee($this->school->name);
+
+        // Admin Dashboard
+        $resAdmin = $this->actingAs($this->admin)->get(route('dashboard', ['session' => $sessionStr]));
+        $resAdmin->assertStatus(200);
+        $resAdmin->assertSee('Opening Outstanding');
+        $resAdmin->assertSee('Opening Balances');
+    }
 }

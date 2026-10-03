@@ -78,11 +78,11 @@
 </div>
 
 
-{{-- ═══ 6 WIDGETS ══════════════════════════════════════════ --}}
+{{-- ═══ 7 WIDGETS ══════════════════════════════════════════ --}}
 <div class="row g-3 mb-4">
 
     {{-- No. of Signed Schools --}}
-    <div class="col-6 col-lg-2">
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
             <div class="text-primary mb-1"><i class="feather icon-home fs-4"></i></div>
             <h4 class="fw-bold mb-0">{{ number_format($signedSchools) }}</h4>
@@ -90,8 +90,8 @@
         </div>
     </div>
 
-    {{-- A: Total PO Amount --}}
-    <div class="col-6 col-lg-2">
+    {{-- Total PO Amount --}}
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
             <div class="text-warning mb-1"><i class="feather icon-file-text fs-4"></i></div>
             <h5 class="fw-bold mb-0">₹{{ number_format($totalPoAmount, 0) }}</h5>
@@ -99,8 +99,17 @@
         </div>
     </div>
 
-    {{-- B: Total Billed --}}
-    <div class="col-6 col-lg-2">
+    {{-- Opening Outstanding --}}
+    <div class="col-6 col-md-4 col-lg">
+        <div class="bg-white rounded shadow-sm p-3 text-center h-100 border border-warning">
+            <div class="text-warning mb-1"><i class="feather icon-repeat fs-4"></i></div>
+            <h5 class="fw-bold mb-0 text-warning">₹{{ number_format($totalOpeningOutstanding, 0) }}</h5>
+            <small class="text-muted">Opening Outstanding</small>
+        </div>
+    </div>
+
+    {{-- Total Billed --}}
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
             <div class="text-info mb-1"><i class="feather icon-layers fs-4"></i></div>
             <h5 class="fw-bold mb-0">₹{{ number_format($totalBillingAmount, 0) }}</h5>
@@ -108,8 +117,8 @@
         </div>
     </div>
 
-    {{-- C: Pending PO --}}
-    <div class="col-6 col-lg-2">
+    {{-- Pending PO --}}
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
             <div class="text-secondary mb-1"><i class="feather icon-clock fs-4"></i></div>
             <h5 class="fw-bold mb-0">₹{{ number_format($totalPendingPo, 0) }}</h5>
@@ -117,8 +126,8 @@
         </div>
     </div>
 
-    {{-- D: Total Collection --}}
-    <div class="col-6 col-lg-2">
+    {{-- Total Collection --}}
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100">
             <div class="text-success mb-1"><span class="fs-4">₹</span></div>
             <h5 class="fw-bold mb-0">₹{{ number_format($totalCollection, 0) }}</h5>
@@ -126,15 +135,15 @@
         </div>
     </div>
 
-    {{-- E: Outstanding --}}
-    <div class="col-6 col-lg-2">
+    {{-- Outstanding --}}
+    <div class="col-6 col-md-4 col-lg">
         <div class="bg-white rounded shadow-sm p-3 text-center h-100
             {{ $totalOutstanding > 0 ? 'border border-danger' : '' }}">
             <div class="text-danger mb-1"><i class="feather icon-alert-circle fs-4"></i></div>
             <h5 class="fw-bold mb-0 {{ $totalOutstanding > 0 ? 'text-danger' : '' }}">
                 ₹{{ number_format($totalOutstanding, 0) }}
             </h5>
-            <small class="text-muted">Outstanding</small>
+            <small class="text-muted">Total Outstanding</small>
         </div>
     </div>
 
@@ -300,6 +309,35 @@
             </tr>
         </thead>
         <tbody>
+            {{-- 1. Opening Balance Rows from Past Sessions --}}
+            @foreach($openingBalanceRows as $ob)
+            <tr class="table-warning bg-opacity-25">
+                <td>
+                    <span class="badge bg-warning text-dark">
+                        <i class="feather icon-repeat me-1"></i>Opening Balance ({{ $ob->session_year }})
+                    </span>
+                </td>
+                <td>{{ $ob->salesPerson->username ?? '-' }}</td>
+                <td>
+                    <span title="{{ $ob->customer->school_code ?? '' }}">
+                        {{ $ob->customer->name ?? '-' }}
+                    </span>
+                    <small class="text-muted d-block">{{ $ob->customer->school_code ?? '' }}</small>
+                </td>
+                <td class="text-end">₹{{ number_format($ob->opening_amount, 2) }}</td>
+                <td class="text-end">₹{{ number_format($ob->opening_billed, 2) }}</td>
+                <td class="text-end">₹{{ number_format(max(0, $ob->opening_amount - $ob->opening_billed), 2) }}</td>
+                <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
+                <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
+                    ₹{{ number_format($ob->opening_outstanding, 2) }}
+                </td>
+                <td>
+                    <span class="badge bg-warning text-dark">Carry Forward</span>
+                </td>
+            </tr>
+            @endforeach
+
+            {{-- 2. Current Session PO Rows --}}
             @forelse($tableRows as $row)
             <tr>
                 <td>
@@ -329,22 +367,24 @@
                 </td>
             </tr>
             @empty
+            @if($openingBalanceRows->isEmpty())
             <tr>
                 <td colspan="9" class="text-center text-muted py-4">No records found for selected filters.</td>
             </tr>
+            @endif
             @endforelse
         </tbody>
 
         {{-- Totals Row --}}
-        @if($tableRows->count())
+        @if($tableRows->count() || $openingBalanceRows->count())
         <tfoot class="table-success fw-bold">
             <tr>
                 <td colspan="3" class="text-end">Total</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('amount'), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('billing_amount'), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum(fn($r) => $r->amount - $r->billing_amount), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('collected_amount'), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('outstanding_amount'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('amount') + $openingBalanceRows->sum('opening_amount'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('billing_amount') + $openingBalanceRows->sum('opening_billed'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum(fn($r) => $r->amount - $r->billing_amount) + $openingBalanceRows->sum(fn($ob) => max(0, $ob->opening_amount - $ob->opening_billed)), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding'), 2) }}</td>
                 <td></td>
             </tr>
         </tfoot>
