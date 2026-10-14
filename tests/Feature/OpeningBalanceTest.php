@@ -300,7 +300,7 @@ class OpeningBalanceTest extends TestCase
         $res->assertSee('200,000');
     }
 
-    /** Test 10: Reports page includes Opening Balance rows */
+    /** Test 10: Reports page includes Opening Balance rows without adding to PO or Billed totals */
     public function test_reports_page_includes_opening_balance(): void
     {
         SchoolOpeningBalance::create([
@@ -319,6 +319,33 @@ class OpeningBalanceTest extends TestCase
         $res->assertStatus(200);
         $res->assertSee('Opening Balance');
         $res->assertSee($this->school->name);
+        // Outstanding is shown, but PO amount is 0 (not 200,000)
+        $res->assertSee('150,000');
+    }
+
+    /** Test 10b: Prior session uncollected opening balance automatically appears in current session */
+    public function test_prior_session_opening_balance_shows_in_current_session(): void
+    {
+        $currentYear = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
+        $priorYear   = $currentYear - 1;
+
+        SchoolOpeningBalance::create([
+            'customer_id'         => $this->school->id,
+            'session_year'        => $priorYear,
+            'user_id'             => $this->salesPerson->id,
+            'opening_amount'      => 27935,
+            'opening_billed'      => 27935,
+            'opening_collected'   => 0,
+            'opening_outstanding' => 27935,
+            'source'              => 'manual',
+            'entered_by'          => $this->admin->id,
+        ]);
+
+        $res = $this->actingAs($this->admin)->get(route('reports.index', ['session_year' => $currentYear]));
+        $res->assertStatus(200);
+        $res->assertSee('Opening Balance');
+        $res->assertSee($this->school->name);
+        $res->assertSee('27,935');
     }
 
     /** Test 11: PO Excel export downloads without error when Opening Balance rows exist */

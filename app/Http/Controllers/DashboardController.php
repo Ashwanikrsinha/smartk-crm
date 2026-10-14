@@ -338,7 +338,7 @@ class DashboardController extends Controller
             'customer:id,name,school_code'
         ])
             ->whereIn('user_id', $teamIds)
-            ->where('session_year', $year)
+            ->forSession($year)
             ->when($spId, fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
@@ -535,7 +535,7 @@ class DashboardController extends Controller
         // Opening balance for this SP in this session
         $obQuery = \App\Models\SchoolOpeningBalance::with('customer:id,name,school_code')
             ->where('user_id', $user->id)
-            ->where('session_year', $year);
+            ->forSession($year);
 
         $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
         $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
@@ -654,7 +654,7 @@ class DashboardController extends Controller
 
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
-            ->where('session_year', $year)
+            ->forSession($year)
             ->when($spId, fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
@@ -747,7 +747,7 @@ class DashboardController extends Controller
 
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
-            ->where('session_year', $year)
+            ->forSession($year)
             ->when($state, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('state', $state)))
             ->when($leadSourceId, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('lead_source_id', $leadSourceId)));
 

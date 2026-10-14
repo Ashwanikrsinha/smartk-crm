@@ -104,7 +104,7 @@ class ReportsController extends Controller
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
         ])
-        ->where('session_year', $filterSessionYear);
+        ->forSession($filterSessionYear);
 
         if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
             $obQuery->where(function($q) use ($teamIds) {
@@ -120,13 +120,13 @@ class ReportsController extends Controller
 
         // ── Summary totals ─────────────────────────────────
         $totals = [
-            'po_amount'      => $rows->sum('amount') + $openingBalanceRows->sum('opening_amount'),
-            'billing_amount' => $rows->sum('billing_amount') + $openingBalanceRows->sum('opening_billed'),
-            'gst_amount'     => $rows->sum('gst_amount'),
-            'net_billed'     => $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))) + $openingBalanceRows->sum('opening_billed'),
-            'pending_po'     => $rows->sum('pending_po_amount'),
-            'collected'      => $rows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected'),
-            'outstanding'    => $rows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding'),
+            'po_amount'      => (float) $rows->sum('amount'),
+            'billing_amount' => (float) $rows->sum('billing_amount'),
+            'gst_amount'     => (float) $rows->sum('gst_amount'),
+            'net_billed'     => (float) $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))),
+            'pending_po'     => (float) $rows->sum('pending_po_amount'),
+            'collected'      => (float) ($rows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected')),
+            'outstanding'    => (float) ($rows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding')),
         ];
 
         // ── Filter dropdowns ───────────────────────────────

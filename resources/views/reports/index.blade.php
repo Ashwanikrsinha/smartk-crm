@@ -257,12 +257,12 @@
                                 </td>
                                 <td>{{ $ob->customer->state ?? '-' }}</td>
                                 <td>{{ $ob->customer->leadSource?->name ?? '—' }}</td>
-                                <td class="text-end fw-bold">₹{{ number_format($ob->opening_amount, 2) }}</td>
+                                <td class="text-end text-muted">₹0.00</td>
                                 @unless ($isMarketing)
-                                    <td class="text-end">₹{{ number_format($ob->opening_billed, 2) }}</td>
+                                    <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end" style="color:#6f42c1">₹0.00</td>
-                                    <td class="text-end fw-bold">₹{{ number_format($ob->opening_billed, 2) }}</td>
-                                    <td class="text-end">₹0.00</td>
+                                    <td class="text-end text-muted">₹0.00</td>
+                                    <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
                                     <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
                                         ₹{{ number_format($ob->opening_outstanding, 2) }}
@@ -344,7 +344,7 @@
                     @endforelse
                 </tbody>
 
-                @if ($rows->count())
+                @if ($rows->count() || $openingBalanceRows->count())
                     <tfoot class="table-dark fw-bold">
                         <tr>
                             {{--
@@ -357,7 +357,7 @@
                                 $baseColspan = $isSp ? 6 : 8; // PO#, Date, Co-branding, (SM, SP), School, State, Lead
                             @endphp
                             <td colspan="{{ $baseColspan }}">
-                                Total ({{ $rows->count() }} records)
+                                Total ({{ $rows->count() + $openingBalanceRows->count() }} records)
                             </td>
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 2) }}</td>
                             @unless ($isMarketing)

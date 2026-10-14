@@ -106,4 +106,25 @@ class SchoolOpeningBalance extends Model
         }
         return self::currentSessionYear();
     }
+
+    /**
+     * Scope query to all active opening balances for a given session.
+     * Includes exact session_year records, plus any uncollected balances from past sessions
+     * that haven't been superseded by a newer record for that school.
+     */
+    public function scopeForSession($query, int $sessionYear)
+    {
+        return $query->where(function ($q) use ($sessionYear) {
+            $q->where('session_year', $sessionYear)
+              ->orWhere(function ($pastQ) use ($sessionYear) {
+                  $pastQ->where('session_year', '<', $sessionYear)
+                        ->where('opening_outstanding', '>', 0)
+                        ->whereNotIn('customer_id', function ($sub) use ($sessionYear) {
+                            $sub->select('customer_id')
+                                ->from('school_opening_balances')
+                                ->where('session_year', $sessionYear);
+                        });
+              });
+        });
+    }
 }

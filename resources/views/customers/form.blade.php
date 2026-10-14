@@ -210,8 +210,8 @@
             <div class="form-text">PDF or image, max 5MB</div>
         </div>
         <div class="col-lg-4 mb-3">
-            <label class="form-label">PAN Card <span class="text-danger">*</span></label>
-            <input type="file" name="pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
+            <label class="form-label">PAN Card </label>
+            <input type="file" name="pan" class="form-control" accept=".pdf,.jpg,.jpeg,.png" >
         </div>
         <div class="col-lg-4 mb-3">
             <label class="form-label">GST Certificate</label>

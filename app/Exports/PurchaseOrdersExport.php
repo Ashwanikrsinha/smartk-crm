@@ -164,7 +164,7 @@ class PurchaseOrdersExport implements
             'customer:id,name,school_code,state,city,lead_source_id,email,phone_number',
             'customer.leadSource:id,name',
         ])
-        ->where('session_year', $filterSessionYear);
+        ->forSession($filterSessionYear);
 
         if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
             $obQuery->where(function($q) use ($teamIds) {
@@ -203,12 +203,12 @@ class PurchaseOrdersExport implements
             $obCols[] = $ob->customer->city  ?? '—';
             $obCols[] = $ob->customer->leadSource?->name ?? 'N/A';
             $obCols[] = 'Carry-Forward';
-            $obCols[] = number_format($ob->opening_amount, 2);
+            $obCols[] = '0.00';
 
             if (!$this->isMarketing) {
-                $obCols[] = number_format($ob->opening_billed, 2);
                 $obCols[] = '0.00';
-                $obCols[] = number_format($ob->opening_billed, 2);
+                $obCols[] = '0.00';
+                $obCols[] = '0.00';
                 $obCols[] = '0.00';
                 $obCols[] = number_format($ob->opening_collected, 2);
                 $obCols[] = number_format($ob->opening_outstanding, 2);

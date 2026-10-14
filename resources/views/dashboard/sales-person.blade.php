@@ -197,7 +197,7 @@
                                     <i class="feather icon-repeat me-1"></i>Opening Balance ({{ $ob->session_year }})
                                 </span>
                             </td>
-                            <td class="text-end">₹{{ number_format($ob->opening_billed > 0 ? $ob->opening_billed : $ob->opening_amount, 2) }}</td>
+                            <td class="text-end text-muted">₹0.00</td>
                             <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
                             <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
                                 ₹{{ number_format($ob->opening_outstanding, 2) }}
@@ -244,7 +244,7 @@
                     <tfoot class="table-success fw-bold">
                         <tr>
                             <td colspan="2" class="text-end">Total</td>
-                            <td class="text-end">₹{{ number_format($schoolRows->sum('amount') + $openingRows->sum(fn($ob) => $ob->opening_billed > 0 ? $ob->opening_billed : $ob->opening_amount), 2) }}</td>
+                            <td class="text-end">₹{{ number_format($schoolRows->sum('amount'), 2) }}</td>
                             <td class="text-end">₹{{ number_format($schoolRows->sum('collected_amount') + $openingRows->sum('opening_collected'), 2) }}</td>
                             <td class="text-end">₹{{ number_format($schoolRows->sum('outstanding_amount') + $openingRows->sum('opening_outstanding'), 2) }}</td>
                             <td></td>

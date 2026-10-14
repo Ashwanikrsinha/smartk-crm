@@ -324,9 +324,9 @@
                     </span>
                     <small class="text-muted d-block">{{ $ob->customer->school_code ?? '' }}</small>
                 </td>
-                <td class="text-end">₹{{ number_format($ob->opening_amount, 2) }}</td>
-                <td class="text-end">₹{{ number_format($ob->opening_billed, 2) }}</td>
-                <td class="text-end">₹{{ number_format(max(0, $ob->opening_amount - $ob->opening_billed), 2) }}</td>
+                <td class="text-end text-muted">₹0.00</td>
+                <td class="text-end text-muted">₹0.00</td>
+                <td class="text-end text-muted">₹0.00</td>
                 <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
                 <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
                     ₹{{ number_format($ob->opening_outstanding, 2) }}
@@ -380,9 +380,9 @@
         <tfoot class="table-success fw-bold">
             <tr>
                 <td colspan="3" class="text-end">Total</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('amount') + $openingBalanceRows->sum('opening_amount'), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum('billing_amount') + $openingBalanceRows->sum('opening_billed'), 2) }}</td>
-                <td class="text-end">₹{{ number_format($tableRows->sum(fn($r) => $r->amount - $r->billing_amount) + $openingBalanceRows->sum(fn($ob) => max(0, $ob->opening_amount - $ob->opening_billed)), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('amount'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum('billing_amount'), 2) }}</td>
+                <td class="text-end">₹{{ number_format($tableRows->sum(fn($r) => $r->amount - $r->billing_amount), 2) }}</td>
                 <td class="text-end">₹{{ number_format($tableRows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected'), 2) }}</td>
                 <td class="text-end">₹{{ number_format($tableRows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding'), 2) }}</td>
                 <td></td>
