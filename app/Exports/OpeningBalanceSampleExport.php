@@ -83,9 +83,10 @@ class ObTemplateSheet implements FromCollection, WithHeadings, WithStyles, Shoul
 
         // Note row
         $sheet->setCellValue('A4', '⚠ School Code is mandatory and must exactly match the code in the CRM.');
-        $sheet->setCellValue('A5', '⚠ Already Collected should be 0 if no payment has been made yet.');
-        $sheet->setCellValue('A6', '⚠ SP Employee Code is optional. Leave blank if unknown.');
-        $sheet->getStyle('A4:A6')->getFont()->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF8B0000'));
+        $sheet->setCellValue('A5', '⚠ Opening Amount can be positive (dues to collect) or negative (advance/credit balance).');
+        $sheet->setCellValue('A6', '⚠ Already Collected should be 0 if no payment has been made yet.');
+        $sheet->setCellValue('A7', '⚠ SP Employee Code is optional. Leave blank if unknown.');
+        $sheet->getStyle('A4:A7')->getFont()->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF8B0000'));
 
         return [
             1 => ['font' => ['bold' => true]],

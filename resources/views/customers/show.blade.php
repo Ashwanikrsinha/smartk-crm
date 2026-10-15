@@ -243,7 +243,9 @@
                                 <div class="col-4">
                                     <div class="bg-white p-2 rounded border">
                                         <small class="text-muted d-block">Opening Amount</small>
-                                        <strong class="text-warning">₹{{ number_format($ob->opening_amount, 2) }}</strong>
+                                        <strong class="text-warning">
+                                            {{ $ob->opening_amount < 0 ? '-₹' . number_format(abs($ob->opening_amount), 2) : '₹' . number_format($ob->opening_amount, 2) }}
+                                        </strong>
                                     </div>
                                 </div>
                                 <div class="col-4">
@@ -255,8 +257,8 @@
                                 <div class="col-4">
                                     <div class="bg-white p-2 rounded border">
                                         <small class="text-muted d-block">Remaining Outstanding</small>
-                                        <strong class="{{ $ob->opening_outstanding > 0 ? 'text-danger' : 'text-success' }}">
-                                            ₹{{ number_format($ob->opening_outstanding, 2) }}
+                                        <strong class="{{ $ob->opening_outstanding > 0 ? 'text-danger' : ($ob->opening_outstanding < 0 ? 'text-info' : 'text-success') }}">
+                                            {{ $ob->opening_outstanding < 0 ? '-₹' . number_format(abs($ob->opening_outstanding), 2) : '₹' . number_format($ob->opening_outstanding, 2) }}
                                         </strong>
                                     </div>
                                 </div>

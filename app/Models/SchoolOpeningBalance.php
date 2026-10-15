@@ -57,7 +57,9 @@ class SchoolOpeningBalance extends Model
 
         $this->updateQuietly([
             'opening_collected'   => $totalCollected,
-            'opening_outstanding' => max(0, $this->opening_amount - $totalCollected),
+            'opening_outstanding' => $this->opening_amount >= 0
+                ? max(0, $this->opening_amount - $totalCollected)
+                : ($this->opening_amount - $totalCollected),
         ]);
     }
 
@@ -118,7 +120,7 @@ class SchoolOpeningBalance extends Model
             $q->where('session_year', $sessionYear)
               ->orWhere(function ($pastQ) use ($sessionYear) {
                   $pastQ->where('session_year', '<', $sessionYear)
-                        ->where('opening_outstanding', '>', 0)
+                        ->where('opening_outstanding', '!=', 0)
                         ->whereNotIn('customer_id', function ($sub) use ($sessionYear) {
                             $sub->select('customer_id')
                                 ->from('school_opening_balances')

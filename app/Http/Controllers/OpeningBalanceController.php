@@ -100,7 +100,7 @@ class OpeningBalanceController extends Controller
             'customer_id'       => 'required|exists:customers,id',
             'session_year'      => 'required|integer|min:2000|max:2100',
             'user_id'           => 'nullable|exists:users,id',
-            'opening_amount'    => 'required|numeric|min:0.01',
+            'opening_amount'    => 'required|numeric|not_in:0',
             'opening_collected' => 'nullable|numeric|min:0',
             'notes'             => 'nullable|string|max:1000',
         ]);
@@ -117,7 +117,9 @@ class OpeningBalanceController extends Controller
 
         $openingCollected   = (float) ($data['opening_collected'] ?? 0);
         $openingAmount      = (float) $data['opening_amount'];
-        $openingOutstanding = max(0, $openingAmount - $openingCollected);
+        $openingOutstanding = $openingAmount >= 0
+            ? max(0, $openingAmount - $openingCollected)
+            : ($openingAmount - $openingCollected);
 
         SchoolOpeningBalance::create([
             'customer_id'         => $data['customer_id'],
@@ -156,13 +158,15 @@ class OpeningBalanceController extends Controller
 
         $data = $request->validate([
             'user_id'        => 'nullable|exists:users,id',
-            'opening_amount' => 'required|numeric|min:0.01',
+            'opening_amount' => 'required|numeric|not_in:0',
             'notes'          => 'nullable|string|max:1000',
         ]);
 
         $openingAmount    = (float) $data['opening_amount'];
         $totalCollected   = $openingBalance->collections()->sum('collected_amount');
-        $outstanding      = max(0, $openingAmount - $totalCollected);
+        $outstanding      = $openingAmount >= 0
+            ? max(0, $openingAmount - $totalCollected)
+            : ($openingAmount - $totalCollected);
 
         $openingBalance->update([
             'user_id'             => $data['user_id'] ?? null,

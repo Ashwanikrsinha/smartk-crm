@@ -73,8 +73,9 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Opening Balance / Carry-Forward Amount (₹) <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" min="0.01" name="opening_amount"
-                            value="{{ old('opening_amount') }}" class="form-control" placeholder="e.g. 300000" required>
+                        <input type="number" step="0.01" name="opening_amount"
+                            value="{{ old('opening_amount') }}" class="form-control" placeholder="e.g. 300000 or -50000" required>
+                        <small class="text-muted">Enter positive for pending dues, or negative for advance / credit balance.</small>
                     </div>
 
                     <div class="col-md-6">

@@ -108,7 +108,9 @@
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-warning border-3">
-                <h5 class="fw-bold text-warning mb-1">₹{{ number_format($totals['opening_amount'], 2) }}</h5>
+                <h5 class="fw-bold text-warning mb-1">
+                    {{ $totals['opening_amount'] < 0 ? '-₹' . number_format(abs($totals['opening_amount']), 2) : '₹' . number_format($totals['opening_amount'], 2) }}
+                </h5>
                 <small class="text-muted">Total Opening Balance (Carry Forward)</small>
             </div>
         </div>
@@ -120,7 +122,9 @@
         </div>
         <div class="col-md-4">
             <div class="bg-white rounded shadow-sm p-3 text-center border-top border-danger border-3">
-                <h5 class="fw-bold text-danger mb-1">₹{{ number_format($totals['opening_outstanding'], 2) }}</h5>
+                <h5 class="fw-bold text-danger mb-1">
+                    {{ $totals['opening_outstanding'] < 0 ? '-₹' . number_format(abs($totals['opening_outstanding']), 2) : '₹' . number_format($totals['opening_outstanding'], 2) }}
+                </h5>
                 <small class="text-muted">Total Outstanding</small>
             </div>
         </div>
@@ -175,13 +179,13 @@
                                 @endif
                             </td>
                             <td class="text-end fw-bold text-warning">
-                                ₹{{ number_format($rec->opening_amount, 2) }}
+                                {{ $rec->opening_amount < 0 ? '-₹' . number_format(abs($rec->opening_amount), 2) : '₹' . number_format($rec->opening_amount, 2) }}
                             </td>
                             <td class="text-end text-success">
                                 ₹{{ number_format($rec->opening_collected, 2) }}
                             </td>
-                            <td class="text-end fw-bold {{ $rec->opening_outstanding > 0 ? 'text-danger' : 'text-success' }}">
-                                ₹{{ number_format($rec->opening_outstanding, 2) }}
+                            <td class="text-end fw-bold {{ $rec->opening_outstanding > 0 ? 'text-danger' : ($rec->opening_outstanding < 0 ? 'text-info' : 'text-success') }}">
+                                {{ $rec->opening_outstanding < 0 ? '-₹' . number_format(abs($rec->opening_outstanding), 2) : '₹' . number_format($rec->opening_outstanding, 2) }}
                             </td>
                             <td class="text-center">
                                 @if ($rec->source === 'auto')

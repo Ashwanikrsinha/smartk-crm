@@ -54,16 +54,19 @@ class OpeningBalancesImport implements ToCollection, WithHeadingRow
             }
 
             // ── Resolve amounts ────────────────────────────────────────────
-            $openingAmount = abs((float) ($row['opening_amount']     ?? $row['carry_forward_amount'] ?? 0));
-            $alreadyPaid   = abs((float) ($row['already_collected']  ?? $row['already_paid']         ?? 0));
+            $rawAmount     = $row['opening_amount'] ?? $row['carry_forward_amount'] ?? null;
+            $openingAmount = $this->parseAmount($rawAmount);
+            $alreadyPaid   = $this->parseAmount($row['already_collected'] ?? $row['already_paid'] ?? 0) ?? 0.0;
 
-            if ($openingAmount <= 0) {
+            if ($openingAmount === null || $openingAmount == 0.0) {
                 $this->errors[] = "Row {$rowNum}: Opening Amount is 0 or blank for '{$schoolCode}'. Skipped.";
                 $this->skippedCount++;
                 continue;
             }
 
-            $outstanding = max(0, $openingAmount - $alreadyPaid);
+            $outstanding = $openingAmount >= 0
+                ? max(0, $openingAmount - $alreadyPaid)
+                : ($openingAmount - $alreadyPaid);
 
             // ── Resolve SP (optional) ──────────────────────────────────────
             $spEmpCode = trim((string) ($row['sp_employee_code'] ?? $row['employee_code'] ?? ''));
@@ -116,4 +119,35 @@ class OpeningBalancesImport implements ToCollection, WithHeadingRow
     public function getImportedCount(): int { return $this->importedCount; }
     public function getSkippedCount(): int  { return $this->skippedCount;  }
     public function getErrors(): array      { return $this->errors;         }
+
+    /**
+     * Parse numeric amounts safely, preserving negative values.
+     * Handles Excel-formatted strings like "-25,000.00", "(25000)", "-₹25000", etc.
+     */
+    private function parseAmount($val): ?float
+    {
+        if ($val === null || $val === '') {
+            return null;
+        }
+
+        if (is_numeric($val)) {
+            return (float) $val;
+        }
+
+        $str = trim((string) $val);
+
+        // Account for parentheses notation for negative numbers e.g. (25,000)
+        if (preg_match('/^\((.+)\)$/', $str, $matches)) {
+            $str = '-' . $matches[1];
+        }
+
+        // Strip currency symbols, commas, and whitespace
+        $cleaned = preg_replace('/[^\d.-]/', '', $str);
+
+        if ($cleaned === '' || !is_numeric($cleaned)) {
+            return null;
+        }
+
+        return (float) $cleaned;
+    }
 }

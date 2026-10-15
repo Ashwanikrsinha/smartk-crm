@@ -440,4 +440,103 @@ class OpeningBalanceTest extends TestCase
         $resAdmin->assertSee('Opening Outstanding');
         $resAdmin->assertSee('Opening Balances');
     }
+
+    /** Test 14: Manual creation of negative opening balance (advance/credit) */
+    public function test_create_negative_opening_balance_manually(): void
+    {
+        $school2 = Customer::create([
+            'name'         => 'Advance Credit School ' . uniqid(),
+            'school_code'  => Customer::generateSchoolCode(),
+            'phone_number' => '9876543211',
+            'state'        => 'Delhi',
+            'city'         => 'New Delhi',
+            'pin_code'     => '110001',
+            'created_by'   => $this->admin->id,
+        ]);
+
+        $res = $this->actingAs($this->admin)->post(route('opening-balances.store'), [
+            'customer_id'       => $school2->id,
+            'session_year'      => 2025,
+            'user_id'           => $this->salesPerson->id,
+            'opening_amount'    => -35000.00,
+            'opening_collected' => 0,
+            'notes'             => 'Excess advance payment carry-forward',
+        ]);
+
+        $res->assertRedirect(route('opening-balances.index'));
+        $res->assertSessionHas('success');
+
+        $this->assertDatabaseHas('school_opening_balances', [
+            'customer_id'         => $school2->id,
+            'session_year'        => 2025,
+            'opening_amount'      => -35000.00,
+            'opening_collected'   => 0.00,
+            'opening_outstanding' => -35000.00,
+        ]);
+    }
+
+    /** Test 15: Bulk upload preserves negative opening balances */
+    public function test_bulk_upload_negative_opening_balances(): void
+    {
+        $school3 = Customer::create([
+            'name'         => 'Negative Upload School ' . uniqid(),
+            'school_code'  => Customer::generateSchoolCode(),
+            'phone_number' => '9876543212',
+            'state'        => 'Delhi',
+            'city'         => 'New Delhi',
+            'pin_code'     => '110001',
+            'created_by'   => $this->admin->id,
+        ]);
+
+        $csvContent = implode("\n", [
+            'School Code,School Name,SP Employee Code,Opening Amount,Already Collected,Notes',
+            "{$school3->school_code},\"{$school3->name}\",{$this->salesPerson->emp_code},-75000,0,Credit advance balance",
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('negative_ob.csv', $csvContent);
+
+        $res = $this->actingAs($this->admin)->post(route('opening-balances.bulk-upload'), [
+            'session_year' => 2025,
+            'file'         => $file,
+        ]);
+
+        $res->assertRedirect();
+        $res->assertSessionHas('success');
+
+        $this->assertDatabaseHas('school_opening_balances', [
+            'customer_id'         => $school3->id,
+            'session_year'        => 2025,
+            'opening_amount'      => -75000.00,
+            'opening_outstanding' => -75000.00,
+        ]);
+    }
+
+    /** Test 16: Update opening balance to negative amount */
+    public function test_update_opening_balance_to_negative(): void
+    {
+        $ob = SchoolOpeningBalance::create([
+            'customer_id'         => $this->school->id,
+            'session_year'        => 2025,
+            'user_id'             => $this->salesPerson->id,
+            'opening_amount'      => 50000,
+            'opening_billed'      => 0,
+            'opening_collected'   => 0,
+            'opening_outstanding' => 50000,
+            'source'              => 'manual',
+            'entered_by'          => $this->admin->id,
+        ]);
+
+        $res = $this->actingAs($this->admin)->put(route('opening-balances.update', $ob), [
+            'user_id'        => $this->salesPerson->id,
+            'opening_amount' => -20000.00,
+            'notes'          => 'Adjusted to negative credit balance',
+        ]);
+
+        $res->assertRedirect(route('opening-balances.index', ['session_year' => 2025]));
+        $res->assertSessionHas('success');
+
+        $ob->refresh();
+        $this->assertEquals(-20000.00, (float) $ob->opening_amount);
+        $this->assertEquals(-20000.00, (float) $ob->opening_outstanding);
+    }
 }
