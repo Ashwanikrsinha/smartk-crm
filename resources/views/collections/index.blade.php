@@ -169,7 +169,7 @@
                                             <label class="form-label small mb-1 text-info fw-bold">
                                                 Add Billing Amount (₹)
                                             </label>
-                                            <input type="number" step="0.01" min="0"
+                                            <input type="number" step="0.01"
                                                 class="form-control form-control-sm billed-input"
                                                 data-id="{{ $row->id }}" placeholder="0.00">
                                         </div>
@@ -179,10 +179,10 @@
                                             <label class="form-label small mb-1 fw-bold" style="color:#6f42c1">
                                                 GST Amount (Total, ₹)
                                             </label>
-                                            <input type="number" step="0.01" min="0"
+                                            <input type="number" step="0.01"
                                                 class="form-control form-control-sm gst-input"
                                                 data-id="{{ $row->id }}"
-                                                value="{{ number_format((float)($row->gst_amount ?? 0), 2, '.', '') }}"
+                                                value="0.00"
                                                 placeholder="0.00">
                                             <small class="text-muted d-block">Set total GST for this PO</small>
                                         </div>
@@ -192,7 +192,7 @@
                                             <label class="form-label small mb-1 text-success fw-bold">
                                                  Add Collection Amount (₹)
                                             </label>
-                                            <input type="number" step="0.01" min="0"
+                                            <input type="number" step="0.01"
                                                 class="form-control form-control-sm collected-input"
                                                 data-id="{{ $row->id }}" placeholder="0.00">
                                         </div>
@@ -275,7 +275,8 @@
                                             <table class="table table-sm table-bordered bg-white mb-0" style="font-size:0.75rem">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th>Date</th>
+                                                        <th>Entry Date</th>
+                                                        <th>Txn / Collection Date</th>
                                                         <th>Action</th>
                                                         <th class="text-end">Amount</th>
                                                         <th class="text-end">PO Amt</th>
@@ -288,7 +289,7 @@
                                                 </thead>
                                                 <tbody id="logs-body-{{ $row->id }}">
                                                     <tr>
-                                                        <td colspan="9" class="text-center py-2 text-muted">Loading logs...</td>
+                                                        <td colspan="10" class="text-center py-2 text-muted">Loading logs...</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -346,26 +347,36 @@
 
             function fetchLogs(id) {
                 var $body = $('#logs-body-' + id);
-                $body.html('<tr><td colspan="9" class="text-center py-2 text-muted">Loading logs...</td></tr>');
+                $body.html('<tr><td colspan="10" class="text-center py-2 text-muted">Loading logs...</td></tr>');
 
                 $.get('/collections/invoice/' + id, function(res) {
                     if (!res.logs || res.logs.length === 0) {
-                        $body.html('<tr><td colspan="9" class="text-center py-2 text-muted">No logs found.</td></tr>');
+                        $body.html('<tr><td colspan="10" class="text-center py-2 text-muted">No logs found.</td></tr>');
                         return;
                     }
 
                     var html = '';
                     res.logs.forEach(function(log) {
-                        var date = new Date(log.created_at).toLocaleDateString('en-IN', {
+                        var entryDate = new Date(log.created_at).toLocaleDateString('en-IN', {
                             day: '2-digit', month: 'short', year: 'numeric'
                         });
+                        var txnDate = log.entry_date ? new Date(log.entry_date).toLocaleDateString('en-IN', {
+                            day: '2-digit', month: 'short', year: 'numeric'
+                        }) : '—';
                         var actionLabel = log.action.charAt(0).toUpperCase() + log.action.slice(1);
-                        var amount = log.amount > 0 ? '₹' + formatNum(log.amount) : '—';
+                        var amtVal = parseFloat(log.amount);
+                        var amount = '—';
+                        if (!isNaN(amtVal) && amtVal !== 0) {
+                            amount = amtVal < 0 ? '-₹' + formatNum(Math.abs(amtVal)) : '₹' + formatNum(amtVal);
+                        }
                         var gstAmt = (log.snapshot_gst_amount !== undefined && log.snapshot_gst_amount !== null) ? log.snapshot_gst_amount : 0;
                         var netBilled = Math.max(0, (parseFloat(log.snapshot_billed_amount) || 0) - parseFloat(gstAmt));
+                        var outstVal = parseFloat(log.snapshot_outstanding) || 0;
+                        var outstFormatted = outstVal < 0 ? '-₹' + formatNum(Math.abs(outstVal)) : '₹' + formatNum(outstVal);
 
                         html += '<tr>' +
-                            '<td>' + date + '</td>' +
+                            '<td>' + entryDate + '</td>' +
+                            '<td>' + txnDate + '</td>' +
                             '<td>' + actionLabel + '</td>' +
                             '<td class="text-end fw-bold">' + amount + '</td>' +
                             '<td class="text-end">₹' + formatNum(log.snapshot_po_amount) + '</td>' +
@@ -373,7 +384,7 @@
                             '<td class="text-end" style="color:#6f42c1">₹' + formatNum(gstAmt) + '</td>' +
                             '<td class="text-end text-dark fw-bold">₹' + formatNum(netBilled) + '</td>' +
                             '<td class="text-end text-success">₹' + formatNum(log.snapshot_collected) + '</td>' +
-                            '<td class="text-end text-danger fw-bold">₹' + formatNum(log.snapshot_outstanding) + '</td>' +
+                            '<td class="text-end text-danger fw-bold">' + outstFormatted + '</td>' +
                         '</tr>';
                     });
                     $body.html(html);
@@ -401,9 +412,9 @@
                 var collectedAmt = parseFloat($('.collected-input[data-id="' + id + '"]').val()) || 0;
                 var entryDate = $('.entry-date[data-id="' + id + '"]').val();
 
-                var hasBilled = billedAmt > 0;
+                var hasBilled = !isNaN(billedAmt) && billedAmt !== 0;
                 var hasGst = gstAmt !== null;
-                var hasCollected = collectedAmt > 0;
+                var hasCollected = !isNaN(collectedAmt) && collectedAmt !== 0;
 
                 if (!hasBilled && !hasGst && !hasCollected) {
                     $err.text('Enter at least one value (Billing, GST, or Collection).').removeClass('d-none');

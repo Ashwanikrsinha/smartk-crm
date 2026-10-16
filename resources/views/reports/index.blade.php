@@ -194,7 +194,7 @@
             <h6 class="fw-bold mb-0">
                 <i class="feather icon-list me-2 text-primary"></i>
                 Records
-                <span class="badge bg-secondary ms-1">{{ $rows->count() + ($openingBalanceRows->count() ?? 0) }}</span>
+                <span class="badge bg-secondary ms-1">{{ $rows->total() + ($openingBalanceRows->count() ?? 0) }}</span>
             </h6>
             {{-- Marketing: no export button here either --}}
             @unless ($isMarketing)
@@ -211,6 +211,7 @@
                         <th>PO Number</th>
                         <th>Date</th>
                         <th>Co-branding</th>
+                        <th>Order Type</th>
                         @if (!$isSp)
                             <th>SM Name</th>
                             <th>SP Name</th>
@@ -234,8 +235,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- ── Opening Balance Carry-Forward Rows ──────── --}}
-                    @if (isset($openingBalanceRows))
+                    {{-- ── Opening Balance Carry-Forward Rows (Shown on Page 1) ──────── --}}
+                    @if (isset($openingBalanceRows) && $rows->currentPage() === 1)
                         @foreach($openingBalanceRows as $ob)
                             <tr class="table-warning">
                                 <td>
@@ -244,7 +245,8 @@
                                     </span>
                                 </td>
                                 <td>{{ $ob->sessionLabel() }}</td>
-                                <td>—</td>
+                                <td></td>
+                                <td></td>
                                 @if (!$isSp)
                                     <td>{{ $ob->salesPerson?->reportiveTo?->username ?? '—' }}</td>
                                     <td>{{ $ob->salesPerson ? $ob->salesPerson->username . ' (' . ($ob->salesPerson->emp_code ?? '-') . ')' : '—' }}</td>
@@ -296,6 +298,11 @@
                                     {{ $row->co_branding ? 'Yes' : 'No' }}
                                 </span>
                             </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    {{ $row->order_type ?? 'New On-board' }}
+                                </span>
+                            </td>
                             @if (!$isSp)
                                 <td>{{ $row->user->reportiveTo?->username }} ({{ $row->user->reportiveTo?->emp_code }})
                                 </td>
@@ -337,27 +344,27 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="17" class="text-center text-muted py-4">
+                            <td colspan="{{ $isSp ? 17 : 19 }}" class="text-center text-muted py-4">
                                 No records found for the selected filters.
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
 
-                @if ($rows->count() || $openingBalanceRows->count())
+                @if ($rows->total() || $openingBalanceRows->count())
                     <tfoot class="table-dark fw-bold">
                         <tr>
                             {{--
                                 colspan shifts based on hidden columns:
                                 SP role hides SM+SP cols (2 less), Marketing hides financials.
-                                Base non-financial cols before amounts: PO#, Date, Co-branding, [SM], [SP], School, State, Lead = 6 or 8
+                                Base non-financial cols before amounts: PO#, Date, Co-branding, Order Type, [SM], [SP], School, State, Lead = 7 or 9
                                 Financial cols (non-marketing): Billed, GST, NetBilled, PendPO, Coll, Outst = 6
                             --}}
                             @php
-                                $baseColspan = $isSp ? 6 : 8; // PO#, Date, Co-branding, (SM, SP), School, State, Lead
+                                $baseColspan = $isSp ? 7 : 9; // PO#, Date, Co-branding, Order Type, (SM, SP), School, State, Lead
                             @endphp
                             <td colspan="{{ $baseColspan }}">
-                                Total ({{ $rows->count() + $openingBalanceRows->count() }} records)
+                                Total ({{ $rows->total() + $openingBalanceRows->count() }} records)
                             </td>
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 2) }}</td>
                             @unless ($isMarketing)
@@ -374,6 +381,19 @@
                 @endif
 
             </table>
+        </div>
+
+        {{-- Pagination links --}}
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <div class="small text-muted">
+                Showing {{ $rows->firstItem() ?? 0 }} to {{ $rows->lastItem() ?? 0 }} of {{ $rows->total() }} purchase orders
+                @if ($openingBalanceRows->count() && $rows->currentPage() === 1)
+                    (+ {{ $openingBalanceRows->count() }} opening balance {{ Str::plural('record', $openingBalanceRows->count()) }})
+                @endif
+            </div>
+            <div>
+                {{ $rows->links('pagination::bootstrap-5') }}
+            </div>
         </div>
 
     </div>

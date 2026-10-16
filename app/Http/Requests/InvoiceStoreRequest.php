@@ -24,6 +24,8 @@ class InvoiceStoreRequest extends FormRequest
             'remarks'           => 'nullable|string|max:1000',
             'terms'             => 'nullable|string',
             'co_branding'       => 'required|in:0,1',
+            'order_type'        => 'required|in:New On-board,Renewal,Re-order',
+            'contact_person'    => 'nullable|string|max:191',
             'total_po_amount'   => 'required|numeric|min:0.01',
             'action'            => 'required|in:draft,submit',
 

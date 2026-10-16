@@ -178,7 +178,7 @@
                                 <td class="text-end">
                                     <div class="d-flex align-items-center gap-1 justify-content-end">
                                         <span class="text-muted small">₹</span>
-                                        <input type="number" step="0.01" min="0"
+                                        <input type="number" step="0.01"
                                             name="collections[{{ $row->id }}][billed_amount]"
                                             class="form-control form-control-sm text-end billing-input"
                                             style="width: 100px;" value=""
@@ -196,7 +196,7 @@
                                 <td class="text-end">
                                     <div class="d-flex align-items-center gap-1 justify-content-end">
                                         <span class="text-muted small">₹</span>
-                                        <input type="number" step="0.01" min="0"
+                                        <input type="number" step="0.01"
                                             name="collections[{{ $row->id }}][gst_amount]"
                                             class="form-control form-control-sm text-end gst-input"
                                             style="width: 100px; color:#6f42c1"
@@ -211,7 +211,7 @@
 
                                 {{-- Net Billed (view only, auto-calculated) --}}
                                 <td class="text-end fw-bold text-dark" id="netbilled-{{ $row->id }}">
-                                    ₹{{ number_format(max(0, (float) $row->billing_amount - (float) ($row->gst_amount ?? 0)), 2) }}
+                                    ₹{{ number_format((float) $row->billing_amount - (float) ($row->gst_amount ?? 0), 2) }}
                                 </td>
 
                                 <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 0) }}</td>
@@ -220,7 +220,7 @@
                                 <td class="text-end">
                                     <div class="d-flex align-items-center gap-1 justify-content-end">
                                         <span class="text-muted small">₹</span>
-                                        <input type="number" step="0.01" min="0"
+                                        <input type="number" step="0.01"
                                             name="collections[{{ $row->id }}][collected_amount]"
                                             class="form-control form-control-sm text-end collection-input"
                                             style="width: 100px;" value=""
@@ -339,14 +339,14 @@
 
                 const newBilled = currentBilled + addBilled;
                 const newCollected = currentCollected + addCollected;
-                const newOutstanding = Math.max(newBilled - newCollected, 0);
-                const newNetBilled = Math.max(newBilled - newGst, 0);
+                const newOutstanding = newBilled - newCollected;
+                const newNetBilled = newBilled - newGst;
 
                 // Update outstanding column in real-time
                 const outstandingCell = $('#outstanding-' + invoiceId);
                 outstandingCell.text('₹' + newOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0}));
                 outstandingCell.toggleClass('text-danger fw-bold', newOutstanding > 0);
-                outstandingCell.toggleClass('text-success', newOutstanding === 0);
+                outstandingCell.toggleClass('text-success', newOutstanding <= 0);
 
                 // Update net billed column in real-time
                 $('#netbilled-' + invoiceId)

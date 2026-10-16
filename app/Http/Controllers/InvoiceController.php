@@ -140,8 +140,10 @@ class InvoiceController extends Controller
                 'visit_id'         => $request->visit_id ?? null,
                 'user_id'          => $request->user_id ?? auth()->id(),
                 'phone_number'     => $request->phone_number,
+                'contact_person'   => $request->contact_person,
                 'address'          => $request->address,
                 'co_branding'      => (bool) $request->input('co_branding', 0),
+                'order_type'       => $request->input('order_type', Invoice::ORDER_TYPE_NEW),
                 'status'           => $status,
                 'remarks'          => $request->remarks,
                 'terms'            => $request->terms,
@@ -253,8 +255,10 @@ class InvoiceController extends Controller
                 'customer_id'       => $request->customer_id,
                 'visit_id'          => $request->visit_id ?? null,
                 'phone_number'      => $request->phone_number,
+                'contact_person'    => $request->contact_person,
                 'address'           => $request->address,
                 'co_branding'       => (bool) $request->input('co_branding', 0),
+                'order_type'        => $request->input('order_type', $invoice->order_type ?? Invoice::ORDER_TYPE_NEW),
                 'status'            => $status,
                 'rejection_reason'  => $rejectionReason,
                 'remarks'           => $request->remarks,
@@ -811,6 +815,7 @@ class InvoiceController extends Controller
             'lead_source_id' => $customer->lead_source_id,
             'lead_source_name' => $customer->leadSource?->name ?? "NA",
             'email'        => $customer->email,
+            'contact_person' => $customer->contacts->first()?->name ?? '',
         ]);
     }
 

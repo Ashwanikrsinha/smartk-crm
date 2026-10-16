@@ -97,9 +97,9 @@ class CollectionController extends Controller
         $request->validate([
             'collections'                       => 'required|array',
             'collections.*.invoice_id'          => 'required|exists:invoices,id',
-            'collections.*.billed_amount'       => 'nullable|numeric|min:0',
-            'collections.*.collected_amount'    => 'nullable|numeric|min:0',
-            'collections.*.gst_amount'          => 'nullable|numeric|min:0',
+            'collections.*.billed_amount'       => 'nullable|numeric',
+            'collections.*.collected_amount'    => 'nullable|numeric',
+            'collections.*.gst_amount'          => 'nullable|numeric',
             'payment_mode'                      => 'required|in:cheque,neft,upi,cash',
             'collected_at'                      => 'required|date',
             'billing_source'                    => 'nullable|in:manual,crm',
@@ -115,7 +115,7 @@ class CollectionController extends Controller
 
                 // ── Update B (Billing Amount) if entered ────────
                 $billedAmt = (float) ($data['billed_amount'] ?? 0);
-                if ($billedAmt > 0) {
+                if ($billedAmt != 0.0) {
                     BillingEntry::create([
                         'invoice_id'       => $invoice->id,
                         'billed_amount'    => $billedAmt,
@@ -138,7 +138,7 @@ class CollectionController extends Controller
                         // pending_po = po_amount - billing — gst is informational only
                         $invoice->updateQuietly([
                             'pending_po_amount'  => max($invoice->amount - $invoice->billing_amount, 0),
-                            'outstanding_amount' => max($invoice->billing_amount - ($invoice->collected_amount ?? 0), 0),
+                            'outstanding_amount' => $invoice->billing_amount - ($invoice->collected_amount ?? 0),
                         ]);
                     }
                 }
@@ -146,7 +146,7 @@ class CollectionController extends Controller
 
                 // ── Update D (Collection Amount) if entered ─────
                 $collectedAmt = (float) ($data['collected_amount'] ?? 0);
-                if ($collectedAmt > 0) {
+                if ($collectedAmt != 0.0) {
                     Collection::create([
                         'invoice_id'       => $invoice->id,
                         'collected_amount' => $collectedAmt,
@@ -173,9 +173,9 @@ class CollectionController extends Controller
 
         $request->validate([
             'invoice_id'        => 'required|exists:invoices,id',
-            'billed_amount'     => 'nullable|numeric|min:0',
-            'collected_amount'  => 'nullable|numeric|min:0',
-            'gst_amount'        => 'nullable|numeric|min:0',
+            'billed_amount'     => 'nullable|numeric',
+            'collected_amount'  => 'nullable|numeric',
+            'gst_amount'        => 'nullable|numeric',
             'payment_mode'      => 'required|in:cheque,neft,upi,cash',
             'entry_date'        => 'required|date',
             'billing_source'    => 'nullable|in:manual,crm',
@@ -189,7 +189,7 @@ class CollectionController extends Controller
 
             // Billed entry
             $billedAmt = (float) ($request->billed_amount ?? 0);
-            if ($billedAmt > 0) {
+            if ($billedAmt != 0.0) {
                 BillingEntry::create([
                     'invoice_id'       => $invoice->id,
                     'billed_amount'    => $billedAmt,
@@ -204,14 +204,12 @@ class CollectionController extends Controller
             // GST update (set total GST on the invoice)
             if ($request->has('gst_amount') && $request->gst_amount !== null && $request->gst_amount !== '') {
                 $gstAmt = (float) $request->gst_amount;
-                if ($gstAmt >= 0) {
-                    $invoice->updateQuietly(['gst_amount' => $gstAmt]);
-                }
+                $invoice->updateQuietly(['gst_amount' => $gstAmt]);
             }
 
             // Collection entry
             $collectedAmt = (float) ($request->collected_amount ?? 0);
-            if ($collectedAmt > 0) {
+            if ($collectedAmt != 0.0) {
                 Collection::create([
                     'invoice_id'       => $invoice->id,
                     'collected_amount' => $collectedAmt,

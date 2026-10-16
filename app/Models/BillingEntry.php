@@ -37,6 +37,7 @@ class BillingEntry extends Model
                 'billing_source'    => $entry->source,
                 'reference_number'  => $entry->reference_number,
                 'remarks'           => $entry->remarks,
+                'entry_date'        => $entry->billed_at,
             ]);
         });
 

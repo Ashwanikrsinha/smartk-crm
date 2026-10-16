@@ -51,6 +51,8 @@ class ReportsController extends Controller
                 'id',
                 'po_number',
                 'invoice_date',
+                'co_branding',
+                'order_type',
                 'user_id',
                 'customer_id',
                 'status',
@@ -81,8 +83,6 @@ class ReportsController extends Controller
         } else {
             $query->whereYear('invoice_date', $year);
         }
-
-        $rows = $query->orderByDesc('invoice_date')->get();
 
         // ── Fetch opening balances for this session / year filter ───
         $filterSessionYear = null;
@@ -118,16 +118,36 @@ class ReportsController extends Controller
 
         $openingBalanceRows = $obQuery->get();
 
-        // ── Summary totals ─────────────────────────────────
+        // ── Summary totals over ALL matching records ──────────────
+        $aggregates = (clone $query)->selectRaw('
+            SUM(amount) as po_amount,
+            SUM(billing_amount) as billing_amount,
+            SUM(gst_amount) as gst_amount,
+            SUM(pending_po_amount) as pending_po_amount,
+            SUM(collected_amount) as collected_amount,
+            SUM(outstanding_amount) as outstanding_amount
+        ')->first();
+
+        $poAmt      = (float) ($aggregates->po_amount ?? 0);
+        $billingAmt = (float) ($aggregates->billing_amount ?? 0);
+        $gstAmt     = (float) ($aggregates->gst_amount ?? 0);
+        $pendingAmt = (float) ($aggregates->pending_po_amount ?? 0);
+        $collAmt    = (float) ($aggregates->collected_amount ?? 0);
+        $outstAmt   = (float) ($aggregates->outstanding_amount ?? 0);
+        $netBilled  = max(0, $billingAmt - $gstAmt);
+
         $totals = [
-            'po_amount'      => (float) $rows->sum('amount'),
-            'billing_amount' => (float) $rows->sum('billing_amount'),
-            'gst_amount'     => (float) $rows->sum('gst_amount'),
-            'net_billed'     => (float) $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)($r->gst_amount ?? 0))),
-            'pending_po'     => (float) $rows->sum('pending_po_amount'),
-            'collected'      => (float) ($rows->sum('collected_amount') + $openingBalanceRows->sum('opening_collected')),
-            'outstanding'    => (float) ($rows->sum('outstanding_amount') + $openingBalanceRows->sum('opening_outstanding')),
+            'po_amount'      => $poAmt,
+            'billing_amount' => $billingAmt,
+            'gst_amount'     => $gstAmt,
+            'net_billed'     => $netBilled,
+            'pending_po'     => $pendingAmt,
+            'collected'      => (float) ($collAmt + $openingBalanceRows->sum('opening_collected')),
+            'outstanding'    => (float) ($outstAmt + $openingBalanceRows->sum('opening_outstanding')),
         ];
+
+        // ── Paginate 20 records at a time ────────────────────────
+        $rows = $query->orderByDesc('invoice_date')->paginate(20)->withQueryString();
 
         // ── Filter dropdowns ───────────────────────────────
         $teamMembers = User::whereIn('id', $teamIds)

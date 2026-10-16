@@ -54,6 +54,7 @@ class PurchaseOrdersExport implements
             'PO Number',
             'PO Date',
             'Co-branding',
+            'Order Type',
             'Sales Person',
             'Sales Manager',
             'School Name',
@@ -166,7 +167,8 @@ class PurchaseOrdersExport implements
         ])
         ->forSession($filterSessionYear);
 
-        if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
+        $currentUser = $this->user ?? auth()->user();
+        if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isBusinessManager() && !$currentUser->isAccounts()) {
             $obQuery->where(function($q) use ($teamIds) {
                 $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
             });
@@ -187,7 +189,8 @@ class PurchaseOrdersExport implements
             $obCols = [
                 'Opening Balance (Carry-Forward)',
                 'Session ' . $ob->sessionLabel(),
-                '—',
+                '',
+                '',
                 $ob->salesPerson ? $ob->salesPerson->username . ' (' . ($ob->salesPerson->emp_code ?? '-') . ')' : '—',
                 $ob->salesPerson?->reportiveTo?->username ?? '—',
                 $ob->customer->name ?? '—',
@@ -258,6 +261,7 @@ class PurchaseOrdersExport implements
             $invoice->po_number,
             $invoice->invoice_date?->format('d/m/Y'),
             $invoice->co_branding ? 'Yes' : 'No',
+            $invoice->order_type ?? 'New On-board',
             $invoice->user ? $invoice->user->username . ' (' . $invoice->user->emp_code . ')' : '—',
             $invoice->user?->reportiveTo?->username ?? '—',
             $invoice->customer->name ?? '—',

@@ -37,6 +37,19 @@ class Invoice extends Model
     const STATUS_SM_APPROVED = 'sm_approved';
     const STATUS_BM_REJECTED = 'bm_rejected';
 
+    const ORDER_TYPE_NEW     = 'New On-board';
+    const ORDER_TYPE_RENEWAL = 'Renewal';
+    const ORDER_TYPE_REORDER = 'Re-order';
+
+    public static function orderTypes(): array
+    {
+        return [
+            self::ORDER_TYPE_NEW,
+            self::ORDER_TYPE_RENEWAL,
+            self::ORDER_TYPE_REORDER,
+        ];
+    }
+
     // ── Relationships ───────────────────────────────────────
 
     public function customer()

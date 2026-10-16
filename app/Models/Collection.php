@@ -42,6 +42,7 @@ class Collection extends Model
                 'payment_mode'     => $collection->payment_mode,
                 'reference_number' => $collection->reference_number,
                 'remarks'          => $collection->remarks,
+                'entry_date'       => $collection->collected_at,
             ]);
         });
 

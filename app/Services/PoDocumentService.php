@@ -151,7 +151,7 @@ class PoDocumentService
             'school_address'      => $customer->address ?? '',
             'school_city'         => $customer->city    ?? '',
             'school_state'        => $customer->state   ?? '',
-            'contact_name'        => $contact?->name                   ?? '',
+            'contact_name'        => $invoice->contact_person ?: ($contact?->name ?? ''),
             'contact_designation' => $contact?->designation?->name     ?? '',
             'contact_phone'       => $contact?->contact_number         ?? $customer->phone_number ?? '',
             'contact_email'       => $customer->email                  ?? '',

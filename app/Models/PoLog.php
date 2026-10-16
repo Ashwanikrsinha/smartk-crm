@@ -18,6 +18,7 @@ class PoLog extends Model
         'snapshot_collected'    => 'decimal:2',
         'snapshot_outstanding'  => 'decimal:2',
         'snapshot_pending_po'   => 'decimal:2',
+        'entry_date'            => 'date',
     ];
 
     const ACTION_BILLED       = 'billed';

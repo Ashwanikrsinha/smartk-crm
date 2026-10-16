@@ -176,6 +176,11 @@ class CustomerController extends Controller
             // Save contacts
             if ($request->filled('person_name.0')) {
                 $customer->createContacts($request);
+            } elseif ($request->filled('contact_person')) {
+                $customer->contacts()->create([
+                    'name'           => $request->contact_person,
+                    'contact_number' => $request->phone_number,
+                ]);
             }
 
             // Upload documents
@@ -208,6 +213,7 @@ class CustomerController extends Controller
                 'city'           => $customer->city,
                 'state'          => $customer->state,
                 'phone_number'   => $customer->phone_number,
+                'contact_person' => $request->contact_person ?? '',
                 'address'        => $customer->address,
                 'email'          => $customer->email,
                 'lead_source_id' => $customer->lead_source_id,

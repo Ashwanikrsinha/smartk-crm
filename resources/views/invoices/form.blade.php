@@ -99,28 +99,28 @@
         {{-- Address --}}
         <div class="col-lg-9 mb-3">
             <label class="form-label">School Address</label>
-            <input type="text" name="address" class="form-control" id="school-address"
+            <input type="text" name="address" class="form-control" id="school-address" readonly
                 value="{{ isset($invoice) ? $invoice->address : old('address') }}" placeholder="Full address">
         </div>
 
         {{-- State --}}
         <div class="col-lg-3 mb-3">
             <label class="form-label">State</label>
-            <input type="text" name="state" class="form-control" id="school-state"
+            <input type="text" name="state" class="form-control" id="school-state" readonly
                 value="{{ isset($invoice) ? $invoice->customer->state : old('state') }}" placeholder="State">
         </div>
 
         {{-- City --}}
         <div class="col-lg-3 mb-3">
             <label class="form-label">City</label>
-            <input type="text" name="city" class="form-control" id="school-city"
+            <input type="text" name="city" class="form-control" id="school-city" readonly
                 value="{{ isset($invoice) ? $invoice->customer->city : old('city') }}" placeholder="City">
         </div>
 
         {{-- Pin Code --}}
         <div class="col-lg-2 mb-3">
             <label class="form-label">Pin Code</label>
-            <input type="text" name="pin_code" class="form-control" id="school-pin"
+            <input type="text" name="pin_code" class="form-control" id="school-pin" readonly
                 value="{{ isset($invoice) ? $invoice->customer->pin_code : old('pin_code') }}"
                 placeholder="6-digit pin">
         </div>
@@ -264,7 +264,8 @@
     <h6 class="fw-bold border-bottom pb-2 mb-3">
         <i class="feather icon-file-text me-2 text-primary"></i>Additional Details
     </h6>
-    <div class="row">{{-- Co-branding --}}
+    <div class="row">
+        {{-- Co-branding --}}
         <div class="col-lg-6 mb-3">
             <label class="form-label d-block">Co-branding <span class="text-danger">*</span></label>
             <div class="d-flex align-items-center gap-4 mt-2">
@@ -288,6 +289,43 @@
                 </div>
             </div>
             @error('co_branding')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        {{-- Order Type --}}
+        <div class="col-lg-6 mb-3">
+            <label class="form-label d-block">Order Type <span class="text-danger">*</span></label>
+            <div class="d-flex align-items-center gap-4 mt-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="order_type" id="order_type_new"
+                        value="New On-board"
+                        {{ old('order_type', isset($invoice) ? $invoice->order_type : 'New On-board') == 'New On-board' ? 'checked' : '' }}
+                        required>
+                    <label class="form-check-label fw-semibold" for="order_type_new">
+                        New On-board
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="order_type" id="order_type_renewal"
+                        value="Renewal"
+                        {{ old('order_type', isset($invoice) ? $invoice->order_type : 'New On-board') == 'Renewal' ? 'checked' : '' }}
+                        required>
+                    <label class="form-check-label fw-semibold" for="order_type_renewal">
+                        Renewal
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="order_type" id="order_type_reorder"
+                        value="Re-order"
+                        {{ old('order_type', isset($invoice) ? $invoice->order_type : 'New On-board') == 'Re-order' ? 'checked' : '' }}
+                        required>
+                    <label class="form-check-label fw-semibold" for="order_type_reorder">
+                        Re-order
+                    </label>
+                </div>
+            </div>
+            @error('order_type')
                 <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
@@ -391,6 +429,7 @@
             function fetchSchoolDetails(schoolId) {
                 $.get(`/invoices/school/${schoolId}`, function(data) {
                     $('#school-code').val(data.school_code);
+                    $('#contact-person').val(data.contact_person || '');
                     $('#school-phone').val(data.phone_number);
                     $('#school-address').val(data.address);
                     $('#school-state').val(data.state);

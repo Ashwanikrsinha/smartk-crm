@@ -80,7 +80,7 @@
 
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Already Collected (₹)</label>
-                        <input type="number" step="0.01" min="0" name="opening_collected"
+                        <input type="number" step="0.01" name="opening_collected"
                             value="{{ old('opening_collected', 0) }}" class="form-control" placeholder="0 if not collected">
                         <small class="text-muted">Enter 0 if no payment has been made against this balance yet.</small>
                     </div>

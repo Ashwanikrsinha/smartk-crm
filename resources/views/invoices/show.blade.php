@@ -259,6 +259,14 @@
                         </td>
                     </tr>
                     <tr>
+                        <th class="text-muted">Order Type</th>
+                        <td>
+                            <span class="badge bg-info text-dark">
+                                {{ $invoice->order_type ?? 'New On-board' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
                         <th class="text-muted">Status</th>
                         <td>
                             @php $c = ['approved'=>'success','submitted'=>'warning','draft'=>'secondary','rejected'=>'danger'][$invoice->status]??'secondary'; @endphp
@@ -281,6 +289,12 @@
                         <td>{{ $invoice->customer->name }}<br><small
                                 class="text-muted">{{ $invoice->customer->school_code }}</small></td>
                     </tr>
+                    @if ($invoice->contact_person)
+                    <tr>
+                        <th class="text-muted">Contact Person</th>
+                        <td>{{ $invoice->contact_person }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <th class="text-muted">Phone</th>
                         <td>{{ $invoice->phone_number ?? '—' }}</td>
