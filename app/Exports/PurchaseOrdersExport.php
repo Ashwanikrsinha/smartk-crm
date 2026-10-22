@@ -205,7 +205,7 @@ class PurchaseOrdersExport implements
             $obCols[] = $ob->customer->state ?? '—';
             $obCols[] = $ob->customer->city  ?? '—';
             $obCols[] = $ob->customer->leadSource?->name ?? 'N/A';
-            $obCols[] = 'Carry-Forward';
+            $obCols[] = ($ob->status === 'return') ? 'Return' : 'Carry-Forward';
             $obCols[] = '0.00';
 
             if (!$this->isMarketing) {

@@ -246,8 +246,10 @@ class OpeningBalanceController extends Controller
         }
 
         $data = $request->validate([
-            'collected_amount'  => 'required|numeric|min:0.01',
-            'payment_mode'      => 'required|in:cheque,neft,rtgs,upi,cash',
+            'collected_amount'  => 'required|numeric',
+            'payment_mode'      => 'required|in:cheque,neft,rtgs,upi,cash,return',
+            'billed_amount'     => 'nullable|numeric',
+            'gst_amount'        => 'nullable|numeric',
             'reference_number'  => 'nullable|string|max:100',
             'remarks'           => 'nullable|string|max:500',
             'collected_at'      => 'required|date',
@@ -255,14 +257,20 @@ class OpeningBalanceController extends Controller
 
         OpeningBalanceCollection::create([
             'opening_balance_id' => $openingBalance->id,
-            'collected_amount'   => $data['collected_amount'],
+            'collected_amount'   => (float) $data['collected_amount'],
+            'billed_amount'      => (float) ($data['billed_amount'] ?? 0),
+            'gst_amount'         => (float) ($data['gst_amount'] ?? 0),
             'payment_mode'       => $data['payment_mode'],
             'reference_number'   => $data['reference_number'] ?? null,
             'remarks'            => $data['remarks'] ?? null,
             'collected_by'       => auth()->id(),
             'collected_at'       => $data['collected_at'],
         ]);
-        // Observer auto-recalculates parent opening_outstanding
+        // Observer auto-recalculates parent opening_collected, opening_billed, opening_outstanding, and status
+
+        if ($data['payment_mode'] === 'return') {
+            return back()->with('success', 'Return of ₹' . number_format($data['collected_amount'], 2) . ' recorded successfully. Status updated to Return.');
+        }
 
         return back()->with('success', '₹' . number_format($data['collected_amount'], 2) . ' collection recorded successfully.');
     }

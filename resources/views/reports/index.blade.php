@@ -266,12 +266,20 @@
                                     <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
-                                    <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : 'text-success' }}">
-                                        ₹{{ number_format($ob->opening_outstanding, 2) }}
+                                    <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : ($ob->opening_outstanding < 0 ? 'text-info fw-bold' : 'text-success') }}">
+                                        {{ $ob->opening_outstanding < 0 ? '-₹' . number_format(abs($ob->opening_outstanding), 2) : '₹' . number_format($ob->opening_outstanding, 2) }}
                                     </td>
                                 @endunless
                                 <td>
-                                    <span class="badge bg-info text-dark">Carry-Forward</span>
+                                    @if ($ob->status === 'return')
+                                        <span class="badge bg-danger">
+                                            <i class="feather icon-corner-up-left me-1"></i> Return
+                                        </span>
+                                    @else
+                                        <span class="badge bg-info text-dark">
+                                            <i class="feather icon-repeat me-1"></i> Carry-Forward
+                                        </span>
+                                    @endif
                                 </td>
                                 @unless ($isMarketing)
                                     <td>—</td>

@@ -331,4 +331,110 @@ class PoEnhancementsAndCollectionsTest extends TestCase
         $this->assertNotNull($collLog);
         $this->assertEquals('2026-10-12', $collLog->entry_date?->format('Y-m-d'));
     }
+
+    public function test_opening_balance_return_deducts_outstanding_and_billed_and_updates_status()
+    {
+        $this->actingAs($this->admin);
+
+        $ob = SchoolOpeningBalance::create([
+            'customer_id'         => $this->customer->id,
+            'user_id'             => $this->admin->id,
+            'session_year'        => (int) date('Y'),
+            'opening_amount'      => 300000.00,
+            'opening_billed'      => 300000.00,
+            'opening_collected'   => 0,
+            'opening_outstanding' => 300000.00,
+            'status'              => 'carry_forward',
+        ]);
+
+        // 1. Normal cash payment of ₹50,000
+        $resPay = $this->post(route('opening-balances.collect', $ob), [
+            'collected_amount' => 50000.00,
+            'payment_mode'     => 'cash',
+            'collected_at'     => now()->format('Y-m-d'),
+        ]);
+        $resPay->assertSessionHas('success');
+
+        $ob->refresh();
+        $this->assertEquals(50000.00, (float) $ob->opening_collected);
+        $this->assertEquals(250000.00, (float) $ob->opening_outstanding);
+        $this->assertEquals('carry_forward', $ob->status);
+
+        // 2. Return of ₹100,000 (with ₹80,000 billed and ₹20,000 GST)
+        $resReturn = $this->post(route('opening-balances.collect', $ob), [
+            'collected_amount' => 100000.00, // Return credit amount deducted from outstanding
+            'payment_mode'     => 'return',
+            'billed_amount'    => 80000.00,  // Deducted from billed
+            'gst_amount'       => 20000.00,
+            'reference_number' => 'RET-NOTE-001',
+            'remarks'          => 'Books returned by school',
+            'collected_at'     => now()->format('Y-m-d'),
+        ]);
+        $resReturn->assertSessionHas('success');
+
+        $ob->refresh();
+        // Cash collected remains pure (still ₹50,000, NOT ₹150,000)
+        $this->assertEquals(50000.00, (float) $ob->opening_collected);
+        // Outstanding is reduced by return: 300,000 - 50,000 - 100,000 = 150,000
+        $this->assertEquals(150000.00, (float) $ob->opening_outstanding);
+        // Billed is reduced: 300,000 - 80,000 = 220,000
+        $this->assertEquals(220000.00, (float) $ob->opening_billed);
+        // Status is updated to 'return'
+        $this->assertEquals('return', $ob->status);
+        $this->assertTrue($ob->isReturned());
+
+        // 3. Verify PO Report view shows 'Return' badge
+        $repRes = $this->get(route('reports.index', ['session_year' => $ob->session_year]));
+        $repRes->assertOk();
+        $repRes->assertSee('Return');
+
+        // 4. Verify Export outputs 'Return'
+        $export = new PurchaseOrdersExport(['session_year' => $ob->session_year], $this->admin);
+        $collection = $export->collection();
+        $obRow = $collection->firstWhere(7, $this->customer->school_code);
+        $this->assertNotNull($obRow);
+        // Status column in export (index 12 for non-marketing)
+        $this->assertContains('Return', $obRow);
+
+        // 5. Delete return entry and verify status & amounts revert
+        $returnEntry = $ob->collections()->where('payment_mode', 'return')->first();
+        $this->assertNotNull($returnEntry);
+        $delRes = $this->delete(route('opening-balance-collections.destroy', $returnEntry));
+        $delRes->assertSessionHas('success');
+
+        $ob->refresh();
+        $this->assertEquals(50000.00, (float) $ob->opening_collected);
+        $this->assertEquals(250000.00, (float) $ob->opening_outstanding);
+        $this->assertEquals(300000.00, (float) $ob->opening_billed);
+        $this->assertEquals('carry_forward', $ob->status);
+    }
+
+    public function test_opening_balance_supports_negative_amounts()
+    {
+        $this->actingAs($this->admin);
+
+        $ob = SchoolOpeningBalance::create([
+            'customer_id'         => $this->customer->id,
+            'user_id'             => $this->admin->id,
+            'session_year'        => (int) date('Y'),
+            'opening_amount'      => -50000.00, // advance credit balance
+            'opening_billed'      => -50000.00,
+            'opening_collected'   => 0,
+            'opening_outstanding' => -50000.00,
+            'status'              => 'carry_forward',
+        ]);
+
+        // Post a negative collection adjustment (-10,000)
+        $res = $this->post(route('opening-balances.collect', $ob), [
+            'collected_amount' => -10000.00,
+            'payment_mode'     => 'cheque',
+            'collected_at'     => now()->format('Y-m-d'),
+        ]);
+        $res->assertSessionHas('success');
+
+        $ob->refresh();
+        $this->assertEquals(-10000.00, (float) $ob->opening_collected);
+        $this->assertEquals(-40000.00, (float) $ob->opening_outstanding);
+    }
 }
+

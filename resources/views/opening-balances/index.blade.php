@@ -150,6 +150,7 @@
                         <th class="text-end text-warning">Opening Amount</th>
                         <th class="text-end text-success">Collected</th>
                         <th class="text-end text-danger">Outstanding</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center">Source</th>
                         <th>Notes</th>
                         <th>Entered By</th>
@@ -188,6 +189,17 @@
                                 {{ $rec->opening_outstanding < 0 ? '-₹' . number_format(abs($rec->opening_outstanding), 2) : '₹' . number_format($rec->opening_outstanding, 2) }}
                             </td>
                             <td class="text-center">
+                                @if ($rec->status === 'return')
+                                    <span class="badge bg-danger">
+                                        <i class="feather icon-corner-up-left me-1"></i> Return
+                                    </span>
+                                @else
+                                    <span class="badge bg-info text-dark">
+                                        <i class="feather icon-repeat me-1"></i> Carry-Forward
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center">
                                 @if ($rec->source === 'auto')
                                     <span class="badge bg-info text-dark">Auto</span>
                                 @else
@@ -205,14 +217,14 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex gap-1 justify-content-center">
-                                    {{-- Record Payment button if outstanding > 0 --}}
-                                    @if ($rec->opening_outstanding > 0)
+                                    {{-- Record Payment button if outstanding != 0 --}}
+                                    @if ($rec->opening_outstanding != 0)
                                         <button type="button" class="btn btn-xs btn-outline-success collect-btn"
                                             data-bs-toggle="modal" data-bs-target="#collectModal"
                                             data-id="{{ $rec->id }}"
                                             data-school="{{ $rec->customer->name ?? '' }} ({{ $rec->customer->school_code ?? '' }})"
                                             data-outstanding="{{ $rec->opening_outstanding }}"
-                                            title="Record Payment">
+                                            title="Record Payment / Return">
                                             <i class="feather icon-check-circle"></i> Pay
                                         </button>
                                     @endif
@@ -236,7 +248,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted py-4">
+                            <td colspan="11" class="text-center text-muted py-4">
                                 No opening balance records found for the selected session.
                             </td>
                         </tr>
@@ -249,7 +261,7 @@
                             <td class="text-end">₹{{ number_format($totals['opening_amount'], 2) }}</td>
                             <td class="text-end">₹{{ number_format($totals['opening_collected'], 2) }}</td>
                             <td class="text-end">₹{{ number_format($totals['opening_outstanding'], 2) }}</td>
-                            <td colspan="4"></td>
+                            <td colspan="5"></td>
                         </tr>
                     </tfoot>
                 @endif
@@ -325,19 +337,20 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="0.01" name="collected_amount" id="modalAmountInput"
+                            <label class="form-label small fw-bold" id="modalAmountLabel">Payment Amount (₹) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="collected_amount" id="modalAmountInput"
                                 class="form-control form-control-sm" required>
                         </div>
 
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label class="form-label small fw-bold">Payment Mode <span class="text-danger">*</span></label>
-                                <select name="payment_mode" class="form-select form-select-sm" required>
+                                <select name="payment_mode" id="modalPaymentMode" class="form-select form-select-sm" required>
                                     <option value="cash">Cash</option>
                                     <option value="cheque">Cheque</option>
                                     <option value="neft">NEFT / RTGS</option>
                                     <option value="upi">UPI</option>
+                                    <option value="return">Return</option>
                                 </select>
                             </div>
                             <div class="col-6">
@@ -347,10 +360,28 @@
                             </div>
                         </div>
 
+                        {{-- Dynamic Return Fields (shown only when Payment Mode is Return) --}}
+                        <div id="obReturnFields" class="p-2 border rounded bg-light mb-3 d-none">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-danger">Billed Return Amount (₹)</label>
+                                    <input type="number" step="0.01" name="billed_amount" id="modalBilledReturnInput"
+                                        class="form-control form-control-sm" placeholder="0.00">
+                                    <small class="text-muted" style="font-size:0.72rem;">Minus from Billed Amount</small>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-danger">GST on Return (₹)</label>
+                                    <input type="number" step="0.01" name="gst_amount" id="modalGstReturnInput"
+                                        class="form-control form-control-sm" placeholder="0.00" value="0.00">
+                                    <small class="text-muted" style="font-size:0.72rem;">GST component</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label small">Reference / Cheque / UTR No.</label>
+                            <label class="form-label small">Reference / Cheque / UTR / Return Slip No.</label>
                             <input type="text" name="reference_number" class="form-control form-control-sm"
-                                placeholder="e.g. Cheque # / UTR #">
+                                placeholder="e.g. Cheque # / UTR # / Return Note #">
                         </div>
 
                         <div class="mb-3">
@@ -361,7 +392,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success btn-sm">
+                        <button type="submit" id="collectModalSubmitBtn" class="btn btn-success btn-sm">
                             <i class="feather icon-check me-1"></i> Save Payment
                         </button>
                     </div>
@@ -377,6 +408,23 @@
         $(document).ready(function() {
             $('.selectize').selectize();
 
+            // Toggle dynamic return fields
+            $(document).on('change', '#modalPaymentMode', function() {
+                if ($(this).val() === 'return') {
+                    $('#obReturnFields').removeClass('d-none');
+                    $('#modalAmountLabel').html('Return / Credit Amount (₹) <span class="text-danger">*</span>');
+                    $('#collectModalSubmitBtn').removeClass('btn-success').addClass('btn-danger').html(
+                        '<i class="feather icon-corner-up-left me-1"></i> Save Return Entry'
+                    );
+                } else {
+                    $('#obReturnFields').addClass('d-none');
+                    $('#modalAmountLabel').html('Payment Amount (₹) <span class="text-danger">*</span>');
+                    $('#collectModalSubmitBtn').removeClass('btn-danger').addClass('btn-success').html(
+                        '<i class="feather icon-check me-1"></i> Save Payment'
+                    );
+                }
+            });
+
             // Setup collect modal dynamically
             $(document).on('click', '.collect-btn', function() {
                 const id = $(this).data('id');
@@ -384,8 +432,11 @@
                 const outstanding = parseFloat($(this).data('outstanding')) || 0;
 
                 $('#modalSchoolName').text(school);
-                $('#modalOutstanding').text('₹' + outstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
-                $('#modalAmountInput').attr('max', outstanding).val(outstanding);
+                $('#modalOutstanding').text((outstanding < 0 ? '-₹' : '₹') + Math.abs(outstanding).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+                $('#modalAmountInput').removeAttr('max').val(outstanding);
+                $('#modalPaymentMode').val('cash').trigger('change');
+                $('#modalBilledReturnInput').val('');
+                $('#modalGstReturnInput').val('0.00');
 
                 const url = '{{ route("opening-balances.collect", ":id") }}'.replace(':id', id);
                 $('#collectForm').attr('action', url);

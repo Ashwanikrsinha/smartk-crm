@@ -16,7 +16,14 @@ class OpeningBalanceCollection extends Model
     protected $casts = [
         'collected_at'     => 'date',
         'collected_amount' => 'decimal:2',
+        'billed_amount'    => 'decimal:2',
+        'gst_amount'       => 'decimal:2',
     ];
+
+    public function isReturn(): bool
+    {
+        return $this->payment_mode === 'return';
+    }
 
     // ── Relationships ─────────────────────────────────────────────────────────
 

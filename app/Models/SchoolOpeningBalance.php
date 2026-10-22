@@ -48,19 +48,41 @@ class SchoolOpeningBalance extends Model
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /**
-     * Recompute opening_collected and opening_outstanding from child records.
+     * Recompute opening_collected, opening_billed, opening_outstanding and status from child records.
      * Called by OpeningBalanceCollection observer on saved/deleted.
      */
     public function recalculateCollected(): void
     {
-        $totalCollected = $this->collections()->sum('collected_amount');
+        // 1. Monetary collections (Cash, Cheque, NEFT, UPI)
+        $totalCashCollected = (float) $this->collections()
+            ->where('payment_mode', '!=', 'return')
+            ->sum('collected_amount');
+
+        // 2. Returns (Sales Return / Credit Note)
+        $returnEntries     = $this->collections()->where('payment_mode', 'return');
+        $totalReturnAmount = (float) $returnEntries->sum('collected_amount');
+        $totalReturnBilled = (float) $returnEntries->sum('billed_amount');
+        $hasReturn         = $returnEntries->exists();
+
+        // 3. Deduct Return & Cash from Outstanding (supports negative balance)
+        $netDeductions = $totalCashCollected + $totalReturnAmount;
+        $outstanding   = (float) $this->opening_amount - $netDeductions;
+
+        // 4. Deduct Return Billed from Billed (supports negative balance)
+        $initialBilled = (float) $this->opening_amount;
+        $currentBilled = $initialBilled - $totalReturnBilled;
 
         $this->updateQuietly([
-            'opening_collected'   => $totalCollected,
-            'opening_outstanding' => $this->opening_amount >= 0
-                ? max(0, $this->opening_amount - $totalCollected)
-                : ($this->opening_amount - $totalCollected),
+            'opening_collected'   => $totalCashCollected,
+            'opening_billed'      => $currentBilled,
+            'opening_outstanding' => $outstanding,
+            'status'              => $hasReturn ? 'return' : 'carry_forward',
         ]);
+    }
+
+    public function isReturned(): bool
+    {
+        return $this->status === 'return';
     }
 
     /**
