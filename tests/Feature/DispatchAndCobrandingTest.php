@@ -33,7 +33,7 @@ class DispatchAndCobrandingTest extends TestCase
         ]);
 
         $customer = Customer::create([
-            'school_code'  => 'SCH-' . rand(1000, 9999),
+            'school_code'  => 'SCH-' . uniqid(),
             'name'         => 'Test School',
             'phone_number' => '9876543210',
             'state'        => 'Delhi',

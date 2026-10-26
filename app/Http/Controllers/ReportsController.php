@@ -153,8 +153,13 @@ class ReportsController extends Controller
             'outstanding'    => (float) ($outstAmt + $openingBalanceRows->sum('opening_outstanding')),
         ];
 
-        // ── Paginate 20 records at a time ────────────────────────
-        $rows = $query->orderByDesc('invoice_date')->paginate(20)->withQueryString();
+        // ── Paginate records ────────────────────────
+        $perPage = (int) $request->input('per_page', 20);
+        if (!in_array($perPage, [10, 20, 50, 100, 200])) {
+            $perPage = 20;
+        }
+
+        $rows = $query->orderByDesc('invoice_date')->paginate($perPage)->withQueryString();
 
         // ── Filter dropdowns ───────────────────────────────
         $teamMembers = User::whereIn('id', $teamIds)
@@ -193,7 +198,8 @@ class ReportsController extends Controller
             'dateTo',
             'year',
             'session',
-            'sessions'
+            'sessions',
+            'perPage'
         ));
     }
 

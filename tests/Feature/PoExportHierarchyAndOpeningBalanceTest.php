@@ -224,4 +224,44 @@ class PoExportHierarchyAndOpeningBalanceTest extends TestCase
         $dashResponse->assertStatus(200);
         $dashResponse->assertSee('₹100,000');
     }
+
+    /**
+     * 5. PO report supports pagination and per_page selection.
+     */
+    public function test_po_report_pagination_and_per_page_selector()
+    {
+        $this->actingAs($this->admin);
+
+        $response = $this->get(route('reports.index', ['per_page' => 10]));
+        $response->assertStatus(200);
+        $response->assertSee('per page');
+        $response->assertSee('value="10" selected', false);
+    }
+
+    /**
+     * 6. Artisan command po:regenerate-docs successfully executes and generates docx files.
+     */
+    public function test_artisan_regenerate_po_docs_command()
+    {
+        $invoice = Invoice::create([
+            'po_number'    => 'PO-CLI-' . rand(1000, 9999),
+            'invoice_number' => rand(100000, 999999),
+            'invoice_date' => '2026-07-25',
+            'customer_id'  => $this->customer->id,
+            'user_id'      => $this->sp->id,
+            'order_type'   => Invoice::ORDER_TYPE_NEW,
+            'status'       => Invoice::STATUS_APPROVED,
+            'amount'       => 35000.00,
+            'pending_po_amount' => 35000.00,
+        ]);
+
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('po:regenerate-docs', [
+            '--id' => $invoice->id,
+        ]);
+
+        $this->assertEquals(0, $exitCode);
+        $invoice->refresh();
+        $this->assertNotNull($invoice->po_document_path);
+        $this->assertTrue(app(PoDocumentService::class)->exists($invoice));
+    }
 }

@@ -28,6 +28,7 @@
     {{-- ═══ FILTERS ════════════════════════════════════════════ --}}
     <div class="bg-white rounded shadow-sm p-3 mb-4">
         <form method="GET" action="{{ route('reports.index') }}" id="filter-form">
+            <input type="hidden" name="per_page" id="per-page-input" value="{{ $perPage ?? 20 }}">
 
             <div class="row g-2 mb-2">
 
@@ -392,16 +393,40 @@
             </table>
         </div>
 
-        {{-- Pagination links --}}
-        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+        {{-- Pagination & Records Info --}}
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-3 border-top gap-2">
             <div class="small text-muted">
-                Showing {{ $rows->firstItem() ?? 0 }} to {{ $rows->lastItem() ?? 0 }} of {{ $rows->total() }} purchase orders
+                Showing {{ $rows->firstItem() ?? ($rows->total() ? 1 : 0) }} to {{ $rows->lastItem() ?? $rows->total() }} of {{ $rows->total() }} purchase orders
                 @if ($openingBalanceRows->count() && $rows->currentPage() === 1)
-                    (+ {{ $openingBalanceRows->count() }} opening balance {{ Str::plural('record', $openingBalanceRows->count()) }})
+                    <span class="badge bg-warning text-dark ms-1">+ {{ $openingBalanceRows->count() }} opening balance {{ Str::plural('record', $openingBalanceRows->count()) }}</span>
                 @endif
             </div>
-            <div>
-                {{ $rows->links('pagination::bootstrap-5') }}
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-1 small text-muted">
+                    <span>Show</span>
+                    <select class="form-select form-select-sm py-0 ps-2 pe-4" style="width:auto; height:28px;"
+                        onchange="document.getElementById('per-page-input').value=this.value; document.getElementById('filter-form').submit();">
+                        @foreach ([10, 20, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ ($perPage ?? 20) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span>per page</span>
+                </div>
+
+                @if ($rows->hasPages())
+                    <div>
+                        {{ $rows->links() }}
+                    </div>
+                @else
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        <li class="page-item active"><span class="page-link">1</span></li>
+                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                    </ul>
+                @endif
             </div>
         </div>
 
