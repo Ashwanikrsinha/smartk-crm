@@ -265,6 +265,17 @@ children.push(para(
     { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
 ));
 
+// ── [12] Numbered section 6: Order Type ───────────────────
+children.push(emptyPara());
+const orderTypeVal = data.order_type || 'New On-board';
+children.push(para(
+    [
+        tnr("Order Type: ", { bold: true }),
+        tnr(orderTypeVal, { bold: true }),
+    ],
+    { numbering: { reference: "main-list", level: 0 }, align: AlignmentType.BOTH }
+));
+
 // ── [12] Remarks ──────────────────────────────────────────
 children.push(emptyPara());
 children.push(para([

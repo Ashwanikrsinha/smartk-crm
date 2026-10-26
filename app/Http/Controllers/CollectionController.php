@@ -35,9 +35,13 @@ class CollectionController extends Controller
         $month    = $request->input('month');
         $year     = $request->input('year', date('Y'));
 
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = $spId ? User::find($spId) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : null;
+
         $rows = Invoice::with(['user:id,username,emp_code', 'customer:id,name,school_code'])
             ->where('status', Invoice::STATUS_APPROVED)
-            ->when($spId,     fn($q) => $q->where('user_id', $spId))
+            ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId))
             ->when($poNumber, fn($q) => $q->where('po_number', 'like', "%{$poNumber}%"))
             ->when($month, function ($q) use ($month) {
@@ -61,7 +65,7 @@ class CollectionController extends Controller
             ->get();
 
         $obQuery = SchoolOpeningBalance::forSession($year)
-            ->when($spId,     fn($q) => $q->where('user_id', $spId))
+            ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
         $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
@@ -77,7 +81,7 @@ class CollectionController extends Controller
             'outstanding'      => $rows->sum('outstanding_amount') + $totalOpeningOutstanding,
         ];
 
-        $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
+        $allSps  = User::SalesPersonOrManager()->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
         $schools = Customer::orderBy('name')->get(['id', 'name', 'school_code']);
 
         return view('collections.index', compact(

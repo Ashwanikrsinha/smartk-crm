@@ -312,10 +312,14 @@ class DashboardController extends Controller
         $sessions     = $this->availableSessions();
         $year         = $sessionRange['start_year'];
 
-        $baseQuery = Invoice::whereIn('user_id', $teamIds)
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = $spId ? User::find($spId) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : $teamIds;
+        $filteredUserIds = array_values(array_intersect($filteredUserIds, $teamIds));
+
+        $baseQuery = Invoice::whereIn('user_id', $filteredUserIds)
             ->whereIn('status', [Invoice::STATUS_APPROVED, Invoice::STATUS_SUBMITTED]);
 
-        if ($spId)     $baseQuery->where('user_id', $spId);
         if ($schoolId) $baseQuery->where('customer_id', $schoolId);
         if ($month) {
             $baseQuery->whereYear('invoice_date', substr($month, 0, 4))
@@ -337,9 +341,8 @@ class DashboardController extends Controller
             'salesPerson:id,username,emp_code',
             'customer:id,name,school_code'
         ])
-            ->whereIn('user_id', $teamIds)
+            ->whereIn('user_id', $filteredUserIds)
             ->forSession($year)
-            ->when($spId, fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
         $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
@@ -355,9 +358,8 @@ class DashboardController extends Controller
         $totalCollection    = $currentCollection + $totalOpeningCollected;
         $totalOutstanding   = $currentOutstanding + $totalOpeningOutstanding;
 
-        $signedSchoolsQuery = Invoice::whereIn('user_id', $teamIds)
+        $signedSchoolsQuery = Invoice::whereIn('user_id', $filteredUserIds)
             ->where('status', Invoice::STATUS_APPROVED);
-        if ($spId) $signedSchoolsQuery->where('user_id', $spId);
         if ($month) {
             $signedSchoolsQuery->whereYear('invoice_date', substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
@@ -369,9 +371,8 @@ class DashboardController extends Controller
         $signedSchools = $signedSchoolsQuery->distinct('customer_id')->count('customer_id');
 
         $tableRows = Invoice::with(['user:id,username', 'customer:id,name,school_code'])
-            ->whereIn('user_id', $teamIds)
+            ->whereIn('user_id', $filteredUserIds)
             ->whereIn('status', [Invoice::STATUS_APPROVED, Invoice::STATUS_SUBMITTED])
-            ->when($spId,     fn($q) => $q->where('user_id', $spId))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId))
             ->when(
                 $month,
@@ -397,7 +398,7 @@ class DashboardController extends Controller
             ->orderByDesc('invoice_date')
             ->get();
 
-        $chartData   = $this->monthlyTrend($teamIds, $sessionRange);
+        $chartData   = $this->monthlyTrend($filteredUserIds, $sessionRange);
         $teamMembers = User::whereIn('id', $teamIds)
             ->orderBy('username')->get(['id', 'username']);
         $schools     = Customer::whereHas('invoices', fn($q) => $q->whereIn('user_id', $teamIds))
@@ -405,7 +406,7 @@ class DashboardController extends Controller
             ->orderBy('name')->get(['id', 'name', 'school_code']);
 
         // Target vs Achievement Calculation (aligned with session/dashboard filter)
-        $targetUsers = $spId ? [$spId] : $teamIds;
+        $targetUsers = $filteredUserIds;
 
         $targetQuery = Target::whereIn('user_id', $targetUsers);
         $invoiceAchievedQuery = Invoice::whereIn('user_id', $targetUsers)
@@ -625,9 +626,13 @@ class DashboardController extends Controller
         $dateFrom     = $request->input('date_from');
         $dateTo       = $request->input('date_to');
 
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = $spId ? User::find($spId) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : null;
+
         $rows = Invoice::with(['user:id,username', 'customer:id,name,school_code'])
             ->where('status', Invoice::STATUS_APPROVED)
-            ->when($spId,     fn($q) => $q->where('user_id', $spId))
+            ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId))
             ->when($poNumber, fn($q) => $q->where('po_number', 'like', "%{$poNumber}%"))
             ->when(
@@ -661,7 +666,7 @@ class DashboardController extends Controller
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
             ->forSession($year)
-            ->when($spId, fn($q) => $q->where('user_id', $spId))
+            ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
         $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
@@ -675,7 +680,7 @@ class DashboardController extends Controller
         $totalCollected   = $currentCollected + $totalOpeningCollected;
         $totalOutstanding = $currentOutstanding + $totalOpeningOutstanding;
 
-        $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username']);
+        $allSps  = User::SalesPersonOrManager()->active()->orderBy('username')->get(['id', 'username']);
         $schools = Customer::orderBy('name')->get(['id', 'name', 'school_code']);
 
         return view('dashboard.accounts', compact(
@@ -719,6 +724,11 @@ class DashboardController extends Controller
         $dateTo       = $request->input('date_to');
         $state        = $request->input('state');
         $leadSourceId = $request->input('lead_source_id');
+        $spId         = $request->input('sp_id');
+
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = $spId ? User::find($spId) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : null;
 
         // Base school query with optional filters
         $schoolQuery = Customer::query();
@@ -733,6 +743,7 @@ class DashboardController extends Controller
 
         // Approved PO financials in session
         $poQuery = Invoice::where('status', Invoice::STATUS_APPROVED);
+        if ($filteredUserIds) $poQuery->whereIn('user_id', $filteredUserIds);
         if ($month) {
             $poQuery->whereYear('invoice_date',  substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
@@ -754,6 +765,7 @@ class DashboardController extends Controller
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
             ->forSession($year)
+            ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($state, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('state', $state)))
             ->when($leadSourceId, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('lead_source_id', $leadSourceId)));
 
@@ -776,7 +788,10 @@ class DashboardController extends Controller
             'data'   => $leadBreakdown->pluck('count')->toArray(),
         ];
 
-        $chartData = $this->monthlyTrend(User::pluck('id')->toArray(), $sessionRange);
+        $chartUserIds = $filteredUserIds ?? User::pluck('id')->toArray();
+        $chartData = $this->monthlyTrend($chartUserIds, $sessionRange);
+
+        $teamMembers = User::SalesPersonOrManager()->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
 
         $recentUsers = User::with('role', 'reportiveTo')->active()
             ->orderByDesc('id')->limit(8)->get();
@@ -798,6 +813,8 @@ class DashboardController extends Controller
             'leadChartData',
             'chartData',
             'recentUsers',
+            'teamMembers',
+            'spId',
             'month',
             'dateFrom',
             'dateTo',

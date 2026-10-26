@@ -121,12 +121,13 @@
                 </div>
 
                 <div class="col-lg-2 col-md-6">
-                    <label class="form-label small mb-1">Year</label>
-                    <select name="year" class="form-control form-control-sm">
-                        @for ($y = date('Y'); $y >= date('Y') - 4; $y--)
-                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}
+                    <label class="form-label small mb-1">Session</label>
+                    <select name="session" class="form-control form-control-sm">
+                        @foreach ($sessions as $s)
+                            <option value="{{ $s }}" {{ ($session ?? '') == $s ? 'selected' : '' }}>
+                                {{ $s }}
                             </option>
-                        @endfor
+                        @endforeach
                     </select>
                 </div>
 

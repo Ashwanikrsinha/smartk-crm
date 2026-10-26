@@ -42,6 +42,18 @@
             </div>
 
             <div class="col-lg-3 col-md-4">
+                <label class="form-label small mb-1">Team Member</label>
+                <select name="sp_id" class="form-control form-control-sm">
+                    <option value="">All Members</option>
+                    @foreach ($teamMembers as $tm)
+                        <option value="{{ $tm->id }}" {{ ($spId ?? request('sp_id')) == $tm->id ? 'selected' : '' }}>
+                            {{ $tm->username }} ({{ $tm->emp_code ?? '-' }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label small mb-1">Lead From</label>
                 <select name="lead_source_id" class="form-control form-control-sm">
                     <option value="">All Sources</option>
@@ -58,12 +70,12 @@
                 <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
             </div>
 
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label small mb-1">Date To</label>
                 <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-1 col-md-4">
                 <label class="form-label small mb-1">State</label>
                 <input type="text" name="state" class="form-control form-control-sm" value="{{ request('state') }}"
                     placeholder="e.g. Maharashtra">

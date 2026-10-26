@@ -134,15 +134,23 @@ class SchoolOpeningBalance extends Model
     /**
      * Scope query to all active opening balances for a given session.
      * Includes exact session_year records, plus any uncollected balances from past sessions
-     * that haven't been superseded by a newer record for that school.
+     * (or balances collected during this session) that haven't been superseded by a newer record for that school.
      */
     public function scopeForSession($query, int $sessionYear)
     {
-        return $query->where(function ($q) use ($sessionYear) {
+        $sessionStart = "{$sessionYear}-07-01";
+        $sessionEnd   = ($sessionYear + 1) . "-06-30";
+
+        return $query->where(function ($q) use ($sessionYear, $sessionStart, $sessionEnd) {
             $q->where('session_year', $sessionYear)
-              ->orWhere(function ($pastQ) use ($sessionYear) {
+              ->orWhere(function ($pastQ) use ($sessionYear, $sessionStart, $sessionEnd) {
                   $pastQ->where('session_year', '<', $sessionYear)
-                        ->where('opening_outstanding', '!=', 0)
+                        ->where(function ($cond) use ($sessionStart, $sessionEnd) {
+                            $cond->where('opening_outstanding', '!=', 0)
+                                 ->orWhereHas('collections', function ($cq) use ($sessionStart, $sessionEnd) {
+                                     $cq->whereBetween('collected_at', [$sessionStart, $sessionEnd]);
+                                 });
+                        })
                         ->whereNotIn('customer_id', function ($sub) use ($sessionYear) {
                             $sub->select('customer_id')
                                 ->from('school_opening_balances')

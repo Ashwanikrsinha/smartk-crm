@@ -29,15 +29,26 @@ class ReportsController extends Controller
         $teamIds = $user->teamMemberIds();
 
         // ── Filters ────────────────────────────────────────
-        $spId      = $request->input('sp_id');
-        $schoolId  = $request->input('school_id');
-        $leadSrcId = $request->input('lead_source_id');
-        $state     = $request->input('state');
-        $status    = $request->input('status');
-        $month     = $request->input('month');
-        $dateFrom  = $request->input('date_from');
-        $dateTo    = $request->input('date_to');
-        $year      = $request->input('year', date('Y'));
+        $spId         = $request->input('sp_id');
+        $schoolId     = $request->input('school_id');
+        $leadSrcId    = $request->input('lead_source_id');
+        $state        = $request->input('state');
+        $status       = $request->input('status');
+        $month        = $request->input('month');
+        $dateFrom     = $request->input('date_from');
+        $dateTo       = $request->input('date_to');
+        $sessionInput = $request->input('session', $request->input('year'));
+        $sessionRange = $this->sessionDateRange($sessionInput);
+        $session      = $sessionRange['session'];
+        $sessions     = $this->availableSessions();
+        $year         = $sessionRange['start_year'];
+
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = $spId ? User::find($spId) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : $teamIds;
+        if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
+            $filteredUserIds = array_values(array_intersect($filteredUserIds, $teamIds));
+        }
 
         // ── Build query ────────────────────────────────────
         $query = Invoice::with([
@@ -46,7 +57,7 @@ class ReportsController extends Controller
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
         ])
-            ->whereIn('user_id', $teamIds)
+            ->whereIn('user_id', $filteredUserIds)
             ->select(
                 'id',
                 'po_number',
@@ -65,7 +76,6 @@ class ReportsController extends Controller
                 'delivery_due_date'
             );
 
-        if ($spId)      $query->where('user_id', $spId);
         if ($schoolId)  $query->where('customer_id', $schoolId);
         if ($status)    $query->where('status', $status);
 
@@ -78,26 +88,20 @@ class ReportsController extends Controller
         if ($month) {
             $query->whereYear('invoice_date',  substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
-        } elseif ($dateFrom && $dateTo) {
-            $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
-            $query->whereYear('invoice_date', $year);
-        }
-
-        // ── Fetch opening balances for this session / year filter ───
-        $filterSessionYear = null;
-        if ($month) {
             $mYear  = (int) substr($month, 0, 4);
             $mMonth = (int) substr($month, 5, 2);
             $filterSessionYear = $mMonth >= 7 ? $mYear : $mYear - 1;
         } elseif ($dateFrom && $dateTo) {
+            $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
             $fromYear = (int) substr($dateFrom, 0, 4);
             $fromMonth = (int) substr($dateFrom, 5, 2);
             $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
         } else {
-            $filterSessionYear = (int) ($request->input('session_year', $year));
+            $query->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
+            $filterSessionYear = $year;
         }
 
+        // ── Fetch opening balances for this session / year filter ───
         $obQuery = \App\Models\SchoolOpeningBalance::with([
             'salesPerson:id,username,emp_code',
             'salesPerson.reportiveTo:id,username,emp_code',
@@ -106,12 +110,15 @@ class ReportsController extends Controller
         ])
         ->forSession($filterSessionYear);
 
-        if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
-            $obQuery->where(function($q) use ($teamIds) {
-                $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
-            });
+        if ($spId) {
+            $obQuery->whereIn('user_id', $filteredUserIds);
+        } else {
+            if (!auth()->user()->isAdmin() && !auth()->user()->isBusinessManager() && !auth()->user()->isAccounts()) {
+                $obQuery->where(function($q) use ($teamIds) {
+                    $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
+                });
+            }
         }
-        if ($spId)      $obQuery->where('user_id', $spId);
         if ($schoolId)  $obQuery->where('customer_id', $schoolId);
         if ($leadSrcId) $obQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $leadSrcId));
         if ($state)     $obQuery->whereHas('customer', fn($q) => $q->where('state', $state));
@@ -184,8 +191,46 @@ class ReportsController extends Controller
             'month',
             'dateFrom',
             'dateTo',
-            'year'
+            'year',
+            'session',
+            'sessions'
         ));
+    }
+
+    private function sessionDateRange(?string $sessionInput): array
+    {
+        if ($sessionInput && strpos($sessionInput, '-') !== false) {
+            $parts     = explode('-', $sessionInput);
+            $startYear = (int) $parts[0];
+        } elseif ($sessionInput && is_numeric($sessionInput)) {
+            $startYear = (int) $sessionInput;
+        } else {
+            $month     = (int) date('n');
+            $year      = (int) date('Y');
+            $startYear = ($month >= 7) ? $year : $year - 1;
+        }
+
+        $session = $startYear . '-' . ($startYear + 1);
+
+        return [
+            'session'    => $session,
+            'start_year' => $startYear,
+            'start_date' => "{$startYear}-07-01",
+            'end_date'   => ($startYear + 1) . "-06-30",
+        ];
+    }
+
+    private function availableSessions(): array
+    {
+        $currentStart = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
+        $sessions     = [];
+
+        for ($i = 0; $i <= 3; $i++) {
+            $start = $currentStart - $i;
+            $sessions[] = $start . '-' . ($start + 1);
+        }
+
+        return $sessions;
     }
 
     // -------------------------------------------------------

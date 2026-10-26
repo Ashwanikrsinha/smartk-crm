@@ -113,6 +113,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Get IDs of self and all team members reporting to this user (recursive / direct).
+     *
+     * @return int[]
+     */
+    public function subordinateAndSelfIds(): array
+    {
+        $ids = [$this->id];
+        $directReports = User::where('reportive_id', $this->id)->pluck('id')->toArray();
+        if (!empty($directReports)) {
+            $ids = array_merge($ids, $directReports);
+            $secondLevel = User::whereIn('reportive_id', $directReports)->pluck('id')->toArray();
+            if (!empty($secondLevel)) {
+                $ids = array_merge($ids, $secondLevel);
+            }
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
      * Convenience: is this user a Sales Manager?
      */
     public function isSalesManager(): bool

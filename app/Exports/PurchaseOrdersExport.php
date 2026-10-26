@@ -112,6 +112,29 @@ class PurchaseOrdersExport implements
         $teamIds = $this->user->teamMemberIds();
         $f       = $this->filters;
 
+        // ── Resolve SP / Manager hierarchy ────────────────
+        $selectedMember  = !empty($f['sp_id']) ? User::find($f['sp_id']) : null;
+        $filteredUserIds = $selectedMember ? $selectedMember->subordinateAndSelfIds() : $teamIds;
+        $currentUser     = $this->user ?? auth()->user();
+        if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isBusinessManager() && !$currentUser->isAccounts()) {
+            $filteredUserIds = array_values(array_intersect($filteredUserIds, $teamIds));
+        }
+
+        // ── Session date range ────────────────────────────
+        $sessionInput = $f['session'] ?? $f['year'] ?? null;
+        if ($sessionInput && strpos((string) $sessionInput, '-') !== false) {
+            $parts     = explode('-', (string) $sessionInput);
+            $startYear = (int) $parts[0];
+        } elseif ($sessionInput && is_numeric($sessionInput)) {
+            $startYear = (int) $sessionInput;
+        } else {
+            $m         = (int) date('n');
+            $y         = (int) date('Y');
+            $startYear = ($m >= 7) ? $y : $y - 1;
+        }
+        $sessionStartDate = "{$startYear}-07-01";
+        $sessionEndDate   = ($startYear + 1) . "-06-30";
+
         // ── 1. Fetch Invoices ───────────────────────────────────────────────
         $query = Invoice::with([
             'user:id,username,reportive_id,emp_code',
@@ -122,9 +145,8 @@ class PurchaseOrdersExport implements
             'invoiceItems.product.category:id,name',
             'invoiceItems.unit:id,name',
             'dispatches.items:dispatch_id,invoice_item_id,quantity_dispatched',
-        ])->whereIn('user_id', $teamIds);
+        ])->whereIn('user_id', $filteredUserIds);
 
-        if (!empty($f['sp_id']))     $query->where('user_id', $f['sp_id']);
         if (!empty($f['school_id'])) $query->where('customer_id', $f['school_id']);
         if (!empty($f['status']))    $query->where('status', $f['status']);
 
@@ -137,28 +159,22 @@ class PurchaseOrdersExport implements
         if (!empty($f['month'])) {
             $query->whereYear('invoice_date',  substr($f['month'], 0, 4))
                 ->whereMonth('invoice_date', substr($f['month'], 5, 2));
+            $mYear  = (int) substr($f['month'], 0, 4);
+            $mMonth = (int) substr($f['month'], 5, 2);
+            $filterSessionYear = $mMonth >= 7 ? $mYear : $mYear - 1;
         } elseif (!empty($f['date_from']) && !empty($f['date_to'])) {
             $query->whereBetween('invoice_date', [$f['date_from'], $f['date_to']]);
+            $fromYear  = (int) substr($f['date_from'], 0, 4);
+            $fromMonth = (int) substr($f['date_from'], 5, 2);
+            $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
         } else {
-            $query->whereYear('invoice_date', $f['year'] ?? date('Y'));
+            $query->whereBetween('invoice_date', [$sessionStartDate, $sessionEndDate]);
+            $filterSessionYear = $startYear;
         }
 
         $invoices = $query->orderByDesc('invoice_date')->get();
 
         // ── 2. Fetch Opening Balances for matching session ───────────────────
-        $filterSessionYear = null;
-        if (!empty($f['month'])) {
-            $mYear  = (int) substr($f['month'], 0, 4);
-            $mMonth = (int) substr($f['month'], 5, 2);
-            $filterSessionYear = $mMonth >= 7 ? $mYear : $mYear - 1;
-        } elseif (!empty($f['date_from']) && !empty($f['date_to'])) {
-            $fromYear  = (int) substr($f['date_from'], 0, 4);
-            $fromMonth = (int) substr($f['date_from'], 5, 2);
-            $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
-        } else {
-            $filterSessionYear = (int) ($f['session_year'] ?? $f['year'] ?? date('Y'));
-        }
-
         $obQuery = SchoolOpeningBalance::with([
             'salesPerson:id,username,emp_code',
             'salesPerson.reportiveTo:id,username,emp_code',
@@ -167,13 +183,15 @@ class PurchaseOrdersExport implements
         ])
         ->forSession($filterSessionYear);
 
-        $currentUser = $this->user ?? auth()->user();
-        if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isBusinessManager() && !$currentUser->isAccounts()) {
-            $obQuery->where(function($q) use ($teamIds) {
-                $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
-            });
+        if (!empty($f['sp_id'])) {
+            $obQuery->whereIn('user_id', $filteredUserIds);
+        } else {
+            if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isBusinessManager() && !$currentUser->isAccounts()) {
+                $obQuery->where(function($q) use ($teamIds) {
+                    $q->whereIn('user_id', $teamIds)->orWhereNull('user_id');
+                });
+            }
         }
-        if (!empty($f['sp_id']))          $obQuery->where('user_id', $f['sp_id']);
         if (!empty($f['school_id']))      $obQuery->where('customer_id', $f['school_id']);
         if (!empty($f['lead_source_id'])) $obQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $f['lead_source_id']));
         if (!empty($f['state']))          $obQuery->whereHas('customer', fn($q) => $q->where('state', $f['state']));
