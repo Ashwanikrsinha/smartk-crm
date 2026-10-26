@@ -59,7 +59,8 @@
                 {
                     data: 'user_name_emp_code',
                     name: 'user_name_emp_code',
-                    orderable: false
+                    orderable: false,
+                    searchable: false
                 },
             ];
 

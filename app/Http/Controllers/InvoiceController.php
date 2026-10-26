@@ -153,6 +153,14 @@ class InvoiceController extends Controller
             ]);
 
             $invoice->createInvoiceItems($request);
+
+            $itemsTotal = (float) $invoice->invoiceItems()->sum('amount');
+            if ($itemsTotal > 0 && abs($itemsTotal - (float) $invoice->amount) > 0.01) {
+                $invoice->updateQuietly([
+                    'amount'            => $itemsTotal,
+                    'pending_po_amount' => max(0, $itemsTotal - (float) ($invoice->billing_amount ?? 0)),
+                ]);
+            }
             $invoice->createPdcs($request);
 
             if ($request->filled('attachments.0')) {
@@ -270,6 +278,14 @@ class InvoiceController extends Controller
 
             $invoice->invoiceItems()->delete();
             $invoice->createInvoiceItems($request);
+
+            $itemsTotal = (float) $invoice->invoiceItems()->sum('amount');
+            if ($itemsTotal > 0 && abs($itemsTotal - (float) $invoice->amount) > 0.01) {
+                $invoice->updateQuietly([
+                    'amount'            => $itemsTotal,
+                    'pending_po_amount' => max(0, $itemsTotal - (float) ($invoice->billing_amount ?? 0)),
+                ]);
+            }
             //  Log::info("requeiuyreuest all====== at inside  txn === ",['req'=>$request->all()]);
 
             $invoice->pdcs()->delete();

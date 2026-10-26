@@ -182,7 +182,7 @@
                                             <input type="number" step="0.01"
                                                 class="form-control form-control-sm gst-input"
                                                 data-id="{{ $row->id }}"
-                                                value="0.00"
+                                                value="{{ $row->gst_amount !== null && (float)$row->gst_amount > 0 ? (float)$row->gst_amount : '' }}"
                                                 placeholder="0.00">
                                             <small class="text-muted d-block">Set total GST for this PO</small>
                                         </div>
@@ -202,6 +202,7 @@
                                             <label class="form-label small mb-1">Payment Mode</label>
                                             <select class="form-control form-control-sm payment-mode"
                                                 data-id="{{ $row->id }}">
+                                                <option value="">Select Mode...</option>
                                                 <option value="cheque">Cheque</option>
                                                 <option value="neft">NEFT</option>
                                                 <option value="upi">UPI</option>
@@ -407,8 +408,9 @@
                 var $err = $('.entry-error-' + id);
 
                 var billedAmt = parseFloat($('.billed-input[data-id="' + id + '"]').val()) || 0;
-                var gstAmt = parseFloat($('.gst-input[data-id="' + id + '"]').val());
-                if (isNaN(gstAmt) || gstAmt < 0) gstAmt = null;
+                var rawGst = $('.gst-input[data-id="' + id + '"]').val();
+                var gstAmt = (rawGst !== undefined && rawGst !== null && rawGst.toString().trim() !== '') ? parseFloat(rawGst) : null;
+                if (gstAmt !== null && (isNaN(gstAmt) || gstAmt < 0)) gstAmt = null;
                 var collectedAmt = parseFloat($('.collected-input[data-id="' + id + '"]').val()) || 0;
                 var entryDate = $('.entry-date[data-id="' + id + '"]').val();
 
@@ -469,7 +471,19 @@
                             '<i class="feather icon-save me-1"></i> Save Entry');
                     },
                     error: function(xhr) {
-                        var msg = xhr.responseJSON?.error || 'Save failed. Please try again.';
+                        var msg = 'Save failed. Please try again.';
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.errors) {
+                                var firstKey = Object.keys(xhr.responseJSON.errors)[0];
+                                if (firstKey && xhr.responseJSON.errors[firstKey][0]) {
+                                    msg = xhr.responseJSON.errors[firstKey][0];
+                                }
+                            } else if (xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            } else if (xhr.responseJSON.error) {
+                                msg = xhr.responseJSON.error;
+                            }
+                        }
                         $err.text(msg).removeClass('d-none');
                         $btn.prop('disabled', false).html(
                             '<i class="feather icon-save me-1"></i> Save Entry');

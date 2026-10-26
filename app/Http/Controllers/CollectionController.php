@@ -7,8 +7,10 @@ use App\Models\BillingEntry;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Models\Customer;
+use App\Models\SchoolOpeningBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
@@ -58,14 +60,21 @@ class CollectionController extends Controller
             ->orderByDesc('invoice_date')
             ->get();
 
+        $obQuery = SchoolOpeningBalance::forSession($year)
+            ->when($spId,     fn($q) => $q->where('user_id', $spId))
+            ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
+
+        $totalOpeningCollected   = (float) $obQuery->sum('opening_collected');
+        $totalOpeningOutstanding = (float) $obQuery->sum('opening_outstanding');
+
         $totals = [
             'po_amount'        => $rows->sum('amount'),
             'billing_amount'   => $rows->sum('billing_amount'),
             'gst_amount'       => $rows->sum('gst_amount'),
             'net_billed'       => $rows->sum(fn($r) => max(0, (float)$r->billing_amount - (float)$r->gst_amount)),
             'pending_po'       => $rows->sum('pending_po_amount'),
-            'collected'        => $rows->sum('collected_amount'),
-            'outstanding'      => $rows->sum('outstanding_amount'),
+            'collected'        => $rows->sum('collected_amount') + $totalOpeningCollected,
+            'outstanding'      => $rows->sum('outstanding_amount') + $totalOpeningOutstanding,
         ];
 
         $allSps  = User::salesPersons()->active()->orderBy('username')->get(['id', 'username', 'emp_code']);
@@ -100,7 +109,7 @@ class CollectionController extends Controller
             'collections.*.billed_amount'       => 'nullable|numeric',
             'collections.*.collected_amount'    => 'nullable|numeric',
             'collections.*.gst_amount'          => 'nullable|numeric',
-            'payment_mode'                      => 'required|in:cheque,neft,upi,cash',
+            'payment_mode'                      => 'nullable|in:cheque,neft,upi,cash',
             'collected_at'                      => 'required|date',
             'billing_source'                    => 'nullable|in:manual,crm',
             'billing_reference'                 => 'nullable|string|max:100',
@@ -176,7 +185,11 @@ class CollectionController extends Controller
             'billed_amount'     => 'nullable|numeric',
             'collected_amount'  => 'nullable|numeric',
             'gst_amount'        => 'nullable|numeric',
-            'payment_mode'      => 'required|in:cheque,neft,upi,cash',
+            'payment_mode'      => [
+                'nullable',
+                Rule::requiredIf(fn() => (float) ($request->collected_amount ?? 0) != 0.0),
+                'in:cheque,neft,upi,cash',
+            ],
             'entry_date'        => 'required|date',
             'billing_source'    => 'nullable|in:manual,crm',
             'billing_reference' => 'nullable|string|max:100',

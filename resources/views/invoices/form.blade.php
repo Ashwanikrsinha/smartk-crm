@@ -469,10 +469,26 @@
             // ─── Item rows: Category → Product chain ────────────
             let itemIndex = {{ isset($invoice) ? $invoice->invoiceItems->count() : 1 }};
 
+            function reindexItemRows() {
+                $('#items-body tr').each(function(i) {
+                    $(this).find('td:first span').text(i + 1);
+                    $(this).find('.category-select').attr('name', `categories[${i}]`);
+                    $(this).find('.product-select').attr('name', `products[${i}]`);
+                    $(this).find('.mrp-input').attr('name', `mrps[${i}]`);
+                    $(this).find('.qty-input').attr('name', `quantities[${i}]`);
+                    $(this).find('.discount-input').attr('name', `discounts[${i}]`);
+                    $(this).find('.rate-input').attr('name', `rates[${i}]`);
+                    $(this).find('.amount-input').attr('name', `amounts[${i}]`);
+                    $(this).find('input[name^="descriptions"]').attr('name', `descriptions[${i}]`);
+                    $(this).find('input[name^="units"]').attr('name', `units[${i}]`);
+                });
+            }
+
             $('#add-item-row').on('click', function() {
-                $.get(`/invoices/item-row-template?idx=${itemIndex}`, function(html) {
+                const nextIdx = itemIndex++;
+                $.get(`/invoices/item-row-template?idx=${nextIdx}`, function(html) {
                     $('#items-body').append(html);
-                    itemIndex++;
+                    reindexItemRows();
                 });
             });
 
@@ -480,6 +496,7 @@
             $(document).on('click', '.remove-item-row', function() {
                 if ($('#items-body tr').length === 1) return; // keep at least 1
                 $(this).closest('tr').remove();
+                reindexItemRows();
                 recalculateTotal();
             });
 
@@ -588,7 +605,13 @@
             }
 
             // ─── Init on page load ───────────────────────────────
+            reindexItemRows();
             recalculateTotal();
+
+            $('form').on('submit', function() {
+                reindexItemRows();
+                recalculateTotal();
+            });
 
         });
     </script>

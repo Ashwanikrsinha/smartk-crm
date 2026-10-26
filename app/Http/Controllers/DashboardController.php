@@ -459,9 +459,15 @@ class DashboardController extends Controller
         }
 
         $targetAmount = (float) $targetQuery->sum('target_amount');
-        $targetAchieved = (float) ($invoiceAchievedQuery
-            ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
-            ->value('total_achieved') ?? 0);
+        if ($month) {
+            $tYear  = (int) substr($month, 0, 4);
+            $tMonth = (int) substr($month, 5, 2);
+            $targetAchieved = Target::calculateAchievedForPeriod($targetUsers, $tMonth, $tYear);
+        } elseif ($dateFrom && $dateTo) {
+            $targetAchieved = Target::calculateAchievedForPeriod($targetUsers, null, null, $dateFrom, $dateTo);
+        } else {
+            $targetAchieved = Target::calculateAchievedForPeriod($targetUsers, null, null, null, null, $sessionRange);
+        }
 
         $targetPct = $targetAmount > 0 ? round(($targetAchieved / $targetAmount) * 100) : 0;
         $targetPctColor = $targetPct >= 100 ? 'success' : ($targetPct >= 60 ? 'warning' : 'danger');
@@ -877,12 +883,20 @@ class DashboardController extends Controller
             ->get()
             ->keyBy(fn($r) => $r->yr . '-' . str_pad((string) $r->mo, 2, '0', STR_PAD_LEFT));
 
+        $obRows = \App\Models\OpeningBalanceCollection::whereHas('openingBalance', fn($q) => $q->whereIn('user_id', $userIds))
+            ->where('payment_mode', '!=', 'return')
+            ->whereBetween('collected_at', [$sessionRange['start_date'], $sessionRange['end_date']])
+            ->selectRaw('YEAR(collected_at) as yr, MONTH(collected_at) as mo, SUM(collected_amount) as total_ob_collected')
+            ->groupBy('yr', 'mo')
+            ->get()
+            ->keyBy(fn($r) => $r->yr . '-' . str_pad((string) $r->mo, 2, '0', STR_PAD_LEFT));
+
         $labels = $poData = $collectionData = [];
         foreach ($monthSeq as $seq) {
             $key = $seq['year'] . '-' . str_pad((string) $seq['month'], 2, '0', STR_PAD_LEFT);
             $labels[]         = $seq['label'];
             $poData[]         = (float) ($rows[$key]->total_po        ?? 0);
-            $collectionData[] = (float) ($rows[$key]->total_collected ?? 0);
+            $collectionData[] = (float) (($rows[$key]->total_collected ?? 0) + ($obRows[$key]->total_ob_collected ?? 0));
         }
 
         return compact('labels', 'poData', 'collectionData');

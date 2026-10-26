@@ -335,15 +335,28 @@ class Invoice extends Model
 
     public function createInvoiceItems($request): void
     {
+        if (empty($request->products) || !is_array($request->products)) {
+            return;
+        }
+
         foreach ($request->products as $i => $product) {
+            if (empty($product)) {
+                continue;
+            }
+
+            $rate     = (float) ($request->rates[$i] ?? 0);
+            $qty      = (float) ($request->quantities[$i] ?? 1);
+            $discount = (float) ($request->discounts[$i] ?? 0);
+            $amount   = isset($request->amounts[$i]) ? (float) $request->amounts[$i] : round($qty * $rate, 2);
+
             $this->invoiceItems()->create([
                 'product_id'  => $product,
                 'description' => $request->descriptions[$i] ?? '',
-                'unit_id'     => $request->units[$i],
-                'quantity'    => $request->quantities[$i],
-                'rate'        => $request->rates[$i],
-                'discount'    => $request->discounts[$i],
-                'amount'      => $request->amounts[$i],
+                'unit_id'     => $request->units[$i] ?? 1,
+                'quantity'    => $qty,
+                'rate'        => $rate,
+                'discount'    => $discount,
+                'amount'      => $amount,
             ]);
         }
     }

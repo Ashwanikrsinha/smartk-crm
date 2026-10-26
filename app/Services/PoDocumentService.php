@@ -143,9 +143,9 @@ class PoDocumentService
 
         return [
             'po_number'           => $invoice->po_number,
-            'po_date'             => $invoice->approved_at
-                ? $invoice->approved_at->format('d F, Y')
-                : now()->format('d F, Y'),
+            'po_date'             => $invoice->invoice_date
+                ? $invoice->invoice_date->format('d F, Y')
+                : ($invoice->approved_at ? $invoice->approved_at->format('d F, Y') : now()->format('d F, Y')),
             'school_name'         => $customer->name,
             'co_branding'         => (bool) $invoice->co_branding,
             'school_address'      => $customer->address ?? '',

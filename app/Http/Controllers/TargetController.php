@@ -39,11 +39,7 @@ class TargetController extends Controller
             $totalTarget = (float) $allMatchingTargets->sum('target_amount');
             $totalAchieved = 0.0;
             foreach ($allMatchingTargets as $t) {
-                $totalAchieved += (float) (Invoice::where('user_id', $t->user_id)
-                    ->whereMonth('invoice_date', $t->month)
-                    ->whereYear('invoice_date',  $t->year)
-                    ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
-                    ->value('total_achieved') ?? 0);
+                $totalAchieved += $t->achievedAmount();
             }
             $totalPct = $totalTarget > 0 ? round(($totalAchieved / $totalTarget) * 100) : 0;
             $totalPctColor = $totalPct >= 100 ? 'success' : ($totalPct >= 60 ? 'warning' : 'danger');
@@ -55,19 +51,10 @@ class TargetController extends Controller
                 ->editColumn('target_amount', fn($t) => '₹' . number_format($t->target_amount, 2))
                 ->editColumn('month', fn($t) => date('F', mktime(0, 0, 0, $t->month, 1)) . ' ' . $t->year)
                 ->addColumn('achieved', function ($t) {
-                    $achieved = (float) (Invoice::where('user_id', $t->user_id)
-                        ->whereMonth('invoice_date', $t->month)
-                        ->whereYear('invoice_date',  $t->year)
-                        ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
-                        ->value('total_achieved') ?? 0);
-                    return '₹' . number_format($achieved, 2);
+                    return '₹' . number_format($t->achievedAmount(), 2);
                 })
                 ->addColumn('achievement_pct', function ($t) {
-                    $achieved = (float) (Invoice::where('user_id', $t->user_id)
-                        ->whereMonth('invoice_date', $t->month)
-                        ->whereYear('invoice_date',  $t->year)
-                        ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
-                        ->value('total_achieved') ?? 0);
+                    $achieved = $t->achievedAmount();
                     $pct = $t->target_amount > 0
                         ? round(($achieved / $t->target_amount) * 100)
                         : 0;
@@ -132,12 +119,8 @@ class TargetController extends Controller
 
         $target->load('user:id,username');
 
-        // Achieved amount this month based on Net Billed
-        $achieved = (float) (Invoice::where('user_id', $target->user_id)
-            ->whereMonth('invoice_date', $target->month)
-            ->whereYear('invoice_date',  $target->year)
-            ->selectRaw('SUM(GREATEST(0, billing_amount - COALESCE(gst_amount, 0))) as total_achieved')
-            ->value('total_achieved') ?? 0);
+        // Achieved amount this month based on Net Billed from billed_at date
+        $achieved = $target->achievedAmount();
 
         $pct = $target->target_amount > 0
             ? round(($achieved / $target->target_amount) * 100)

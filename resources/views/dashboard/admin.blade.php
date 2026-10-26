@@ -179,7 +179,7 @@
                         @foreach ($recentUsers as $u)
                             <tr>
                                 <td>{{ $u->username }}</td>
-                                <td><span class="badge bg-primary">{{ $u->role->name }}</span></td>
+                                <td><span class="badge bg-primary">{{ $u->role?->name ?? '—' }}</span></td>
                                 <td>{{ $u->reportiveTo?->username ?? '—' }}</td>
                                 <td>
                                     @can('update', auth()->user())

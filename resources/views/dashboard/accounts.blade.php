@@ -200,7 +200,7 @@
                                             name="collections[{{ $row->id }}][gst_amount]"
                                             class="form-control form-control-sm text-end gst-input"
                                             style="width: 100px; color:#6f42c1"
-                                            value="{{ number_format((float) (0), 2, '.', '') }}"
+                                            value=""
                                             data-invoice-id="{{ $row->id }}"
                                             placeholder="0.00">
                                     </div>
