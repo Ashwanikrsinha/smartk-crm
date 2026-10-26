@@ -79,7 +79,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $query->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $query->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
@@ -236,7 +236,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $poQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $poQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
@@ -326,7 +326,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $baseQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $baseQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
@@ -342,7 +342,7 @@ class DashboardController extends Controller
             'customer:id,name,school_code'
         ])
             ->whereIn('user_id', $filteredUserIds)
-            ->forSession($year)
+            ->when($year !== null, fn($q) => $q->forSession($year))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
         $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
@@ -365,7 +365,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $signedSchoolsQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $signedSchoolsQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
         $signedSchools = $signedSchoolsQuery->distinct('customer_id')->count('customer_id');
@@ -380,7 +380,9 @@ class DashboardController extends Controller
                     ->whereMonth('invoice_date', substr($month, 5, 2)),
                 fn($q) => $dateFrom && $dateTo
                     ? $q->whereBetween('invoice_date', [$dateFrom, $dateTo])
-                    : $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                    : ($sessionRange['start_date'] && $sessionRange['end_date']
+                        ? $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                        : $q)
             )
             ->select(
                 'id',
@@ -529,7 +531,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $baseQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $baseQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
 
@@ -542,7 +544,7 @@ class DashboardController extends Controller
         // Opening balance for this SP in this session
         $obQuery = \App\Models\SchoolOpeningBalance::with('customer:id,name,school_code')
             ->where('user_id', $user->id)
-            ->forSession($year);
+            ->when($year !== null, fn($q) => $q->forSession($year));
 
         $totalOpeningAmount      = (float) $obQuery->sum('opening_amount');
         $totalOpeningBilled      = (float) $obQuery->sum('opening_billed');
@@ -570,7 +572,9 @@ class DashboardController extends Controller
                     ->whereMonth('invoice_date', substr($month, 5, 2)),
                 fn($q) => $dateFrom && $dateTo
                     ? $q->whereBetween('invoice_date', [$dateFrom, $dateTo])
-                    : $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                    : ($sessionRange['start_date'] && $sessionRange['end_date']
+                        ? $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                        : $q)
             )
             ->select('id', 'po_number', 'customer_id', 'amount', 'billing_amount', 'collected_amount', 'outstanding_amount', 'status')
             ->orderByDesc('invoice_date')
@@ -578,7 +582,10 @@ class DashboardController extends Controller
 
         $pendingPos = Invoice::where('user_id', $user->id)
             ->whereIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_SUBMITTED])
-            ->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+            ->when(
+                $sessionRange['start_date'] && $sessionRange['end_date'],
+                fn($q) => $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+            )
             ->orderByDesc('invoice_date')
             ->get(['id', 'po_number', 'invoice_date', 'amount', 'status']);
 
@@ -641,7 +648,9 @@ class DashboardController extends Controller
                     ->whereMonth('invoice_date', substr($month, 5, 2)),
                 fn($q) => $dateFrom && $dateTo
                     ? $q->whereBetween('invoice_date', [$dateFrom, $dateTo])
-                    : $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                    : ($sessionRange['start_date'] && $sessionRange['end_date']
+                        ? $q->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+                        : $q)
             )
             ->select(
                 'id',
@@ -665,7 +674,7 @@ class DashboardController extends Controller
 
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
-            ->forSession($year)
+            ->when($year !== null, fn($q) => $q->forSession($year))
             ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($schoolId, fn($q) => $q->where('customer_id', $schoolId));
 
@@ -749,7 +758,7 @@ class DashboardController extends Controller
                 ->whereMonth('invoice_date', substr($month, 5, 2));
         } elseif ($dateFrom && $dateTo) {
             $poQuery->whereBetween('invoice_date', [$dateFrom, $dateTo]);
-        } else {
+        } elseif ($sessionRange['start_date'] && $sessionRange['end_date']) {
             $poQuery->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
         }
         if ($state)        $poQuery->whereHas('customer', fn($q) => $q->where('state', $state));
@@ -764,7 +773,7 @@ class DashboardController extends Controller
 
         // Add opening balance carry-forward
         $obQuery = \App\Models\SchoolOpeningBalance::with(['salesPerson:id,username,emp_code', 'customer:id,name,school_code'])
-            ->forSession($year)
+            ->when($year !== null, fn($q) => $q->forSession($year))
             ->when($filteredUserIds, fn($q) => $q->whereIn('user_id', $filteredUserIds))
             ->when($state, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('state', $state)))
             ->when($leadSourceId, fn($q) => $q->whereHas('customer', fn($sq) => $sq->where('lead_source_id', $leadSourceId)));
@@ -841,6 +850,27 @@ class DashboardController extends Controller
      */
     private function sessionDateRange(?string $sessionInput): array
     {
+        if ($sessionInput === 'all') {
+            return [
+                'session'    => 'all',
+                'start_date' => null,
+                'end_date'   => null,
+                'start_year' => null,
+                'end_year'   => null,
+            ];
+        }
+
+        if ($sessionInput && str_starts_with($sessionInput, 'year_')) {
+            $y = (int) substr($sessionInput, 5);
+            return [
+                'session'    => $sessionInput,
+                'start_date' => sprintf('%04d-01-01', $y),
+                'end_date'   => sprintf('%04d-12-31', $y),
+                'start_year' => $y,
+                'end_year'   => $y,
+            ];
+        }
+
         if (empty($sessionInput)) {
             $session = $this->currentSession();
         } elseif (preg_match('/^(\d{4})-(\d{4})$/', $sessionInput, $m)) {
@@ -871,18 +901,30 @@ class DashboardController extends Controller
     private function availableSessions(): array
     {
         $currStart = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
-        $sessions = [];
+        $sessions = ['all'];
         for ($y = $currStart + 1; $y >= $currStart - 4; $y--) {
             $sessions[] = $y . '-' . ($y + 1);
         }
+        $sessions[] = 'year_' . date('Y');
+        $sessions[] = 'year_' . (date('Y') - 1);
         return $sessions;
     }
 
     /** PO + Collection monthly trend (for Admin, Manager, SP) across July to June */
     private function monthlyTrend(array $userIds, array $sessionRange): array
     {
-        $startYear = $sessionRange['start_year'];
-        $endYear   = $sessionRange['end_year'];
+        if (empty($sessionRange['start_year'])) {
+            $fallback   = $this->sessionDateRange($this->currentSession());
+            $startYear  = $fallback['start_year'];
+            $endYear    = $fallback['end_year'];
+            $startDate  = $fallback['start_date'];
+            $endDate    = $fallback['end_date'];
+        } else {
+            $startYear  = $sessionRange['start_year'];
+            $endYear    = $sessionRange['end_year'];
+            $startDate  = $sessionRange['start_date'];
+            $endDate    = $sessionRange['end_date'];
+        }
 
         $monthSeq = [];
         for ($m = 7; $m <= 12; $m++) {
@@ -894,7 +936,7 @@ class DashboardController extends Controller
 
         $rows = Invoice::whereIn('user_id', $userIds)
             ->where('status', Invoice::STATUS_APPROVED)
-            ->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+            ->whereBetween('invoice_date', [$startDate, $endDate])
             ->selectRaw('YEAR(invoice_date) as yr, MONTH(invoice_date) as mo, SUM(amount) as total_po, SUM(collected_amount) as total_collected')
             ->groupBy('yr', 'mo')
             ->get()
@@ -902,7 +944,7 @@ class DashboardController extends Controller
 
         $obRows = \App\Models\OpeningBalanceCollection::whereHas('openingBalance', fn($q) => $q->whereIn('user_id', $userIds))
             ->where('payment_mode', '!=', 'return')
-            ->whereBetween('collected_at', [$sessionRange['start_date'], $sessionRange['end_date']])
+            ->whereBetween('collected_at', [$startDate, $endDate])
             ->selectRaw('YEAR(collected_at) as yr, MONTH(collected_at) as mo, SUM(collected_amount) as total_ob_collected')
             ->groupBy('yr', 'mo')
             ->get()
@@ -922,8 +964,18 @@ class DashboardController extends Controller
     /** PO-only monthly trend (for Marketing — no collection data) across July to June */
     private function marketingMonthlyTrend(array $sessionRange): array
     {
-        $startYear = $sessionRange['start_year'];
-        $endYear   = $sessionRange['end_year'];
+        if (empty($sessionRange['start_year'])) {
+            $fallback  = $this->sessionDateRange($this->currentSession());
+            $startYear = $fallback['start_year'];
+            $endYear   = $fallback['end_year'];
+            $startDate = $fallback['start_date'];
+            $endDate   = $fallback['end_date'];
+        } else {
+            $startYear = $sessionRange['start_year'];
+            $endYear   = $sessionRange['end_year'];
+            $startDate = $sessionRange['start_date'];
+            $endDate   = $sessionRange['end_date'];
+        }
 
         $monthSeq = [];
         for ($m = 7; $m <= 12; $m++) {
@@ -934,7 +986,7 @@ class DashboardController extends Controller
         }
 
         $rows = Invoice::where('status', Invoice::STATUS_APPROVED)
-            ->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']])
+            ->whereBetween('invoice_date', [$startDate, $endDate])
             ->selectRaw('YEAR(invoice_date) as yr, MONTH(invoice_date) as mo, SUM(amount) as total_po')
             ->groupBy('yr', 'mo')
             ->get()

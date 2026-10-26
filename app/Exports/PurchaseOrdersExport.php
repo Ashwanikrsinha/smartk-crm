@@ -121,19 +121,8 @@ class PurchaseOrdersExport implements
         }
 
         // ── Session date range ────────────────────────────
-        $sessionInput = $f['session'] ?? $f['year'] ?? null;
-        if ($sessionInput && strpos((string) $sessionInput, '-') !== false) {
-            $parts     = explode('-', (string) $sessionInput);
-            $startYear = (int) $parts[0];
-        } elseif ($sessionInput && is_numeric($sessionInput)) {
-            $startYear = (int) $sessionInput;
-        } else {
-            $m         = (int) date('n');
-            $y         = (int) date('Y');
-            $startYear = ($m >= 7) ? $y : $y - 1;
-        }
-        $sessionStartDate = "{$startYear}-07-01";
-        $sessionEndDate   = ($startYear + 1) . "-06-30";
+        $sessionInput = $f['session'] ?? $f['year'] ?? 'all';
+        $filterSessionYear = null;
 
         // ── 1. Fetch Invoices ───────────────────────────────────────────────
         $query = Invoice::with([
@@ -167,12 +156,22 @@ class PurchaseOrdersExport implements
             $fromYear  = (int) substr($f['date_from'], 0, 4);
             $fromMonth = (int) substr($f['date_from'], 5, 2);
             $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
-        } else {
+        } elseif ($sessionInput && str_starts_with((string) $sessionInput, 'year_')) {
+            $calYear = (int) substr((string) $sessionInput, 5);
+            $query->whereYear('invoice_date', $calYear);
+            $filterSessionYear = $calYear;
+        } elseif ($sessionInput && $sessionInput !== 'all') {
+            if (strpos((string) $sessionInput, '-') !== false) {
+                $parts     = explode('-', (string) $sessionInput);
+                $startYear = (int) $parts[0];
+            } else {
+                $startYear = (int) $sessionInput;
+            }
+            $sessionStartDate = "{$startYear}-07-01";
+            $sessionEndDate   = ($startYear + 1) . "-06-30";
             $query->whereBetween('invoice_date', [$sessionStartDate, $sessionEndDate]);
             $filterSessionYear = $startYear;
         }
-
-        $invoices = $query->orderByDesc('invoice_date')->get();
 
         // ── 2. Fetch Opening Balances for matching session ───────────────────
         $obQuery = SchoolOpeningBalance::with([
@@ -180,8 +179,11 @@ class PurchaseOrdersExport implements
             'salesPerson.reportiveTo:id,username,emp_code',
             'customer:id,name,school_code,state,city,lead_source_id,email,phone_number',
             'customer.leadSource:id,name',
-        ])
-        ->forSession($filterSessionYear);
+        ]);
+
+        if ($filterSessionYear !== null) {
+            $obQuery->forSession($filterSessionYear);
+        }
 
         if (!empty($f['sp_id'])) {
             $obQuery->whereIn('user_id', $filteredUserIds);
@@ -196,7 +198,9 @@ class PurchaseOrdersExport implements
         if (!empty($f['lead_source_id'])) $obQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $f['lead_source_id']));
         if (!empty($f['state']))          $obQuery->whereHas('customer', fn($q) => $q->where('state', $f['state']));
 
-        $openingBalances = $obQuery->get();
+        $recordType      = $f['record_type'] ?? 'all';
+        $invoices        = ($recordType !== 'opening_balance') ? $query->orderByDesc('invoice_date')->get() : collect();
+        $openingBalances = ($recordType !== 'po') ? $obQuery->get() : collect();
 
         // ── 3. Build Export Rows ─────────────────────────────────────────────
         $rows = collect();

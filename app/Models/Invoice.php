@@ -191,7 +191,7 @@ class Invoice extends Model
      */
     public function getPoAmountAttribute(): float
     {
-        return (float) $this->amount;
+        return (float) ($this->attributes['po_amount'] ?? $this->amount ?? 0);
     }
 
     /**
@@ -210,6 +210,9 @@ class Invoice extends Model
      */
     public function getPendingPoAmountAttribute(): float
     {
+        if (isset($this->attributes['pending_po_amount'])) {
+            return (float) $this->attributes['pending_po_amount'];
+        }
         return $this->po_amount - $this->billing_amount;
     }
 

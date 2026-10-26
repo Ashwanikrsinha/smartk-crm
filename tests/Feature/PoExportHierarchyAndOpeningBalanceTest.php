@@ -55,8 +55,8 @@ class PoExportHierarchyAndOpeningBalanceTest extends TestCase
         ]);
 
         $this->customer = Customer::create([
-            'name'        => 'Hierarchy School ' . rand(100, 999),
-            'school_code' => 'SCH-HIER-' . rand(100, 999),
+            'name'        => 'Hierarchy School ' . uniqid(),
+            'school_code' => 'SCH-HIER-' . uniqid(),
             'address'     => '456 MG Road',
             'city'        => 'Delhi',
             'state'       => 'Delhi',
@@ -263,5 +263,126 @@ class PoExportHierarchyAndOpeningBalanceTest extends TestCase
         $invoice->refresh();
         $this->assertNotNull($invoice->po_document_path);
         $this->assertTrue(app(PoDocumentService::class)->exists($invoice));
+    }
+
+    /**
+     * 7. PO report pagination strictly caps records at per_page and does not dump opening balances on page 1.
+     */
+    public function test_po_report_pagination_strictly_caps_per_page()
+    {
+        $this->actingAs($this->admin);
+
+        // Create 25 opening balances
+        for ($i = 0; $i < 25; $i++) {
+            $cust = Customer::create([
+                'name'        => 'Paging Cust ' . uniqid(),
+                'school_code' => 'PAG-' . uniqid(),
+            ]);
+            SchoolOpeningBalance::create([
+                'customer_id'         => $cust->id,
+                'user_id'             => $this->sp->id,
+                'session_year'        => 2026,
+                'opening_amount'      => 1000.00,
+                'opening_billed'      => 1000.00,
+                'opening_collected'   => 0.00,
+                'opening_outstanding' => 1000.00,
+                'source'              => 'manual',
+                'status'              => 'carry_forward',
+                'entered_by'          => $this->admin->id,
+            ]);
+        }
+
+        // Create 5 POs
+        for ($i = 0; $i < 5; $i++) {
+            Invoice::create([
+                'po_number'         => 'PO-PAGE-' . uniqid(),
+                'invoice_number'    => rand(100000, 999999),
+                'invoice_date'      => '2026-10-15',
+                'customer_id'       => $this->customer->id,
+                'user_id'           => $this->sp->id,
+                'status'            => Invoice::STATUS_APPROVED,
+                'amount'            => 5000.00,
+                'pending_po_amount' => 5000.00,
+            ]);
+        }
+
+        // Request page 1 with per_page = 10
+        $response = $this->get(route('reports.index', ['per_page' => 10, 'page' => 1]));
+        $response->assertStatus(200);
+
+        $viewRows = $response->viewData('rows');
+        // Total items on page 1 MUST NOT exceed perPage (10)
+        $this->assertLessThanOrEqual(10, $viewRows->count());
+        $this->assertEquals(10, $viewRows->perPage());
+        $this->assertEquals(1, $viewRows->currentPage());
+    }
+
+    /**
+     * 8. Sales person filter with All Sessions shows full amount including pre-July orders (> 20 Lakhs).
+     */
+    public function test_sales_person_filter_with_all_sessions_shows_full_amount()
+    {
+        $this->actingAs($this->admin);
+
+        // Pre-July order (April 2026): ₹2,000,000 (20 Lacs)
+        Invoice::create([
+            'po_number'         => 'PO-20LAC-' . uniqid(),
+            'invoice_number'    => rand(100000, 999999),
+            'invoice_date'      => '2026-04-10',
+            'customer_id'       => $this->customer->id,
+            'user_id'           => $this->sp->id,
+            'status'            => Invoice::STATUS_APPROVED,
+            'amount'            => 2000000.00,
+            'pending_po_amount' => 2000000.00,
+        ]);
+
+        // Post-July order (August 2026): ₹15,000
+        $inv2 = Invoice::create([
+            'po_number'         => 'PO-15K-' . uniqid(),
+            'invoice_number'    => rand(100000, 999999),
+            'invoice_date'      => '2026-08-10',
+            'customer_id'       => $this->customer->id,
+            'user_id'           => $this->sp->id,
+            'status'            => Invoice::STATUS_APPROVED,
+            'amount'            => 15000.00,
+            'pending_po_amount' => 15000.00,
+        ]);
+
+        // When filtering by SP without restricting session (or session=all)
+        $response = $this->get(route('reports.index', [
+            'sp_id'   => $this->sp->id,
+            'session' => 'all',
+        ]));
+
+        $response->assertStatus(200);
+        $totals = $response->viewData('totals');
+
+        // Total PO amount must include the 20 Lacs pre-July order + 15k post-July order = ₹2,015,000.00
+        $this->assertGreaterThanOrEqual(2015000.00, $totals['po_amount']);
+        $response->assertSee('2,015,000.00');
+    }
+
+    /**
+     * 9. Record type filter separates POs and Opening Balances.
+     */
+    public function test_record_type_filter_separates_po_and_opening_balances()
+    {
+        $this->actingAs($this->admin);
+
+        // Request record_type = po
+        $poResponse = $this->get(route('reports.index', ['record_type' => 'po']));
+        $poResponse->assertStatus(200);
+        $this->assertEquals('po', $poResponse->viewData('recordType'));
+        foreach ($poResponse->viewData('rows') as $row) {
+            $this->assertInstanceOf(Invoice::class, $row);
+        }
+
+        // Request record_type = opening_balance
+        $obResponse = $this->get(route('reports.index', ['record_type' => 'opening_balance']));
+        $obResponse->assertStatus(200);
+        $this->assertEquals('opening_balance', $obResponse->viewData('recordType'));
+        foreach ($obResponse->viewData('rows') as $row) {
+            $this->assertInstanceOf(SchoolOpeningBalance::class, $row);
+        }
     }
 }

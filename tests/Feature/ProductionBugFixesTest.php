@@ -66,8 +66,8 @@ class ProductionBugFixesTest extends TestCase
         ]);
 
         $this->customer = Customer::create([
-            'name'        => 'Test BugFix School ' . rand(100, 999),
-            'school_code' => 'SCH-BUG-' . rand(100, 999),
+            'name'        => 'Test BugFix School ' . uniqid(),
+            'school_code' => 'SCH-BUG-' . uniqid(),
             'address'     => '123 Main Road',
             'city'        => 'Delhi',
             'state'       => 'Delhi',

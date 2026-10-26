@@ -33,7 +33,7 @@
                 <select name="session" class="form-control form-control-sm">
                     @foreach ($sessions as $s)
                         <option value="{{ $s }}" {{ $session == $s ? 'selected' : '' }}>
-                            {{ $s }}
+                            {{ $s === 'all' ? 'All Sessions / All Time' : (str_starts_with($s, 'year_') ? 'Calendar Year ' . substr($s, 5) : 'Session ' . $s) }}
                         </option>
                     @endforeach
                 </select>

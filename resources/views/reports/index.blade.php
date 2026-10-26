@@ -103,7 +103,17 @@
 
             <div class="row g-2 align-items-end">
 
-                <div class="col-lg-3 col-md-6">
+                {{-- Record Type --}}
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label small mb-1">Record Type</label>
+                    <select name="record_type" class="form-control form-control-sm">
+                        <option value="all" {{ ($recordType ?? 'all') === 'all' ? 'selected' : '' }}>All Records</option>
+                        <option value="po" {{ ($recordType ?? '') === 'po' ? 'selected' : '' }}>Purchase Orders Only</option>
+                        <option value="opening_balance" {{ ($recordType ?? '') === 'opening_balance' ? 'selected' : '' }}>Opening Balances Only</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
                     <label class="form-label small mb-1">Month</label>
                     <input type="month" name="month" class="form-control form-control-sm" value="{{ $month ?? '' }}"
                         id="month-filter">
@@ -122,21 +132,30 @@
                 </div>
 
                 <div class="col-lg-2 col-md-6">
-                    <label class="form-label small mb-1">Session</label>
+                    <label class="form-label small mb-1">Session / Year</label>
                     <select name="session" class="form-control form-control-sm">
                         @foreach ($sessions as $s)
-                            <option value="{{ $s }}" {{ ($session ?? '') == $s ? 'selected' : '' }}>
-                                {{ $s }}
+                            @php
+                                if ($s === 'all') {
+                                    $sLabel = 'All Sessions / All Time';
+                                } elseif (str_starts_with($s, 'year_')) {
+                                    $sLabel = 'Calendar Year ' . substr($s, 5);
+                                } else {
+                                    $sLabel = 'Session ' . $s;
+                                }
+                            @endphp
+                            <option value="{{ $s }}" {{ ($session ?? 'all') == $s ? 'selected' : '' }}>
+                                {{ $sLabel }}
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                <div class="col-lg-3 d-flex gap-2">
+                <div class="col-lg-2 d-flex gap-2">
                     <button type="submit" class="btn btn-primary btn-sm w-100">
                         <i class="feather icon-filter me-1"></i> Apply
                     </button>
-                    <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
                         <i class="feather icon-x"></i>
                     </a>
                 </div>
@@ -196,7 +215,7 @@
             <h6 class="fw-bold mb-0">
                 <i class="feather icon-list me-2 text-primary"></i>
                 Records
-                <span class="badge bg-secondary ms-1">{{ $rows->total() + ($openingBalanceRows->count() ?? 0) }}</span>
+                <span class="badge bg-secondary ms-1">{{ $rows->total() }}</span>
             </h6>
             {{-- Marketing: no export button here either --}}
             @unless ($isMarketing)
@@ -237,43 +256,42 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- ── Opening Balance Carry-Forward Rows (Shown on Page 1) ──────── --}}
-                    @if (isset($openingBalanceRows) && $rows->currentPage() === 1)
-                        @foreach($openingBalanceRows as $ob)
+                    @forelse($rows as $row)
+                        @if ($row instanceof \App\Models\SchoolOpeningBalance)
                             <tr class="table-warning">
                                 <td>
                                     <span class="badge bg-warning text-dark fw-bold">
                                         <i class="feather icon-repeat me-1"></i> Opening Balance
                                     </span>
                                 </td>
-                                <td>{{ $ob->sessionLabel() }}</td>
-                                <td></td>
-                                <td></td>
+                                <td>{{ $row->sessionLabel() }}</td>
+                                <td><span class="badge bg-secondary">—</span></td>
+                                <td><span class="badge bg-light text-dark border">—</span></td>
                                 @if (!$isSp)
-                                    <td>{{ $ob->salesPerson?->reportiveTo?->username ?? '—' }}</td>
-                                    <td>{{ $ob->salesPerson ? $ob->salesPerson->username . ' (' . ($ob->salesPerson->emp_code ?? '-') . ')' : '—' }}</td>
+                                    <td>{{ $row->salesPerson?->reportiveTo?->username ?? '—' }}</td>
+                                    <td>{{ $row->salesPerson ? $row->salesPerson->username . ' (' . ($row->salesPerson->emp_code ?? '-') . ')' : '—' }}</td>
                                 @endif
                                 <td>
-                                    <a href="{{ route('customers.show', $ob->customer_id) }}" class="text-primary fw-bold">
-                                        {{ $ob->customer->name ?? '-' }}
+                                    <a href="{{ route('customers.show', $row->customer_id) }}" class="text-primary fw-bold">
+                                        {{ $row->customer->name ?? '-' }}
                                     </a>
-                                    <small class="text-muted d-block">{{ $ob->customer->school_code ?? '-' }}</small>
+                                    <small class="text-muted d-block">{{ $row->customer->school_code ?? '-' }}</small>
                                 </td>
-                                <td>{{ $ob->customer->state ?? '-' }}</td>
-                                <td>{{ $ob->customer->leadSource?->name ?? '—' }}</td>
+                                <td>{{ $row->customer->state ?? '-' }}</td>
+                                <td>{{ $row->customer->leadSource?->name ?? '—' }}</td>
                                 <td class="text-end text-muted">₹0.00</td>
                                 @unless ($isMarketing)
                                     <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end" style="color:#6f42c1">₹0.00</td>
                                     <td class="text-end text-muted">₹0.00</td>
                                     <td class="text-end text-muted">₹0.00</td>
-                                    <td class="text-end">₹{{ number_format($ob->opening_collected, 2) }}</td>
-                                    <td class="text-end {{ $ob->opening_outstanding > 0 ? 'text-danger fw-bold' : ($ob->opening_outstanding < 0 ? 'text-info fw-bold' : 'text-success') }}">
-                                        {{ $ob->opening_outstanding < 0 ? '-₹' . number_format(abs($ob->opening_outstanding), 2) : '₹' . number_format($ob->opening_outstanding, 2) }}
+                                    <td class="text-end">₹{{ number_format($row->opening_collected, 2) }}</td>
+                                    <td class="text-end {{ $row->opening_outstanding > 0 ? 'text-danger fw-bold' : ($row->opening_outstanding < 0 ? 'text-info fw-bold' : 'text-success') }}">
+                                        {{ $row->opening_outstanding < 0 ? '-₹' . number_format(abs($row->opening_outstanding), 2) : '₹' . number_format($row->opening_outstanding, 2) }}
                                     </td>
                                 @endunless
                                 <td>
-                                    @if ($ob->status === 'return')
+                                    @if ($row->status === 'return')
                                         <span class="badge bg-danger">
                                             <i class="feather icon-corner-up-left me-1"></i> Return
                                         </span>
@@ -287,71 +305,67 @@
                                     <td>—</td>
                                 @endunless
                             </tr>
-                        @endforeach
-                    @endif
-
-                    @forelse($rows as $row)
-                        <tr>
-                            <td>
-                                {{-- Marketing: plain text, no clickable link to PO detail --}}
-                                @if ($isMarketing)
-                                    {{ $row->po_number }}
-                                @else
-                                    <a href="{{ route('invoices.show', $row->id) }}" class="text-primary">
+                        @else
+                            <tr>
+                                <td>
+                                    {{-- Marketing: plain text, no clickable link to PO detail --}}
+                                    @if ($isMarketing)
                                         {{ $row->po_number }}
-                                    </a>
+                                    @else
+                                        <a href="{{ route('invoices.show', $row->id) }}" class="text-primary">
+                                            {{ $row->po_number }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>{{ $row->invoice_date ? $row->invoice_date->format('d M, Y') : '—' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $row->co_branding ? 'info text-dark' : 'secondary' }}">
+                                        {{ $row->co_branding ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ $row->order_type ?? 'New On-board' }}
+                                    </span>
+                                </td>
+                                @if (!$isSp)
+                                    <td>{{ $row->user->reportiveTo?->username ?? '—' }} ({{ $row->user->reportiveTo?->emp_code ?? '—' }})</td>
+                                    <td>{{ $row->user->username ?? '-' }} ({{ $row->user->emp_code ?? '-' }})</td>
                                 @endif
-                            </td>
-                            <td>{{ $row->invoice_date->format('d M, Y') }}</td>
-                            <td>
-                                <span class="badge bg-{{ $row->co_branding ? 'info text-dark' : 'secondary' }}">
-                                    {{ $row->co_branding ? 'Yes' : 'No' }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border">
-                                    {{ $row->order_type ?? 'New On-board' }}
-                                </span>
-                            </td>
-                            @if (!$isSp)
-                                <td>{{ $row->user->reportiveTo?->username }} ({{ $row->user->reportiveTo?->emp_code }})
+                                <td>
+                                    {{ $row->customer->name ?? '-' }}
+                                    <small class="text-muted d-block">{{ $row->customer->school_code ?? '-' }}</small>
                                 </td>
-                                <td>{{ $row->user->username ?? '-' }} ({{ $row->user->emp_code }})</td>
-                            @endif
-                            <td>
-                                {{ $row->customer->name ?? '-' }}
-                                <small class="text-muted d-block">{{ $row->customer->school_code }}</small>
-                            </td>
-                            <td>{{ $row->customer->state ?? '-' }}</td>
-                            <td>{{ $row->customer->leadSource?->name ?? '—' }}</td>
-                            <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
-                            @unless ($isMarketing)
-                                <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
-                                <td class="text-end" style="color:#6f42c1">₹{{ number_format((float)($row->gst_amount ?? 0), 2) }}</td>
-                                <td class="text-end fw-bold">₹{{ number_format(max(0, (float)$row->billing_amount - (float)($row->gst_amount ?? 0)), 2) }}</td>
-                                <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
-                                <td class="text-end">₹{{ number_format($row->collected_amount, 2) }}</td>
-                                <td
-                                    class="text-end {{ $row->outstanding_amount > 0 ? 'text-danger fw-bold' : 'text-success' }}">
-                                    ₹{{ number_format($row->outstanding_amount, 2) }}
+                                <td>{{ $row->customer->state ?? '-' }}</td>
+                                <td>{{ $row->customer->leadSource?->name ?? '—' }}</td>
+                                <td class="text-end">₹{{ number_format($row->amount, 2) }}</td>
+                                @unless ($isMarketing)
+                                    <td class="text-end">₹{{ number_format($row->billing_amount, 2) }}</td>
+                                    <td class="text-end" style="color:#6f42c1">₹{{ number_format((float)($row->gst_amount ?? 0), 2) }}</td>
+                                    <td class="text-end fw-bold">₹{{ number_format(max(0, (float)$row->billing_amount - (float)($row->gst_amount ?? 0)), 2) }}</td>
+                                    <td class="text-end">₹{{ number_format($row->amount - $row->billing_amount, 2) }}</td>
+                                    <td class="text-end">₹{{ number_format($row->collected_amount, 2) }}</td>
+                                    <td class="text-end {{ $row->outstanding_amount > 0 ? 'text-danger fw-bold' : 'text-success' }}">
+                                        ₹{{ number_format($row->outstanding_amount, 2) }}
+                                    </td>
+                                @endunless
+                                <td>
+                                    @php
+                                        $map = [
+                                            'approved'  => 'success',
+                                            'submitted' => 'warning',
+                                            'draft'     => 'secondary',
+                                            'rejected'  => 'danger',
+                                        ];
+                                        $c = $map[$row->status] ?? 'secondary';
+                                    @endphp
+                                    <span class="badge bg-{{ $c }}">{{ ucfirst($row->status) }}</span>
                                 </td>
-                            @endunless
-                            <td>
-                                @php
-                                    $map = [
-                                        'approved' => 'success',
-                                        'submitted' => 'warning',
-                                        'draft' => 'secondary',
-                                        'rejected' => 'danger',
-                                    ];
-                                    $c = $map[$row->status] ?? 'secondary';
-                                @endphp
-                                <span class="badge bg-{{ $c }}">{{ ucfirst($row->status) }}</span>
-                            </td>
-                            @unless ($isMarketing)
-                                <td>{{ $row->delivery_due_date ? $row->delivery_due_date->format('d M, Y') : '—' }}</td>
-                            @endunless
-                        </tr>
+                                @unless ($isMarketing)
+                                    <td>{{ $row->delivery_due_date ? $row->delivery_due_date->format('d M, Y') : '—' }}</td>
+                                @endunless
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="{{ $isSp ? 17 : 19 }}" class="text-center text-muted py-4">
@@ -361,7 +375,7 @@
                     @endforelse
                 </tbody>
 
-                @if ($rows->total() || $openingBalanceRows->count())
+                @if ($rows->total())
                     <tfoot class="table-dark fw-bold">
                         <tr>
                             {{--
@@ -374,7 +388,7 @@
                                 $baseColspan = $isSp ? 7 : 9; // PO#, Date, Co-branding, Order Type, (SM, SP), School, State, Lead
                             @endphp
                             <td colspan="{{ $baseColspan }}">
-                                Total ({{ $rows->total() + $openingBalanceRows->count() }} records)
+                                Total ({{ $rows->total() }} records)
                             </td>
                             <td class="text-end">₹{{ number_format($totals['po_amount'], 2) }}</td>
                             @unless ($isMarketing)
@@ -396,9 +410,9 @@
         {{-- Pagination & Records Info --}}
         <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-3 border-top gap-2">
             <div class="small text-muted">
-                Showing {{ $rows->firstItem() ?? ($rows->total() ? 1 : 0) }} to {{ $rows->lastItem() ?? $rows->total() }} of {{ $rows->total() }} purchase orders
-                @if ($openingBalanceRows->count() && $rows->currentPage() === 1)
-                    <span class="badge bg-warning text-dark ms-1">+ {{ $openingBalanceRows->count() }} opening balance {{ Str::plural('record', $openingBalanceRows->count()) }}</span>
+                Showing {{ $rows->firstItem() ?? ($rows->total() ? 1 : 0) }} to {{ $rows->lastItem() ?? $rows->total() }} of {{ $rows->total() }} records
+                @if (($recordType ?? 'all') === 'all' && ($poCount ?? 0) > 0 && ($obCount ?? 0) > 0)
+                    <span class="text-muted ms-1">({{ $poCount }} POs, {{ $obCount }} Opening Balances)</span>
                 @endif
             </div>
 

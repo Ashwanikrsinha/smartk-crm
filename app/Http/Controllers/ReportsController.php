@@ -37,10 +37,15 @@ class ReportsController extends Controller
         $month        = $request->input('month');
         $dateFrom     = $request->input('date_from');
         $dateTo       = $request->input('date_to');
-        $sessionInput = $request->input('session', $request->input('year'));
+        $recordType   = $request->input('record_type', 'all');
+        if (!in_array($recordType, ['all', 'po', 'opening_balance'])) {
+            $recordType = 'all';
+        }
+
+        $sessionInput = $request->input('session', $request->input('year', 'all'));
+        $sessions     = $this->availableSessions();
         $sessionRange = $this->sessionDateRange($sessionInput);
         $session      = $sessionRange['session'];
-        $sessions     = $this->availableSessions();
         $year         = $sessionRange['start_year'];
 
         // ── Resolve SP / Manager hierarchy ────────────────
@@ -85,6 +90,8 @@ class ReportsController extends Controller
         if ($state) {
             $query->whereHas('customer', fn($q) => $q->where('state', $state));
         }
+
+        $filterSessionYear = null;
         if ($month) {
             $query->whereYear('invoice_date',  substr($month, 0, 4))
                 ->whereMonth('invoice_date', substr($month, 5, 2));
@@ -96,7 +103,11 @@ class ReportsController extends Controller
             $fromYear = (int) substr($dateFrom, 0, 4);
             $fromMonth = (int) substr($dateFrom, 5, 2);
             $filterSessionYear = $fromMonth >= 7 ? $fromYear : $fromYear - 1;
-        } else {
+        } elseif ($sessionInput && str_starts_with($sessionInput, 'year_')) {
+            $calYear = (int) substr($sessionInput, 5);
+            $query->whereYear('invoice_date', $calYear);
+            $filterSessionYear = $calYear;
+        } elseif ($sessionInput && $sessionInput !== 'all') {
             $query->whereBetween('invoice_date', [$sessionRange['start_date'], $sessionRange['end_date']]);
             $filterSessionYear = $year;
         }
@@ -107,8 +118,11 @@ class ReportsController extends Controller
             'salesPerson.reportiveTo:id,username,emp_code',
             'customer:id,name,school_code,state,city,lead_source_id',
             'customer.leadSource:id,name',
-        ])
-        ->forSession($filterSessionYear);
+        ]);
+
+        if ($filterSessionYear !== null) {
+            $obQuery->forSession($filterSessionYear);
+        }
 
         if ($spId) {
             $obQuery->whereIn('user_id', $filteredUserIds);
@@ -123,24 +137,40 @@ class ReportsController extends Controller
         if ($leadSrcId) $obQuery->whereHas('customer', fn($q) => $q->where('lead_source_id', $leadSrcId));
         if ($state)     $obQuery->whereHas('customer', fn($q) => $q->where('state', $state));
 
-        $openingBalanceRows = $obQuery->get();
-
         // ── Summary totals over ALL matching records ──────────────
-        $aggregates = (clone $query)->selectRaw('
-            SUM(amount) as po_amount,
-            SUM(billing_amount) as billing_amount,
-            SUM(gst_amount) as gst_amount,
-            SUM(pending_po_amount) as pending_po_amount,
-            SUM(collected_amount) as collected_amount,
-            SUM(outstanding_amount) as outstanding_amount
-        ')->first();
+        if ($recordType !== 'opening_balance') {
+            $aggregates = (clone $query)->select(DB::raw('
+                SUM(amount) as po_amount,
+                SUM(billing_amount) as billing_amount,
+                SUM(gst_amount) as gst_amount,
+                SUM(pending_po_amount) as pending_po_amount,
+                SUM(collected_amount) as collected_amount,
+                SUM(outstanding_amount) as outstanding_amount
+            '))->first();
 
-        $poAmt      = (float) ($aggregates->po_amount ?? 0);
-        $billingAmt = (float) ($aggregates->billing_amount ?? 0);
-        $gstAmt     = (float) ($aggregates->gst_amount ?? 0);
-        $pendingAmt = (float) ($aggregates->pending_po_amount ?? 0);
-        $collAmt    = (float) ($aggregates->collected_amount ?? 0);
-        $outstAmt   = (float) ($aggregates->outstanding_amount ?? 0);
+            $poAmt      = (float) ($aggregates->po_amount ?? 0);
+            $billingAmt = (float) ($aggregates->billing_amount ?? 0);
+            $gstAmt     = (float) ($aggregates->gst_amount ?? 0);
+            $pendingAmt = (float) ($aggregates->pending_po_amount ?? 0);
+            $collAmt    = (float) ($aggregates->collected_amount ?? 0);
+            $outstAmt   = (float) ($aggregates->outstanding_amount ?? 0);
+        } else {
+            $poAmt = 0; $billingAmt = 0; $gstAmt = 0; $pendingAmt = 0; $collAmt = 0; $outstAmt = 0;
+        }
+
+        if ($recordType !== 'po') {
+            $obAggregates = (clone $obQuery)->select(DB::raw('
+                SUM(opening_collected) as ob_collected,
+                SUM(opening_outstanding) as ob_outstanding
+            '))->first();
+
+            $obCollAmt  = (float) ($obAggregates->ob_collected ?? 0);
+            $obOutstAmt = (float) ($obAggregates->ob_outstanding ?? 0);
+        } else {
+            $obCollAmt  = 0;
+            $obOutstAmt = 0;
+        }
+
         $netBilled  = max(0, $billingAmt - $gstAmt);
 
         $totals = [
@@ -149,17 +179,64 @@ class ReportsController extends Controller
             'gst_amount'     => $gstAmt,
             'net_billed'     => $netBilled,
             'pending_po'     => $pendingAmt,
-            'collected'      => (float) ($collAmt + $openingBalanceRows->sum('opening_collected')),
-            'outstanding'    => (float) ($outstAmt + $openingBalanceRows->sum('opening_outstanding')),
+            'collected'      => (float) ($collAmt + $obCollAmt),
+            'outstanding'    => (float) ($outstAmt + $obOutstAmt),
         ];
 
-        // ── Paginate records ────────────────────────
+        // ── Unified Pagination: exactly perPage records per page ────────────────
         $perPage = (int) $request->input('per_page', 20);
         if (!in_array($perPage, [10, 20, 50, 100, 200])) {
             $perPage = 20;
         }
+        $page = (int) $request->input('page', 1);
+        if ($page < 1) $page = 1;
 
-        $rows = $query->orderByDesc('invoice_date')->paginate($perPage)->withQueryString();
+        $poCount = ($recordType !== 'opening_balance') ? (clone $query)->count() : 0;
+        $obCount = ($recordType !== 'po') ? (clone $obQuery)->count() : 0;
+        $totalCount = $poCount + $obCount;
+
+        $offset = ($page - 1) * $perPage;
+
+        $pageInvoices = collect();
+        $pageOBs      = collect();
+
+        if ($recordType === 'po') {
+            $pageInvoices = (clone $query)->orderByDesc('invoice_date')
+                ->skip($offset)->take($perPage)->get();
+        } elseif ($recordType === 'opening_balance') {
+            $pageOBs = (clone $obQuery)->orderByDesc('id')
+                ->skip($offset)->take($perPage)->get();
+        } else {
+            // 'all' records: Purchase orders first, then opening balances
+            if ($offset < $poCount) {
+                $poTake = min($perPage, $poCount - $offset);
+                $pageInvoices = (clone $query)->orderByDesc('invoice_date')
+                    ->skip($offset)->take($poTake)->get();
+
+                $obTake = $perPage - $poTake;
+                if ($obTake > 0) {
+                    $pageOBs = (clone $obQuery)->orderByDesc('id')
+                        ->skip(0)->take($obTake)->get();
+                }
+            } else {
+                $obOffset = $offset - $poCount;
+                $pageOBs = (clone $obQuery)->orderByDesc('id')
+                    ->skip($obOffset)->take($perPage)->get();
+            }
+        }
+
+        $currentPageItems = $pageInvoices->concat($pageOBs);
+
+        $rows = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentPageItems,
+            $totalCount,
+            $perPage,
+            $page,
+            [
+                'path'  => \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPath(),
+                'query' => $request->query(),
+            ]
+        );
 
         // ── Filter dropdowns ───────────────────────────────
         $teamMembers = User::whereIn('id', $teamIds)
@@ -182,7 +259,6 @@ class ReportsController extends Controller
 
         return view('reports.index', compact(
             'rows',
-            'openingBalanceRows',
             'totals',
             'teamMembers',
             'schools',
@@ -199,16 +275,38 @@ class ReportsController extends Controller
             'year',
             'session',
             'sessions',
-            'perPage'
+            'perPage',
+            'recordType',
+            'poCount',
+            'obCount'
         ));
     }
 
     private function sessionDateRange(?string $sessionInput): array
     {
-        if ($sessionInput && strpos($sessionInput, '-') !== false) {
+        if ($sessionInput === 'all' || empty($sessionInput)) {
+            return [
+                'session'    => 'all',
+                'start_year' => null,
+                'start_date' => null,
+                'end_date'   => null,
+            ];
+        }
+
+        if (str_starts_with($sessionInput, 'year_')) {
+            $y = (int) substr($sessionInput, 5);
+            return [
+                'session'    => $sessionInput,
+                'start_year' => $y,
+                'start_date' => "{$y}-01-01",
+                'end_date'   => "{$y}-12-31",
+            ];
+        }
+
+        if (strpos($sessionInput, '-') !== false) {
             $parts     = explode('-', $sessionInput);
             $startYear = (int) $parts[0];
-        } elseif ($sessionInput && is_numeric($sessionInput)) {
+        } elseif (is_numeric($sessionInput)) {
             $startYear = (int) $sessionInput;
         } else {
             $month     = (int) date('n');
@@ -229,12 +327,15 @@ class ReportsController extends Controller
     private function availableSessions(): array
     {
         $currentStart = ((int) date('n') >= 7) ? (int) date('Y') : (int) date('Y') - 1;
-        $sessions     = [];
+        $sessions     = ['all'];
 
         for ($i = 0; $i <= 3; $i++) {
             $start = $currentStart - $i;
             $sessions[] = $start . '-' . ($start + 1);
         }
+
+        $sessions[] = 'year_' . date('Y');
+        $sessions[] = 'year_' . (date('Y') - 1);
 
         return $sessions;
     }
