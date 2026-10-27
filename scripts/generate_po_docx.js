@@ -176,8 +176,9 @@ children.push(para(
     { indent: { left: 360 }, align: AlignmentType.BOTH }
 ));
 
+const deliveryDateVal = data.delivery_date || data.delivery_due_date;
 children.push(para(
-    [tnr("Delivery Time: Within 20 working days from receiving the order.")],
+    [tnr(`Delivery Date: ${deliveryDateVal ? deliveryDateVal : 'Within 20 working days from receiving the order.'}`)],
     { indent: { left: 360 }, align: AlignmentType.BOTH }
 ));
 
@@ -229,6 +230,7 @@ children.push(para(
     `Communication Address: ${data.school_address}`,
     `City: ${data.school_city}`,
     `State: ${data.school_state}`,
+    `Pin Code: ${data.school_pin_code || data.pin_code || ''}`,
 ].forEach(line => {
     children.push(para([tnr(line)], { indent: { left: 360 }, align: AlignmentType.BOTH }));
 });

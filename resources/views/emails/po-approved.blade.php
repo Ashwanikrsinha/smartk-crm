@@ -97,6 +97,7 @@
             <div class="highlight">
                 <strong>PO Number:</strong> {{ $invoice->po_number }}<br>
                 <strong>PO Date:</strong> {{ $invoice->invoice_date ? $invoice->invoice_date->format('d M, Y') : '—' }}<br>
+                <strong>Delivery Due Date:</strong> {{ $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d M, Y') : '—' }}<br>
                 <strong>Order Type:</strong> {{ $invoice->order_type ?? 'New On-board' }}<br>
                 <strong>Co-Branding:</strong> {{ $invoice->co_branding ? 'Yes' : 'No' }}<br>
                 <strong>Total Amount:</strong> ₹{{ number_format($invoice->amount, 2) }}

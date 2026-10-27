@@ -146,12 +146,16 @@ class PoDocumentService
             'po_date'             => $invoice->invoice_date
                 ? $invoice->invoice_date->format('d F, Y')
                 : ($invoice->approved_at ? $invoice->approved_at->format('d F, Y') : now()->format('d F, Y')),
+            'delivery_date'       => $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d F, Y') : '',
+            'delivery_due_date'   => $invoice->delivery_due_date ? $invoice->delivery_due_date->format('d F, Y') : '',
             'school_name'         => $customer->name,
             'co_branding'         => (bool) $invoice->co_branding,
             'order_type'          => $invoice->order_type ?? 'New On-board',
-            'school_address'      => $customer->address ?? '',
+            'school_address'      => $invoice->address ?: ($customer->address ?? ''),
             'school_city'         => $customer->city    ?? '',
             'school_state'        => $customer->state   ?? '',
+            'school_pin_code'     => $customer->pin_code ?? '',
+            'pin_code'            => $customer->pin_code ?? '',
             'contact_name'        => $invoice->contact_person ?: ($contact?->name ?? ''),
             'contact_designation' => $contact?->designation?->name     ?? '',
             'contact_phone'       => $contact?->contact_number         ?? $customer->phone_number ?? '',

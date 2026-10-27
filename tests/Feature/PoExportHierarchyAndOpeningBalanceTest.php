@@ -90,6 +90,8 @@ class PoExportHierarchyAndOpeningBalanceTest extends TestCase
         $data = $method->invoke($service, $invoice);
 
         $this->assertEquals('15 August, 2026', $data['po_date']);
+        $this->assertEquals('01 September, 2026', $data['delivery_date']);
+        $this->assertEquals('110001', $data['pin_code']);
         $this->assertEquals(Invoice::ORDER_TYPE_REORDER, $data['order_type']);
         $this->assertTrue($data['co_branding']);
     }
